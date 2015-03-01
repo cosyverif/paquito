@@ -36,7 +36,7 @@ CosyVerif/deb-base/scripts
 
 CosyVerif/images/
 -----------------
-
+ 
 **create_buildcosy** : Prépare 3 systèmes : un esclave dédié à Jenkins, un dépôt pour les paquets Debian et une image "minimale" pour créer et tester les paquets.
 
 * L'esclave Jenkins et le dépôt sont des machines virtuelles (vm), tandis que le système de test de paquets est une image Docker.
