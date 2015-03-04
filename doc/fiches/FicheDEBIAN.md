@@ -14,14 +14,23 @@ L'arborescence d'un paquet Debian se présente sous cette forme :
 Citation
 
 - dossier_du_paquet/
+
 --- DEBIAN/
+
 ----- control
+
 ----- preinst
+
 ----- postinst
+
 ----- prerm
+
 ----- postrm
+
 --- usr/
+
 ----- bin/
+
 ------- votre_programme
 
 Le fichier control:
