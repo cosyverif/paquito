@@ -1,5 +1,5 @@
 Fiche technique pour la création d'un paquet RPM:
-==========================================
+==================================================
 
 Introduction:
 -------------
@@ -72,8 +72,8 @@ ne devrait pas être modifiée.
 
 
 
-REMARQUE : 
-----------
+**REMARQUE** : 
+
 On peut accéder à la valeur de chacune des variables déclarées dans l’entête à travers %{nom de la variable }
 
 **exemple:**
