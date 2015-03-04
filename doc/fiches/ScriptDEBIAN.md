@@ -13,15 +13,12 @@ il contient toutes les commandes nécessaire à la creation du paquet (arboresen
 # Si le nombre d'arguments est inférieur à 1
 
 if [[ $# -lt 1 ]] ; then
-
-	echo "Usage: $0 <directory>" && exit 1
+echo "Usage: $0 <directory>" && exit 1
 fi
 
 mkdir deb-$1
 
 cd deb-$1
-
-# Pas d'espace aux virgules entre les noms de fichier
 
 mkdir -p DEBIAN/ usr/bin usr/share/hello-world
 
