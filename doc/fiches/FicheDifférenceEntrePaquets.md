@@ -1,11 +1,9 @@
-Fiche technique expliquant les différences et les points
-=========================================================
-commun entre les distributions (DEBIAN ,ARCH ,RPM):
+Fiche technique expliquant les différences et les points commun entre les distributions (DEBIAN ,ARCH ,RPM):
 ===================================================
 
 
 Création , arborescence et nommage des paquets :
-==================================================
+------------------------------------------------
 
 Ce qui est en commun:
 ---------------------
@@ -102,10 +100,10 @@ ARCH:   *pkgname*
 RPM:	*Name*
 
 Dépendances :
-==============
+--------------
 
 Ce qui est en commun:
------------------------
+----------------------
 Les trois distributions contiennent une variable qui contient les dépendances de notre programme(au niveau des informations sur le paquet).
 
 Debian: fichier control
