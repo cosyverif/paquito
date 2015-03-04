@@ -2,7 +2,7 @@ Fiche technique expliquant les différences et les points commun entre les distr
 ===================================================
 
 
-Création , arborescence et nommage des paquets :
+1.Création , arborescence et nommage des paquets :
 ------------------------------------------------
 
 Ce qui est en commun:
@@ -99,7 +99,7 @@ Debian: *Package*
 ARCH:   *pkgname*
 RPM:	*Name*
 
-Dépendances :
+2.Dépendances :
 --------------
 
 Ce qui est en commun:
