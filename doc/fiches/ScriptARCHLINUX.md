@@ -2,7 +2,7 @@ Script création du paquet ARCHLINUX pour le programme hello world:
 ==================================================================
 
 
-#!/bin/bash
+**#!/bin/bash**
 
 echo "pkgname=arch-$1
 
