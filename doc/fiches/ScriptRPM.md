@@ -1,7 +1,5 @@
-Script création du paquet RPM pour le programme hello 
-===========================================================
-world:
-=======
+Script création du paquet RPM pour le programme hello world
+============================================================
 
 Construction de l'arborescence du RPM:
 -----------------------------------------
