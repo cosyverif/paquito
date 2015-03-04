@@ -17,11 +17,11 @@ Contenu du fichier:
 -------------------
 
 
-# Maintainer
+**# Maintainer**
 	
 La personne qui se charge officiellement de la maintenance du paquet (format Nom <mail@domain.tld>;) .
 
-# Contributor
+**# Contributor**
 	
 La personne qui est à l'origine du paquet (même format) .
 
@@ -134,38 +134,61 @@ Fin de la fonction
 Comme exemple, nous allons maintenant imaginer que notre archive tar.gz téléchargée contient ceci :
 
 Archive tar.gz
+
 ---- bin/
+
 ---- doc/
+
 -------- palne.6.gz
+
 -------- index.html
+
 ---- src/
+
 -------- main.c
+
 -------- fonctions.c
+
 -------- fonctions.h
+
 ---- data/
+
 -------- COPYING
+
 -------- images/
+
 ------------ icone.png
+
 ------------ splash.png
+
 ------------ gagne.png
+
 ------------ perdu.png
+
 -------- conf/
+
 ------------ palne.cfg
+
 ---- Makefile
 
 
 **build()**
 {
+
     cd $srcdir/$pkgname  # on se place dans le répértoire     contenant les sources.
-    #srcdir:le répertoire ou l'archive sera décompresser.
-    #pkgname: répertoire de l'archive décompresser.
+    
+    **#srcdir:le répertoire ou l'archive sera décompresse**r
+    .
+    **#pkgname: répertoire de l'archive décompresser**.
 
     make || return 1    # compiler le makefile 
     # || return 1:cela permet de dire que si la commande a échoué, on arrête la création du paquet.
 
+
     cd ..
-    #pkgdir : répertoire du paquet
-    #construction de l'arborescence du paquet
+    
+    **#pkgdir : répertoire du paquet**
+    **#construction de l'arborescence du paquet**
 
     mkdir -p $pkgdir/usr/bin/ 
     mkdir -p $pkgdir/usr/share/palne/
@@ -174,7 +197,7 @@ Archive tar.gz
     mkdir -p $pkgdir/etc/palne/
     mkdir -p $pkgdir/usr/share/licenses/palne/
     
-    #déplacer les fichiers(ceux qui vont constituer le paquet exp: exécutable ici c'est palne) vers le répertoire du paquet
+    **#déplacer les fichiers(ceux qui vont constituer le paquet exp: exécutable ici c'est palne) vers le répertoire du paquet**
 
     cp bin/palne $pkgdir/usr/bin/
     #donner les droits d’exécution pour l’exécutable
