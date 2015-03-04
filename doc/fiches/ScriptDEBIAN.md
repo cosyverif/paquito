@@ -10,9 +10,10 @@ il contient toutes les commandes nécessaire à la creation du paquet (arboresen
 
 **#!/bin/bash**
 
-# Si le nombre d'arguments est inférieur à 1
+**# Si le nombre d'arguments est inférieur à 1**
 
-if [[ $# -lt 1 ]] ; then
+if [[ $# -lt 1 ]] 
+then
 echo "Usage: $0 <directory>" && exit 1
 fi
 
