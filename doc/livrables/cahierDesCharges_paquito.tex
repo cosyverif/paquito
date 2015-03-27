@@ -1,0 +1,222 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usepackage{placeins}
+\newenvironment{remarque}{\textbf{Remarque :}}{}
+\title{Cahier des charges}
+\author{Corentin GUILLEVIC et Sarah HADBI}
+\begin{document}
+
+\maketitle
+
+\section{Contexte et définition du problème}
+
+De nos jours, toute personne disposant d'un ordinateur a besoin d'y installer un certain nombre de logiciels pour l'utiliser à des fins personnelles ou professionnelles. Sachant que les ordinateurs fonctionnent sous différentes architectures (32 bits, 64 bits, ARM...) et systèmes d'exploitations (Windows, MAC OS X, Linux...), eux-mêmes divisés dans le cas de Linux en distributions (Debian , Red hat...), à partir de là un problème se pose :
+\\
+
+Si on prend l'exemple de Linux, un logiciel est installé à travers un paquet récupéré sur le dépôt d'une distribution. Le paquet en question n'est pas forcément disponible sous toutes les distributions. A partir de là, si une personne possède une distribution spécifique sur son ordinateur, et que le paquet du logiciel n'est pas forcément adapté pour celle-ci (c'est-à-dire qu'il n'existe pas pour la distribution), elle ne pourra pas l'installer directement et simplement sur sa machine. Elle sera donc contrainte d'aller récupérer les sources du paquet et de devoir assurer la compilation, tâche assez laborieuse.
+
+\section{Projet Paquito}
+\subsection{Existant}
+Pour répondre à ce besoin de simplification, le projet Paquito a été initié, qui dispose actuellement d'une version préalable composée d'un certain nombre de scripts. Ceux-ci visent à la création assistée de paquets à destination de la distribution Debian. Pour la poursuite du projet, ces scripts peuvent éventuellement servir de base.
+
+L'objectif est de faciliter d'une part la vie des développeurs dans la mise à disposition de leurs logiciels et d'autre part faciliter l'accès aux logiciels pour les utilisateurs. Le projet Paquito se matérialise par une infrastructure de construction de paquet à destination des distributions Linux.
+	
+Ce projet doit offrir à terme une compilation automatique et simultanée de paquets, à partir d'un dépôt quelconque mis à disposition par le développeur. Selon les choix du développeur, un ensemble de paquets pour différentes distributions, architectures et versions sera généré. Cet ensemble sera réparti dans les différents dépôts associés.
+  
+L'infrastructure Paquito doit aussi fournir au développeur un retour en cas d'erreurs ainsi qu'un moyen de vérifier et tester les résultats produits (avant de les publier).
+\FloatBarrier
+
+\begin{figure}[!h]
+\begin{tikzpicture}[scale=0.9]
+	\node[inner sep=0pt,anchor=center] (U) at (1,-3) {\includegraphics[width=30pt]{img/programmer.png}}
+	node at (U.south) [below] {Développeur} ;
+	\node[inner sep=0pt,anchor=center] (G) at (1,-1) {\includegraphics[width=25pt]{img/latex_server.png}}
+	node at (G.north) [above] {GitHub} ;
+	\draw[-stealth,very thick] (U) -- (G);
+	
+	\node[inner sep=0pt,anchor=center] (M1) at (9.5,0) {\includegraphics[width=40pt]{img/latex_database.png}}
+	node at (M1.north) [above] {Miroirs (dépôts)} ;
+	\node[inner sep=0pt,anchor=center] () at (9.5,0) {\includegraphics[width=30pt]{img/debian_logo.png}} ;
+	\node[inner sep=0pt,anchor=center] (M2) at (9.5,-2) {\includegraphics[width=40pt]{img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (9.5,-2) {\includegraphics[width=25pt]{img/redhat_logo.png}} ;
+	\node[inner sep=0pt,anchor=center] (M3) at (9.5,-4) {\includegraphics[width=40pt]{img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (9.5,-4) {\includegraphics[width=25pt]{img/Arch-linux-logo.png}} ;
+	\node[inner sep=0pt,anchor=center] (C) at (12.3,-4) {\includegraphics[width=35pt]{img/latex_monitor2.png}}
+	node at (C.south) [below] {Clients} ;
+	\node[inner sep=0pt,anchor=center] (C1) at (12.3,-2) {\includegraphics[width=35pt]{img/latex_monitor.png}} ;
+	\node[inner sep=0pt,anchor=center] (C2) at (12.3,0) {\includegraphics[width=35pt]{img/latex_monitor.png}} ;
+	\node[] at (11.4,-0.8) {\includegraphics[width=17pt]{img/processor_32.png}} ;
+	\node[] at (13.2,-0.8) {\includegraphics[width=17pt]{img/processor_64.png}} ;
+	\node[] at (11.4,-2.8) {\includegraphics[width=17pt]{img/processor_32.png}} ;
+	\node[] at (13.2,-2.8) {\includegraphics[width=17pt]{img/processor_64.png}} ;
+	\node[] at (13.3,-4.6) {\colorbox{white}{\makebox(12,12){\includegraphics[width=17pt]{img/processor_64.png}}}} ;
+	
+	\draw[stealth-stealth,very thick] (M1) -- (C2) ;
+	\draw[stealth-stealth,very thick] (M2) -- (C1);
+	\draw[stealth-stealth,very thick] (M3) -- (C);
+	\node[inner sep=0pt,anchor=center] (N) at (5,-2) {\includegraphics[width=130pt]{img/latex_cloud.png}}
+	node at (N.center) [] {\textbf{{\Huge ?}}} ;
+	\draw[-stealth,very thick] (G) -- (N);
+	\draw[-stealth,very thick] (N) -- (M1);
+	\draw[-stealth,very thick] (N) -- (M2);
+	\draw[-stealth,very thick] (N) -- (M3);
+	
+	\node[inner sep=0pt,anchor=center] (U1) at (13.5,0.1) {\includegraphics[width=15pt]{img/latex_user.png}} ;
+	\node[inner sep=0pt,anchor=center] (U2) at (13.5,-2.0) {\includegraphics[width=15pt]{img/latex_user.png}} ;
+	\node[inner sep=0pt,anchor=center] (U2) at (13.5,-3.8) {\includegraphics[width=15pt]{img/latex_user.png}} ;
+\end{tikzpicture}
+\caption{Illustration du problème}
+\end{figure}
+\subsection{Intervenants}
+Développeurs :
+\begin{itemize}\renewcommand{\labelitemi}{$\bullet$}
+\item Corentin GUILLEVIC 
+\item Sarah HADBI
+\end{itemize}
+Clients :
+\begin{itemize}\renewcommand{\labelitemi}{$\bullet$}
+\item Francis HULIN-HUBARD
+\item Alban LINARD
+\item Pierre-Arnaud SENTUCQ
+\end{itemize}
+
+\subsection{Objectifs}
+
+L'objectif initial du projet Paquito (qui existe depuis 2014) était de faciliter la conception de paquets pour la distribution Debian. Dans le cadre de ce PSAR, le but est de reprendre l'existant et de l'améliorer afin d'étendre ses fonctionnalités de génération de paquets, pour les distributions :
+\begin{itemize}\renewcommand{\labelitemi}{$\bullet$}
+\item Archlinux 
+\item Redhat
+\end{itemize}
+Sachant que l'architecture doit être prise en compte pour chacune de ces distributions (32 et 64 bits, sauf pour Archlinux qui n'acceptera que le 64 bits).
+
+\section{Définitions}
+
+\begin{itemize}\renewcommand{\labelitemi}{$\bullet$}
+\item \textit{Paquet} : Archive (fichier compressé) comprenant les fichiers informatiques, les informations et procédures nécessaires à l'installation d'un logiciel sur un système d'exploitation .
+\item \textit{Compilation} : Travail réalisé par un compilateur qui consiste à transformer un code source lisible par un humain en un fichier binaire exécutable par une machine.
+\item \textit{Dépôt/Miroir de paquets} : Un dépôt est un stockage centralisé et organisé de paquets, en vue de leur distribution sur le réseau ou bien un endroit directement accessible aux utilisateurs.
+\item \textit{Docker} : Logiciel automatisant le déploiement d'applications dans des conteneurs logiciels et empaquette une application et ses dépendances dans un conteneur virtuel, qui pourra être exécuté sur n'importe quel serveur Linux . Ceci permet d'étendre la flexibilité et la portabilité d’exécution d'une application, que ce soit sur la machine locale, un cloud privé ou public, une machine nue. 
+\item \textit{Container} : Un type de cloisonnement d'un système d'exploitation dans certains systèmes de virtualisation légers réutilisant le noyau et éventuellement les bibliothèques du système hôte.
+\item \textit{GitHub} : Service web d'hébergement et de gestion de développement de logiciels, utilisant le logiciel de gestion de versions Git , Le nom GitHub est composé du mot "git" faisant référence à un système de contrôle de version open-source et le mot "hub" faisant référence au réseau social bâti autour du système Git.
+\item \textit{Jenkins} : Outil d'intégration continue,  il s'interface avec des systèmes de gestion de versions tels que CVS, Git et Subversion.
+\item \textit{Dépendances} : un logiciel dépend pour son exécution de la présence (inclusion) des bibliothèques logicielles adéquates.
+\end{itemize}
+
+\section{Description fonctionnelle}
+
+L'infrastructure utilisée dans le cadre du projet Paquito est illustrée par le schéma suivant :
+
+\begin{figure}[!h]
+\begin{tikzpicture}[scale=1.0]
+	\node[inner sep=0pt,anchor=center] (U) at (-4,-4) {\includegraphics[width=35pt]{img/programmer.png}} ;
+	\node[inner sep=0pt,anchor=center] (G) at (-4,-1) {\includegraphics[width=30pt]{img/latex_server.png}}
+	node at (G.north) [above] {GitHub} ;
+	\node[anchor=south west,inner sep=0] at (-3.3,-1.2) {\includegraphics[width=17pt]{img/latex_flag.png}} ;
+	\node[inner sep=0pt,anchor=center] (J) at (-1.8,-2) {\includegraphics[width=30pt]{img/latex_server.png}}
+	node at (J.south) [below] {Jenkins CI} ;
+	\draw[-stealth,very thick] (G) -- (J);
+	\draw[-stealth,very thick] (U) -- (G);
+	
+	\node[inner sep=0pt,anchor=center] (D1) at (1.5,0) {\includegraphics[width=40pt]{img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (1.5,0) {\includegraphics[width=35pt]{img/docker-logo.png}} ;
+	
+	\node[inner sep=0pt,anchor=center, opacity=0.5] (D2) at (1.5,-2) {\includegraphics[width=40pt]{img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.5] () at (1.5,-2) {\includegraphics[width=35pt]{img/docker-logo.png}} ;
+	
+	\node[inner sep=0pt,anchor=center, opacity=0.2] (D3) at (1.5,-4) {\includegraphics[width=40pt]{img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.2] () at (1.5,-4) {\includegraphics[width=35pt]{img/docker-logo.png}} ;
+
+	\node[inner sep=0pt,anchor=center] () at (2.5,-5.3) {\includegraphics[width=20pt]{img/debian_logo.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (3.3,-5.3) {\includegraphics[width=20pt]{img/Arch-linux-logo.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (4.1,-5.3) {\includegraphics[width=20pt]{img/redhat_logo.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (2.8,-6.2) {\includegraphics[width=20pt]{img/processor_32.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (3.8,-6.2) {\includegraphics[width=20pt]{img/processor_64.png}} ;
+	\node at (1.55,-6.3) [align=center, right, rotate=90] {\huge \ldots} ;
+	\node at (5.05,-6.3) [align=center, right, rotate=90] {\huge \ldots} ;	
+	
+	\draw[-stealth,very thick] (J) -- (D1);
+	\draw[-stealth,very thick, opacity=0.5] (J) -- (D2);
+	\draw[-stealth,very thick, opacity=0.2] (J) -- (D3);
+	\node at (0.1,-7.6) [align=center, right] {Compilation} ;
+	\draw[dashed] (6.3,-6.8) -- (6.3,1) -- (0,1) -- (0,-6.8) -- cycle ;	
+
+	\node[inner sep=0pt,anchor=center] (D4) at (5,0) {\includegraphics[width=40pt]{img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (5,0) {\includegraphics[width=35pt]{img/docker-logo.png}} ;
+	
+	\node[inner sep=0pt,anchor=center, opacity=0.5] (D5) at (5,-2) {\includegraphics[width=40pt]{img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.5] () at (5,-2) {\includegraphics[width=35pt]{img/docker-logo.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.2] (D6) at (5,-4) {\includegraphics[width=40pt]{img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.2] () at (5,-4) {\includegraphics[width=35pt]{img/docker-logo.png}} ;
+	%\draw[dashed] (3.7,-5.3) -- (3.7,1) -- (6.3,1) -- (6.3,-5.3) -- cycle ;	
+	\node at (3.7,-7.6) [align=center, right] {Tests \\ d'installation} ;
+	
+	\draw[-stealth,very thick] (D1) -- (D4);
+	\draw[-stealth,very thick, opacity=0.5] (D2) -- (D5);
+	\draw[-stealth,very thick, opacity=0.2] (D3) -- (D6);
+	
+	\node[inner sep=0pt,anchor=center] (M1) at (8,0) {\includegraphics[width=40pt]{img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (8,0) {\includegraphics[width=25pt]{img/package_white.png}} ;
+	
+	\node[inner sep=0pt,anchor=center, opacity=0.5] (M2) at (8,-2) {\includegraphics[width=40pt]{img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.5] () at (8,-2) {\includegraphics[width=25pt]{img/package_white.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.2] (M3) at (8,-4) {\includegraphics[width=40pt]{img/latex_database.png}} node at (M3.south east) [below] {Miroirs (dépôts)} ;	
+	\node[inner sep=0pt,anchor=center, opacity=0.2] () at (8,-4) {\includegraphics[width=25pt]{img/package_white.png}} ;	
+	
+	\draw[-stealth,very thick] (D4) -- (M1);
+	\draw[-stealth,very thick, opacity=0.5] (D5) -- (M2);
+	\draw[-stealth,very thick, opacity=0.2] (D6) -- (M3);	
+	
+\end{tikzpicture}
+\caption{Illustration de la solution}
+\end{figure}
+\break
+La chaîne de fonctionnement de l'infrastructure est divisée en plusieurs étapes :
+\begin{itemize}\renewcommand{\labelitemi}{$\bullet$}
+\item Un développeur effectue un commit dans le dépôt GitHub (c'est-à-dire qu'il officialise dans le dépôt les modifications qu'il a apporté au code source). L'interface GitHub, qui offre des services administratifs, active un fanion indiquant que des changements ont récemment eu lieu.
+
+\begin{remarque}
+Parmi le code source que le développeur a officialisé se trouve un fichier de	configuration. Ce fichier, primordial pour l'infrastr\-ucture Paquito, contient un ensemble de 	méta-données telles que le nom du paquet ou sa version, mais les plus importantes sont les dépendances.
+\end{remarque}
+\item Le service Jenkins CI, en veille de l'activation du fanion du dépôt GitHub, détecte un changement et procède donc au téléchargement du projet (il récupère par la même occasion un maximum d'informations qui serviront lors de la phase de compilation). Il lancera ensuite une série de containers Docker adapté à chaque distribution, ses versions et les architectures.
+
+\begin{remarque}
+Normalement utilisé pour réaliser de l'intégration continue, Jenkins CI est utilisé dans le cadre du projet uniquement pour ses fonctionnalités d'écoute de dépôts et de démarrage de containers Docker.
+\end{remarque}
+\item Chaque container Docker (qui a une configuration vierge) se chargera de compiler le code source (notamment à partir des informations récoltées par Jenkins CI) en considérant les dépendances (autre logiciel, librairie...). En cas d'échec, le container concerné renvoi les messages d'erreurs au développeur puis s'arrête (les autres containers ne sont pas impactés).
+
+\begin{remarque}
+Les éventuelles erreurs renvoyées par le container seront sauvegardées sous forme d'un fichier de journalisation.
+\end{remarque}
+
+\item Une fois la compilation réussie et le package créé, celui-ci est testé sur un nouveau container Docker créé à cet effet (comme pour la compilation, ce container est vierge). L'idée est de s'assurer que l'installation du package aboutisse avec succès et que le programme associé fonctionne correctement. Ce dernier point est vérifié grâce aux tests arbitraires que le développeur fournit sous formes de scripts . En cas d'échec d'un test, le container en question est arrêté et le développeur est notifié.
+\item Une fois que le package est réputé conforme et fonctionnel, celui-ci est inséré dans un dépôt de logiciel lié à sa distribution, sa version et son architecture. Les utilisateurs n'auront qu'à télécharger le logiciel par l'intermédiaire de leur gestionnaire de paquets (après avoir bien entendu ajouté l'adresse du miroir où se trouve le package dans le fichier \textbf{source.list}).
+\end{itemize}
+
+\subsection{Solution}
+
+Le scénario imaginé pour valider l'avancement du présent projet sera le suivant : à partir de 3 projets mis à disposition par les clients (\textit{HelloWorld}, \textit{Prod} et \textit{GreatSPN}), nous devons générer un ensemble de paquets pour les distributions Debian , Redhat et ArchLinux (en prenant en compte les différentes architectures, c'est-à-dire 32bits et 64bits). Plus précisément, la validation de ce scénario passera par les points suivants :
+\begin{itemize}\renewcommand{\labelitemi}{$\bullet$}
+\item Identifier les points communs et les différences pour la construction des paquets (selon les systèmes de gestions de paquets de chaque distribution)
+\item Modifier le fichier de configuration du projet Paquito 2014 pour prendre en compte les nouveaux types de paquets (en se basant notamment sur les recherches sur les points communs et les différences entre types de paquets) ainsi que pour y inclure toutes les dépendances nécessaires pour la génération de ces paquets.
+\item Modifier et adapter si nécessaire les scripts du projet Paquito 2014 pour ajouter le support des paquets Redhat et Archlinux, en plus des paquets Debian.
+\end{itemize}
+
+\section{Scénario de recette}
+
+La condition de validation finale de ce scénario est donc d'obtenir un ensemble de paquets installables et fonctionnels (les logiciels doivent fonctionner) des projets \textit{HelloWorld}, \textit{Prod} et \textit{GreatSPN} pour les distributions cibles.
+
+\section{Délais}
+
+Définition des dates-clés pour la remise des livrables :
+
+Semaine du 06/03 : STBE.
+
+Semaine du 06/04 : STR.
+
+Semaine du 05/05 : Soutenance.
+
+\end{document}
