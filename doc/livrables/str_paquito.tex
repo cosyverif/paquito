@@ -1,0 +1,241 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usepackage{dirtree}
+\usepackage{caption}
+\usepackage{subcaption}
+\newenvironment{remarque}{\textbf{Remarque :}}{}
+\title{Spécification technique de réalisation}
+\author{Corentin GUILLEVIC et Sarah HADBI}
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction}
+Dans ce document nous nous intéresserons à la partie technique du cahier des charges, la STR (Spécification technique de réalisation), qui vise à fournir au prestataire ou au maître d'œuvre (MOE) de notre projet informatique le maximum de spécifications techniques que nous souhaitons valider. Cette partie nécessite un niveau d'expertise informatique non-négligeable et vise à assurer la pérennité du projet. En outre, dans le cadre de notre projet Paquito, nous :
+\begin{itemize}
+	\item Préciserons les différences et les points communs entre les systèmes de fichiers (Debian, ArchLinux et Redhat)
+	\item Effectuerons des modifications au sein de certains fichiers déjà présents
+	\item Apporterons des solutions aux problèmes rencontrés (relatés dans le cahier des charges)
+\end{itemize}
+
+\section{Systèmes de paquets}
+\subsection{Points Communs}
+Chacune des distribution dispose d'un fichier spécial propre destiné à spécifier les méta-données du paquet ainsi qu'éventuellement définir sa procédure de construction. Le volume de données est variable selon le système de paquet :
+\begin{itemize}
+	\item \textbf{Debian}:  Le fichier \textbf{control} contient les informations sur le paquet
+	\item \textbf{Archlinux} : Le fichier \textbf{PKGBUILD} contient les informations sur le paquet et une fonction appelée \textbf{build()} pour construire le paquet
+	\item \textbf{RPM} : Le fichier \textbf{SPEC} contient les informations sur le paquet ainsi que plusieurs sections pour la construction du paquet
+\end{itemize}
+
+Les autres points communs entre les systèmes de fichiers sont :
+\begin{itemize}
+	\item Les méta-données des les fichiers sus-cités sont globalement similaires : nom du paquet, version, dépendances, licence, etc...
+	\item Les paquets sont organisés pour contenir dans une partie dédiée les fichiers du programme (par exemple, le répertoire \textbf{/usr/bin} est censé contenir l'exécutable).
+	\item Les éléments communs du nommage des paquets pour les 3 systèmes comprennent le nom du paquet et sa version (tous deux définis dans le fichier spécial).
+	\item Chaque système de paquet prévoit une commande spécifique propre pour initier la création du paquet :
+	\begin{itemize}
+		\item \textbf{Debian} : dpkg-deb --build package\_name
+		\item \textbf{Archlinux} : makepkg
+		\item \textbf{Redhat} : rpmbuild -ba rpmbuild/SPECS/package\_name.spec
+	\end{itemize}
+	\item Les trois distributions possèdent une variable contenant les dépendances du programme (dépendances à l'exécution). Cette variable est située dans le fichier spécial de chaque distribution :
+	\begin{itemize}
+		\item \textbf{Debian} : \textit{Depends:tcc\textgreater=1.4}
+		\item \textbf{Archlinux} : \textit{Depends=('tcc\textgreater=1.4')}
+		\item \textbf{Redhat} : \textit{tcc}
+	\end{itemize}
+	\begin{remarque} L'exemple est tiré de la dépendance à l'exécution "Tiny C" du programme HELLOWORLD.
+	\end{remarque}
+\end{itemize}
+
+\subsection{Différences}
+\subsubsection{Arborescence}
+Puisque chaque distribution impose une arborescence spécifique pour créer un paquet, cette partie vise à montrer et expliquer ces différences.
+\paragraph{Debian} Le répertoire du paquet sera constitué de deux parties :
+\begin{itemize}
+	\item Une partie \textbf{control} (fichier \textbf{control} qui est dans le répertoire \textbf{DEBIAN}), qui contiendra les informations sur le paquet (version, nom, dépendances...)
+	\item Une partie \textbf{data}, qui contiendra les fichiers du programme, tel que par exemple le répertoire \textbf{/usr/bin}, qui contiendra le ou les exécutables
+\end{itemize}
+\hspace{0.5cm} \begin{remarque} Le fichier \textbf{control} est propre à la distribution Debian\end{remarque}
+
+\begin{figure}[!h]
+	\centering
+	\framebox[\textwidth]{%
+		\begin{minipage}{0.9\textwidth}
+			\dirtree{%
+			.1 package/.
+			.2 DEBIAN/.
+			.3 control.
+			.2 usr/.
+			.3 bin/.
+			}
+		\end{minipage}
+	}
+\end{figure}
+
+\paragraph{Archlinux} Le répertoire du paquet contiendra uniquement la partie \textbf{data}, qui héberge les différents fichiers du programme. Par exemple : \textbf{/usr/bin}, \textbf{/usr/lib} pour les librairies, etc...
+
+\begin{figure}[!h]
+	\centering
+	\framebox[\textwidth]{%
+		\begin{minipage}{0.9\textwidth}
+			\dirtree{%
+			.1 pkgbuild.
+			.1 package/.
+			.2 usr/.
+			.3 bin/.
+			}
+		\end{minipage}
+	}
+\end{figure}
+
+\paragraph{Redhat} Il n'y a pas de répertoire spécial pour l'arborescence du paquet. À la place, il y a un répertoire \textbf{rpmbuild} qui contiendra les répertoires suivants :
+
+\begin{itemize}
+	\item[\textbf{SOURCES}]Contient l'archive contenant les sources du programme
+	\item[\textbf{BUILD}]Contient l'archive décompressée (celle présente dans le répertoire \textbf{SOURCES}) 
+	\item[\textbf{RPMS}]Contient le paquet RPM binaire
+	\item[\textbf{SRPMS}]Contient le paquet RPM source 
+	\item[\textbf{SPECS}]Contient le fichier \textbf{SPEC} qui est un fichier propre à RPM, il contiendra les informations sur le paquet ainsi que différentes sections
+\end{itemize}
+\begin{remarque} La commande \textbf{rpmdev-setuptree} permet de simplifier la procédure en créant automatiquement l'arborescence suscitée.\end{remarque}
+
+\begin{figure}[!h]
+	\centering
+	\framebox[\textwidth]{%
+		\begin{minipage}{0.9\textwidth}
+			\dirtree{%
+			.1 rpmbuild/.
+			.2 SOURCES/.
+			.2 BUILD/.
+			.2 SPECS/.
+			.3 SPEC/.
+			.2 RPMS/.
+			.3 Paquet\ binaire.
+			.2 SRPMS/.
+			.3 Paquet\ source.
+			}
+		\end{minipage}
+	}
+\end{figure}
+
+\subsubsection{Construction du paquet}
+\paragraph{Debian} La création du paquet se fait à partir d'un simple script shell. Il contiendra :
+\begin{itemize}
+	\item Les commandes permettant la création de l'arborescence décrite précédemment
+	\item Les commandes de compilation afin de compiler les sources et générer le ou les différents exécutables
+	\item La commande permettant la création du paquet Debian : \textbf{sudo dpkg-deb --build package\_name} (ou \textbf{package\_name} est le nom du répertoire contenant l'arborescence du paquet)
+\end{itemize}
+En exécutant la commande \textbf{ls} sur le répertoire où se situe le script, nous constaterons la présence d'un répertoire (qui sera le répertoire décrit précédemment contenant l'arborescence du paquet) et du paquet Debian fraîchement créé.
+\paragraph{Archlinux} La création du paquet se fait à l'aide de la fonction \textbf{buid()} contenu dans le fichier \textbf{PKGBUILD} (qui est propre à la distribution Archlinux).
+
+Rappel : Le fichier \textbf{PKGBUILD} contient les information sur le paquet (comme le fichier \textbf{control}) mais aussi la fonction \textbf{build()} qui gère la création du paquet.
+
+En général, l'ordre des commandes dans la fonction \textbf{build()} est le suivant :
+\begin{enumerate}
+	\item Déplacement dans le répertoire contenant les sources téléchargées 
+	\item Compilation les sources
+	\item Déplacement dans le répertoire destiné à être le paquet
+\end{enumerate}
+
+Une fois le fichier \textbf{PKGBUILD} rempli pour créer le paquet, il faut exécuter la commande \textbf{makepkg} (au niveau du répertoire qui contient ce fichier), ce qui aura pour effet de créer le paquet Archlinux. Du coup, on pourra l'apercevoir avec la commande \textbf{ls}, en plus du fichier \textbf{PKGBUILD}, et du répertoire qui contient l'arborescence du paquet.
+\paragraph{Redhat} La construction du paquet RPM est gérée par le fichier \textbf{SPEC}. Il contient les informations sur le paquet (à l'instar du fichier \textbf{control}) mais surtout des sections permettant d'arriver à la création du paquet? Par exemple :
+\begin{itemize}
+	\item \textit{\%build} est une section du fichier \textbf{SPEC} qui permettra la compilation des sources
+	\item \textit{\%install} est une section qui se chargera de déplacer les fichiers sources et exécutables dans les bons répertoires
+\end{itemize}
+Une fois le fichier \textbf{SPEC} rempli, on se place au niveau du répertoire qui contiendra le répertoire \textbf{rpmbuild} décrit précédemment, pour exécuter la commande \textbf{rpmbuild -ba rpmbuild/SPECS/package\_name.spec}
+\begin{remarque} Le nom du fichier \textbf{SPEC} est composé du nom souhaité pour le paquet suivi de l'extension \textbf{.spec}.\end{remarque}
+
+Il y aura deux paquets créés : un paquet binaire qui sera contenu dans le répertoire \textbf{RPMS} et le paquet source qui sera contenu dans le répertoire \textbf{SRPMS}.
+
+\begin{remarque} Le paquet source permet en l'installant de récupérer le fichier \textbf{SPEC} et les sources du programme ayant servis pour la construction du RPM associé.\end{remarque}
+\subsubsection{Nommage}
+Une fois le paquet créé, il aura selon la distribution les noms suivants :
+\begin{itemize}
+	\item \textbf{Debian} : nom-du-paquet\_version-1\_architecture.deb
+	\item \textbf{Archlinux} : nom-du-paquet-version.tar.gz
+	\item \textbf{Redhat} : nom-du-paquet-version-1.fc10.architecture.rpm
+\end{itemize}
+
+De plus, les noms des variables (méta-données) ne sont pas toujours les mêmes selon la distribution. Si on considère pour l'exemple la variable utilisée pour nommer le paquet, son nom n'est pas identique :
+\begin{itemize}
+	\item \textbf{Debian} : \textit{Package}
+	\item \textbf{Archlinux} : \textit{pkgname}
+	\item \textbf{Redhat} : \textit{Name}
+\end{itemize}
+\subsubsection{Dépendances}
+En plus des dépendances citées précédemment (aux points communs), le système de paquet d'Archlinux prend en charge deux autres types de dépendances :
+\begin{itemize}
+	\item[\textbf{optdepends}]Paquet optionnel qui rajoute en général des fonctionnalités au programme
+	\item[\textbf{makedepends}]Dépendances exigées pour la compilation du programme
+\end{itemize}
+Le système de paquet RPM possède lui-aussi le type de dépendances exigées pour la compilation du programme (\textbf{BuildRequires}).
+\section{Retour sur l'existant}
+Cette partie est un résumé des points importants du projet Paquito 2014.
+\subsection{buildeb}
+Le fichier \textbf{buildeb} est un script shell qui permet de faciliter la création d'un paquet Debian à partir de sources. C'est en quelque sorte l'exécutable du projet Paquito 2014.
+
+Pour concevoir le paquet Debian désiré, il faut remplir et compléter le fichier \textbf{build\_config.yml} (qui contiendra toutes les méta-données). Il sera ensuite interprété par le script \textbf{buildeb} pour réaliser un paquet ou plusieurs paquets. L'exécution du script est divisée en 9 étapes :
+\begin{enumerate}
+	\item Interprétation des options fournis en ligne de commande
+	\item Lecture du fichier de configuration (c'est-à-dire \textbf{build\_config.yml} grâce au script \textbf{config\_parser.pl})
+	\item Recherche du \textbf{Makefile}
+	\item Création de logs (2 journaux, le contenu de l'un est la sortie standard des différentes commandes, l'autre contient la sortie de \textbf{debuild} [l'outil qui construit les paquets]) 
+	\item Tâches avant les opérations de construction (\textbf{BEFOREBUILD})
+	\item Création des Tarballs (c'est-à-dire les archives qui contiennent le code source) (seulement pour les paquets contenant des librairies ou des paquets binaires)
+	\item Gestion du fichier copyright (il doit être présent pour répondre à la politique de Debian)
+	\item Construction des paquets :
+	\begin{enumerate}
+		\item Création des fichiers Debian (avec \textbf{dh\_make}) 
+		\item Modification des fichiers Debian 
+		\item Création du paquet source 
+		\item Construction du paquet 
+	\end{enumerate}
+	\item Lancement après les opérations de construction
+\end{enumerate}
+\subsection{config-parser.pl}
+Interprète le fichier \textbf{build\_config.yml} pour y récupérer les informations. Pour cela, il doit impérativement se trouver dans le même répertoire que le script \textbf{buildeb}.
+\subsection{correct-lintian.pl}
+Détecte les éventuelles erreurs et vérifie la conformité du paquet Debian par rapport à la politique de Debian. Bien que ce script ne soit pas nécessaire pour la procédure de création de paquets, il est hautement recommandé de l'utiliser afin d'obtenir des paquets correctement formés.
+
+Naturellement, il doit se trouver dans le même répertoire que le script \textbf{buildeb}.
+\subsection{build-config.yml}
+Le fichier \textbf{build\_config.yml} (qui devra être renommé \textbf{paquito.yml}) est le fichier de configuration que devra remplir le développeur du logiciel pour former le paquet. Il est initialement constitué des champs suivants :
+\begin{itemize}
+	\item \textbf{BINPACKAGENAME} : Nom souhaité pour le paquet binaire (si le paquet à construire n'est pas un binaire, laisser vide). Voir \textbf{PACKAGETYPE}
+	\item \textbf{LIBPACKAGENAME} : Nom souhaité pour le paquet de librairies (si le paquet à construire ne contient pas de librairies, laisser vide). Voir \textbf{PACKAGETYPE}
+	\item \textbf{INDPACKAGENAME} : Nom souhaité pour le paquet contenant des fichiers sans architecture (si le paquet à construire est destiné à une architecture, laisser vide). Voir \textbf{PACKAGETYPE}
+	\item \textbf{VERSION} : Version du programme. Doit être incrémenté lors du remplissage du fichier de configuration pour que le paquet créé représente la dernière version disponible. Si vide, utilise la date (timestamp)
+	\item \textbf{COPYRIGHT} : Copyrigth. Une liste de copyright est disponible pour faire un choix. Mais on peut spécifer à la place un fichier. Enfin, il est possible de laisser ce champ vide (le fichier \textbf{COPYING} ou \textbf{LICENSE} sera alors recherché)
+	\item \textbf{DEVS} : Développeur(s) du projet. La mise en forme doit être "\textit{- 201X-201X Nom address@mail}". Si vide, recherche le fichier "AUTHORS" (qui doit se trouver dans le même répertoire que le \textbf{Makefile})
+	\item \textbf{PACKAGETYPE} : Type de paquet, dont il existe trois options : "s" pour un paquet binaire, "l" pour une librairie, et "s l" pour un paquet "hybride"
+	\item \textbf{BUILDDEPENDS} : Liste de dépendances nécessaires à la construction du paquet (plus précisément lorsque Make est lancé, donc pour la compilation du logiciel). Il est possible, pour chaque paquet, de spécifier la version minimum requise
+	\item \textbf{BINRUNDEPENDS} : Dépendances (à l'exécution) dans le cas d'un paquet binaire
+	\item \textbf{LIBRUNDEPENDS} : Dépendances (à l'exécution) dans le cas d'un paquet de librairies
+	\item \textbf{INDRUNDEPENDS} : Dépendances (à l'exécution) dans le cas d'un paquet sans architecture
+	\item \textbf{BEFOREBUILD} : Liste des commandes à lancer avant le début de la construction du paquet. Attention : si une variable d'environment est changée ici, elle doit être rétablie par l'intermédiaire de \textbf{AFTERBUILD}
+	\item \textbf{AFTERBUILD} : Liste des commandes à lancer après la construction du paquet
+	\item \textbf{CONFIGUREFLAGS} : Options que l'on souhaite passer à \textbf{./configure}
+	\item \textbf{BINARYNAMES} : Liste des binaires qui seront inclus dans le paquet binaire. Chaque entrée se présente sous la forme : "chemin du fichier à inclure"::"chemin relatif (depuis /) vers le répertoire où devra se trouver après installation le binaire"
+	\item \textbf{LIBNAMES} : Liste des librairies qui seront inclues dans le paquet de librairies. La syntaxe est la même que \textbf{BINARYNAMES}
+	\item \textbf{HEADERNAMES} : Liste de fichiers d'entête (headers) qui seront inclus dans le paquet de développement. La syntaxe est la même que \textbf{BINARYNAMES}
+	\item \textbf{INDNAMES} : Liste des fichiers sans architecture qui seront inclus dans le paquet sans architecture. La syntaxe est la même que BINARYNAMES
+	\item \textbf{MANPAGES} : Liste des pages du manuel qui doivent être inclues dans le paquet binaire. Mettre seulement les noms, les dossiers d'installation ne sont pas demandés
+	\item \textbf{DISTRIBUTION} : Distribution (et sa version) du paquet
+	\item \textbf{BINPACKAGEDESCFILE} : Chemin vers le fichier de description pour le paquet binaire. Le fichier contient la descripteur que l'utilisateur peut consulter avec \textbf{dpkg -I} ou un gestionnaire de paquet graphique
+	\item \textbf{LIBPACKAGEDESCFILE} : Chemin vers le fichier de description pour le paquet de libraires. Même chose que \textbf{BINPACKAGEDESCFILE}
+	\item \textbf{INDPACKAGEDESCFILE} : Chemin vers le fichier de description pour le paquet sans-architecture. Même chose que \textbf{BINPACKAGEDESCFILE}
+	\item \textbf{DEBFULLNAME} : Le nom du mainteneur du paquet
+	\item \textbf{DEBEMAIL} : Adresse mail du mainteneur du projet
+	\item \textbf{HOMEPAGE} : URL associée au paquet
+\end{itemize}
+
+
+\end{document}
