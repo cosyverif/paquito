@@ -1,0 +1,254 @@
+\documentclass[11pt,xcolor=dvipsnames]{beamer}
+\usetheme{Warsaw}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{dirtree}
+\setbeamercolor{frametitle}{bg=orange}
+\setbeamercolor{framenumber}{bg=black,fg=white}
+\setbeamerfont{page number in head/foot}{size=\large}
+\setbeamercolor{structure}{fg=orange!85!black}
+\setbeamertemplate{footline} {
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.5\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\insertshortauthor
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.4\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle\hspace*{3em}
+  \end{beamercolorbox}}%
+  \begin{beamercolorbox}[wd=.1\paperwidth,ht=2.25ex,dp=1ex,center]{framenumber}
+     \usebeamerfont{framenumber}\insertframenumber{} / \inserttotalframenumber\hspace*{1ex}
+  \end{beamercolorbox}%
+  \vskip0pt%
+}
+
+\pgfdeclareimage[height=0.6cm]{logoUPMC}{UPMC.png}
+\logo{\pgfuseimage{logoUPMC}}
+
+\author{Corentin GUILLEVIC et Sarah HADBI}
+\title{Projet Paquito}
+%\setbeamercovered{transparent} 
+%\setbeamertemplate{navigation symbols}{} 
+%\logo{} 
+%\institute{} 
+\date{13 mars 2015} 
+%\subject{} 
+\begin{document}
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}
+\tableofcontents
+\end{frame}
+
+\section{Le projet Paquito}
+\subsection{Besoin}
+\begin{frame}{Le besoin}
+\begin{tikzpicture}[scale=0.8]
+	\node[inner sep=0pt,anchor=center] (U) at (1,-3) {\includegraphics[width=30pt]{../livrables/img/programmer.png}}
+	node at (U.south) [below] {Développeur} ;
+	\node[inner sep=0pt,anchor=center] (G) at (1,-1) {\includegraphics[width=25pt]{../livrables/img/latex_server.png}}
+	node at (G.north) [above] {GitHub} ;
+	\draw[-stealth,very thick] (U) -- (G);
+	
+	\node[inner sep=0pt,anchor=center] (M1) at (9.5,0) {\includegraphics[width=40pt]{../livrables/img/latex_database.png}}
+	node at (M1.north) [above] {Miroirs (dépôts)} ;
+	\node[inner sep=0pt,anchor=center] () at (9.5,0) {\includegraphics[width=30pt]{../livrables/img/debian_logo.png}} ;
+	\node[inner sep=0pt,anchor=center] (M2) at (9.5,-2) {\includegraphics[width=40pt]{../livrables/img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (9.5,-2) {\includegraphics[width=25pt]{../livrables/img/redhat_logo.png}} ;
+	\node[inner sep=0pt,anchor=center] (M3) at (9.5,-4) {\includegraphics[width=40pt]{../livrables/img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (9.5,-4) {\includegraphics[width=25pt]{../livrables/img/Arch-linux-logo.png}} ;
+	\node[inner sep=0pt,anchor=center] (C) at (12.5,-4) {\includegraphics[width=35pt]{../livrables/img/latex_monitor2.png}}
+	node at (C.south) [below] {Clients} ;
+	\node[inner sep=0pt,anchor=center] (C1) at (12.5,-2) {\includegraphics[width=35pt]{../livrables/img/latex_monitor.png}} ;
+	\node[inner sep=0pt,anchor=center] (C2) at (12.5,0) {\includegraphics[width=35pt]{../livrables/img/latex_monitor.png}} ;
+	\node[] at (11.6,-0.8) {\includegraphics[width=17pt]{../livrables/img/processor_32.png}} ;
+	\node[] at (13.4,-0.8) {\includegraphics[width=17pt]{../livrables/img/processor_64.png}} ;
+	\node[] at (11.6,-2.8) {\includegraphics[width=17pt]{../livrables/img/processor_32.png}} ;
+	\node[] at (13.4,-2.8) {\includegraphics[width=17pt]{../livrables/img/processor_64.png}} ;
+	\node[] at (13.5,-4.6) {\colorbox{white}{\makebox(12,12){\includegraphics[width=17pt]{../livrables/img/processor_64.png}}}} ;
+	
+	\draw[stealth-stealth,very thick] (M1) -- (C2) ;
+	\draw[stealth-stealth,very thick] (M2) -- (C1);
+	\draw[stealth-stealth,very thick] (M3) -- (C);
+	\node[inner sep=0pt,anchor=center] (N) at (5,-2) {\includegraphics[width=130pt]{../livrables/img/latex_cloud.png}}
+	node at (N.center) [] {\textbf{{\Huge ?}}} ;
+	\draw[-stealth,very thick] (G) -- (N);
+	\draw[-stealth,very thick] (N) -- (M1);
+	\draw[-stealth,very thick] (N) -- (M2);
+	\draw[-stealth,very thick] (N) -- (M3);
+\end{tikzpicture}
+\end{frame}
+
+\subsection{Solution}
+\begin{frame}{La solution}
+\begin{tikzpicture}[scale=0.7]
+	\node[inner sep=0pt,anchor=center] (U) at (-4,-4) {\includegraphics[width=30pt]{../livrables/img/programmer.png}} ;
+	\node[inner sep=0pt,anchor=center] (G) at (-4,-1) {\includegraphics[width=25pt]{../livrables/img/latex_server.png}}
+	node at (G.north) [above] {GitHub} ;
+	\node[anchor=south west,inner sep=0] at (-3.3,-1.2) {\includegraphics[width=12pt]{../livrables/img/latex_flag.png}} ;
+	\node[inner sep=0pt,anchor=center] (J) at (-1.8,-2) {\includegraphics[width=25pt]{../livrables/img/latex_server.png}}
+	node at (J.south) [below] {Jenkins CI} ;
+	\draw[-stealth,very thick] (G) -- (J);
+	\draw[-stealth,very thick] (U) -- (G);
+	
+	\node[inner sep=0pt,anchor=center] (D1) at (1.5,0) {\includegraphics[width=35pt]{../livrables/img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (1.5,0) {\includegraphics[width=30pt]{../livrables/img/docker-logo.png}} ;
+	
+	\node[inner sep=0pt,anchor=center, opacity=0.5] (D2) at (1.5,-2) {\includegraphics[width=35pt]{../livrables/img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.5] () at (1.5,-2) {\includegraphics[width=30pt]{../livrables/img/docker-logo.png}} ;
+	
+	\node[inner sep=0pt,anchor=center, opacity=0.2] (D3) at (1.5,-4) {\includegraphics[width=35pt]{../livrables/img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.2] () at (1.5,-4) {\includegraphics[width=30pt]{../livrables/img/docker-logo.png}} ;
+
+	\node[inner sep=0pt,anchor=center] () at (2.5,-5.3) {\includegraphics[width=15pt]{../livrables/img/debian_logo.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (3.3,-5.3) {\includegraphics[width=15pt]{../livrables/img/Arch-linux-logo.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (4.1,-5.3) {\includegraphics[width=15pt]{../livrables/img/redhat_logo.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (2.8,-6.2) {\includegraphics[width=15pt]{../livrables/img/processor_32.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (3.8,-6.2) {\includegraphics[width=15pt]{../livrables/img/processor_64.png}} ;
+	\node at (1.55,-6.3) [align=center, right, rotate=90] {\huge \ldots} ;
+	\node at (5.05,-6.3) [align=center, right, rotate=90] {\huge \ldots} ;	
+	
+	\draw[-stealth,very thick] (J) -- (D1);
+	\draw[-stealth,very thick, opacity=0.5] (J) -- (D2);
+	\draw[-stealth,very thick, opacity=0.2] (J) -- (D3);
+	\node at (0.1,-7.6) [align=center, right] {Compilation \\ et tests} ;
+	\draw[dashed] (6.3,-6.8) -- (6.3,1) -- (0,1) -- (0,-6.8) -- cycle ;	
+
+	\node[inner sep=0pt,anchor=center] (D4) at (5,0) {\includegraphics[width=35pt]{../livrables/img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (5,0) {\includegraphics[width=30pt]{../livrables/img/docker-logo.png}} ;
+	
+	\node[inner sep=0pt,anchor=center, opacity=0.5] (D5) at (5,-2) {\includegraphics[width=35pt]{../livrables/img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.5] () at (5,-2) {\includegraphics[width=30pt]{../livrables/img/docker-logo.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.2] (D6) at (5,-4) {\includegraphics[width=35pt]{../livrables/img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.2] () at (5,-4) {\includegraphics[width=30pt]{../livrables/img/docker-logo.png}} ;
+	%\draw[dashed] (3.7,-5.3) -- (3.7,1) -- (6.3,1) -- (6.3,-5.3) -- cycle ;	
+	\node at (3.7,-7.6) [align=center, right] {Tests \\ développeur} ;
+	
+	\draw[-stealth,very thick] (D1) -- (D4);
+	\draw[-stealth,very thick, opacity=0.5] (D2) -- (D5);
+	\draw[-stealth,very thick, opacity=0.2] (D3) -- (D6);
+	
+	\node[inner sep=0pt,anchor=center] (M1) at (8,0) {\includegraphics[width=35pt]{../livrables/img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center] () at (8,0) {\includegraphics[width=20pt]{../livrables/img/package_white.png}} ;
+	
+	\node[inner sep=0pt,anchor=center, opacity=0.5] (M2) at (8,-2) {\includegraphics[width=35pt]{../livrables/img/latex_database.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.5] () at (8,-2) {\includegraphics[width=20pt]{../livrables/img/package_white.png}} ;
+	\node[inner sep=0pt,anchor=center, opacity=0.2] (M3) at (8,-4) {\includegraphics[width=35pt]{../livrables/img/latex_database.png}} node at (M3.south east) [below] {Miroirs (dépôts)} ;	
+	\node[inner sep=0pt,anchor=center, opacity=0.2] () at (8,-4) {\includegraphics[width=20pt]{../livrables/img/package_white.png}} ;	
+	
+	\draw[-stealth,very thick] (D4) -- (M1);
+	\draw[-stealth,very thick, opacity=0.5] (D5) -- (M2);
+	\draw[-stealth,very thick, opacity=0.2] (D6) -- (M3);	
+	
+\end{tikzpicture}
+\end{frame}
+
+\section{Avancement}
+\subsection{Précédente réunion}
+\begin{frame}{Précédente réunion}
+Les décisions actées :
+\begin{itemize}
+\item Analyse du projet Paquito de l'année dernière
+\item Documentation du fichier de configuration du projet Paquito
+\item Achever l'écriture des scripts de création des paquets (Debian, ArchLinux, Redhat)
+\item Documentation sur les différences entre les paquets à créer
+\end{itemize}
+\end{frame}
+
+\subsection{Aujourd'hui}
+\begin{frame}{Comparaison entre arborescences}
+\begin{columns}[t]
+	\begin{column}{5cm}
+	\begin{itemize}
+		\item Debian (conception par un script)
+	\end{itemize}
+			\dirtree{%
+				.1 package/.
+				.2 DEBIAN/.
+				.3 control.
+				.2 usr/.
+				.3 bin/.
+			}
+	\end{column}
+	\begin{column}{6cm}
+	\begin{itemize}
+		\item Redhat
+	\end{itemize}
+			\dirtree{%
+				.1 rpmbuild/.
+				.2 SOURCES/.
+				.2 BUILD/.
+				.2 SPECS/.
+				.3 SPEC/.
+				.2 RPMS/.
+				.3 Paquet\ binaire.
+				.2 SRPMS/.
+				.3 Paquet\ source.
+			}
+	\end{column}
+ \end{columns}	
+\end{frame}
+	
+\begin{frame}{Comparaison entre arborescences}
+\begin{columns}[t]
+	\begin{column}{5cm}
+	\begin{itemize}
+		\item Archlinux (conception par une fonction interne du fichier \textbf{pkgbuild})
+	\end{itemize}
+		\dirtree{%
+			.1 pkgbuild.
+			.1 package/.
+			.2 usr/.
+			.3 bin/.
+		}
+	\end{column}
+	
+	\begin{column}{6cm}
+	\begin{itemize}
+\item Dépendances :
+	\begin{itemize}
+	\item Debian : \textit{Depends : tcc >= 1.4}
+	\item Archlinux :
+		\begin{itemize}
+		\item Depends = ('tcc >= 1.4')
+		\item optdepends
+		\item makedepends
+		\end{itemize}
+	\item Redhat :
+		\begin{itemize}
+		\item Require : tcc
+		\item BuildRequires
+		\end{itemize}
+	\end{itemize}
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Précédent projet Paquito}
+	Contenu :
+	\begin{itemize}
+		\item Un "exécutable" pour construire les paquets : \textbf{buildeb}
+		\item Un fichier de configuration : \textbf{build\_config.yml}
+		\item Un parseur adapté : \textbf{config\_parser.pl}
+		\item Un analyseur de paquets Debian : \textbf{correct\_lintian.pl}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Précédent projet Paquito}
+	Le fichier \textbf{build\_config.yml} :
+	\begin{itemize}
+		\item Séparation entre types de paquets
+		\item Instructions de pré/post-constructions
+		\item Inclusions de fichiers (binaires, headers, librairies)
+	\end{itemize}
+\end{frame}
+
+\end{document}
