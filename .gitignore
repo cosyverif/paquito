@@ -1,0 +1,5 @@
+bin/composer.phar
+vendor/
+composer.lock
+paquito.phar
+paquito

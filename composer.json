@@ -1,0 +1,16 @@
+{
+    "require": {
+        "symfony/console": "*",
+        "symfony/yaml": "*",
+        "herrera-io/phar-update": "*"
+    },
+    "require-dev": {
+        "fabpot/php-cs-fixer": "*",
+        "kherge/box": "*"
+    },
+    "autoload": {
+        "psr-4": {
+          "Paquito\\": "src//"
+        }
+    }
+}
