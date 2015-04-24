@@ -1,0 +1,55 @@
+Name: Hello-World
+
+Version: 1.1
+
+Homepage: https://www.paquito.fr
+
+Summary: Programme Hello-World
+
+Description: Ce programme va nous permettre d'afficher un simple helloworld sur la console
+
+Copyright: la licence
+
+Maintainer: Paul <Paul@gmail.com> 
+
+Authors:  
+      - sarah <sarah@gmail.com>
+      - corentin <corentin@gmail.com>
+
+BuildDepends:
+        Compiler1:
+                - gcc++
+                - Debian:
+                        All: tdd++
+                        Stable: tss++
+                - Archlinux:
+                        All: io++
+
+Packages:
+        HelloWorld:
+                Type: binary
+                Files:
+                        /usr/bin/helloworld: src/helloworld
+                        /usr/share/hello-world: src/program.c
+                RunTimeDependency:
+                        RunTime1:
+                                - tcc
+                                - Debian:
+                                        All: bcc
+                                        Testing: vcc
+                BeforeBuild:
+                        Command1:
+                                - echo "Bonjour"
+                                - Debian:
+                                        All: echo "Au revoir"
+                                        Wheezy: echo "Marbre"
+                                        Testing: echo "Rubis"
+                AfterBuild:
+                        Command1:
+                                - echo "Granite"
+                                - Debian:
+                                        All: "Rouge"
+                                        Jessy: "Bleu"
+                                        Wheezy: "Noir"
+                                - Archlinux:
+                                        All: echo "Saphir" 
