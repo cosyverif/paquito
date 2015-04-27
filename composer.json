@@ -2,7 +2,8 @@
     "require": {
         "symfony/console": "*",
         "symfony/yaml": "*",
-        "herrera-io/phar-update": "*"
+        "herrera-io/phar-update": "*",
+        "psr/log": "*"
     },
     "require-dev": {
         "fabpot/php-cs-fixer": "*",
