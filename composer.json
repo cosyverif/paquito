@@ -1,8 +1,9 @@
 {
     "require": {
+        "symfony/config": "*",
         "symfony/console": "*",
-        "symfony/yaml": "*",
         "symfony/translation": "*",
+        "symfony/yaml": "*",
         "herrera-io/phar-update": "*",
         "psr/log": "*"
     },
