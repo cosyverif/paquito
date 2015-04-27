@@ -14,7 +14,6 @@ use \Paquito\Command\Normalize;
 // FIXME: erase when release
 error_reporting(E_ALL | E_STRICT);
 
-// http://symfony.com/doc/master/components/translation/usage.html
 $application = new Application('paquito', '0.1');
 $application->add(new Update());
 $application->add(new Parse());
@@ -22,5 +21,6 @@ $application->add(new Check());
 $application->add(new Prune());
 $application->add(new Write());
 $application->add(new Normalize());
+// http://symfony.com/doc/master/components/translation/usage.html
 $application->translator = new Translator("fr_FR");
 $application->run();
