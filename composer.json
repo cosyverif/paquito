@@ -2,6 +2,7 @@
     "require": {
         "symfony/console": "*",
         "symfony/yaml": "*",
+        "symfony/translation": "*",
         "herrera-io/phar-update": "*",
         "psr/log": "*"
     },
