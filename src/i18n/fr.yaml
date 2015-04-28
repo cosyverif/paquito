@@ -1,1 +1,19 @@
-greet: "Bonjour"
+check:
+        number: "Le nombre d'éléments du fichier de configuration est incorrect"
+        field: "Le champ %value% n'existe pas"
+        tab_compiler: "Le contenu doit être sous forme d'un tableau de compilers"
+        void: "Le champ %key% est vide"
+        tab_depends: "Le contenu du compiler %key% doit être sous forme d'un tableau de dépendances"
+        dist: "Erreur dans le nom de la distribution (%key%)"
+        content_field: "Le champ %key% doit contenir au moins le champ %field_name%"
+        tab_field: "Le champ %key% doit être un tableau"
+        name_field: "Le nom du champ doit être obligatoirement %field_name% (%key%)"
+        version: "La version est incorrecte (%key%)"
+        package: "Mauvais type de paquet (%val%)"
+        tab_runtime_command: "Le contenu de %key% doit être sous forme d'un tableau"
+        common_empty: "Le champ %name% ne possède pas de commande/dépendence commune"
+parse:
+        exist: "L'élément %filename% n'existe pas ou n'est pas un fichier régulier"
+        right: "Droits insuffisants pour lire le fichier %filename%"
+write:
+        save: "Erreur lors de l'écriture dans le fichier %output_file%"

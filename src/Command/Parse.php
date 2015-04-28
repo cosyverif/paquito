@@ -8,6 +8,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Component\Console\Logger\ConsoleLogger;
+use Symfony\Component\Translation\Translator;
 
 class Parse extends Command
 {
@@ -17,7 +18,7 @@ class Parse extends Command
             ->setName('parse')
             ->setDescription('Parse a YaML file')
             ->addArgument(
-                'filename',
+                'input',
                 InputArgument::REQUIRED,
                 'Name of a YaML file'
             )
@@ -26,18 +27,22 @@ class Parse extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $filename = $input->getArgument('filename');
-        $logger = new ConsoleLogger($output);
+        /* Get path and name of the input file */
+        $filename = $input->getArgument('input');
+    /* Launch Logger module */
+    $logger = new ConsoleLogger($output);
+    /* The file not exists */
         if (!is_file($filename)) {
-            $logger->err("L'élément $filename n'existe pas ou n'est pas un fichier régulier");
+            $logger->error($this->getApplication()->translator->trans('parse.exist', array('%filename%' => $filename)));
 
             return -1;
+    /* The file is not readable */
         } elseif (!is_readable($filename)) {
-            $logger->err("Droits insuffisants pour lire le fichier $filename");
+            $logger->error($this->getApplication()->translator->trans('parse.right', array('%filename%' => $filename)));
 
             return -1;
         }
-        # Parse le fichier et retourne son contenu sous forme d'un tableau (hashmap)
-        return Yaml::parse(file_get_contents($filename));
+        # Parse the file and return its content like a array (hashmap)
+        $this->getApplication()->data = Yaml::parse(file_get_contents($filename));
     }
 }
