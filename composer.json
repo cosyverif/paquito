@@ -5,7 +5,8 @@
         "symfony/translation": "*",
         "symfony/yaml": "*",
         "herrera-io/phar-update": "*",
-        "psr/log": "*"
+        "psr/log": "*",
+        "symfony/intl": "~2.6"
     },
     "require-dev": {
         "fabpot/php-cs-fixer": "*",

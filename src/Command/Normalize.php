@@ -6,126 +6,110 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\ArrayInput;
 
 class Normalize extends Command
 {
+    public $newStruct = array() ; 
+
     protected function configure()
     {
         $this
             ->setName('normalize')
             ->setDescription('Normalize a YaML file')
             ->addArgument(
-                'structure',
+                'input',
                 InputArgument::REQUIRED,
-                'Data structure of a YaML file'
+                'Name of a YaML file'
+            )
+            ->addArgument(
+                'output',
+                InputArgument::OPTIONAL,
+                'Name of a YaML file'
             )
             ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $struct = $input->getArgument('structure');
-        /* Note: La variable $newStruct contiendra la nouvelle structure résultant de la normalisation */
-        foreach ($struct as $cle => $val) {
-            if ($cle == 'BuildDepends') {
+        /* Get path and name of the input file */
+	$input_file = $input->getArgument('input');
+	/* Get references of the command parse() */
+	$command = $this->getApplication()->find('check');
+	/* Declare the arguments in a array (arguments has to gave like this) */
+	$arguments = array(
+		'command' => 'check',
+		'input'    => $input_file,
+	);
+	$array_input = new ArrayInput($arguments);
+	/* Run command */
+	$command->run($array_input, $output);
+
+	/* Get structure of YaML file (which was parsed and checked) */
+	$struct = $this->getApplication()->data;
+
+        /* Note: The variable $newStruct will owns the new structure (which becomes of the normalization) */
+        foreach ($struct as $key => $val) {
+            if ($key == 'BuildDepends') {
                 /* Le champ "BuildDepends" n'existe pas */
                 if (empty($val)) {
                     /* La variable $val est vide mais elle est quand même assignée à la clé "BuildDepend"
                      * car le fichier YaML de Paquito doit nécessairement posséder cette clé */
-                    $newStruct[$cle] = $val;
+                    $this->newStruct[$key] = $val;
                     /* Le champ "BuildDepends" existe */
                 } else {
-                    $Build = $val;
-                    /* Pour chacun des "compilers" existants */
-                    foreach ($Build as $cle => $val) {
-                        /* Nom du "compiler" courant */
-                        $compiler = $cle;
-                        $tab = $val;
-                        /* Il n'y a pas de cas particuliers (c'est-à-dire que le nom de
-                         * la dépendance est pareil pour toutes les distributions) */
-                        if (count($tab) == 1) {
-                            $newStruct['BuildDepends'][$compiler]['Common'] = $tab[0];
-                            /* Pour chacune des dépendances */
-                            //foreach($tab as $cle => $val) {
-                            //$val : valeur de la dépendance
-                            /* Ajout du mot-clé "Common" en tant que clé */
-                            //$newStruct["BuildDepends"][$compiler]["Common"] = $val ;
-                            //}
-                            /* Si des cas particuliers sont mentionnés (c'est à dire qu'il y a une
-                             * différence de dépendances pour une autre distribution) */
-                        } else {
-                            $j = 1;
-                            /* Pour chacun des éléments (comprenant le nom supposément commun de la
-                             * dépendance ainsi que les variations par distribution) */
-                            foreach ($tab as $cle => $val) {
-                                /* Le premier cas particulier aura un traitement différent (ajout du
-                                 * mot-clé "Common" et réorganisation de la structure en conséquence) */
-                                if ($j) {
-                                    /* La variable $val représente ici le nom supposément commun de la dépendence */
-                                    $newStruct['BuildDepends'][$compiler]['Common'] = $val;
-                                    $j--;
-                                } else {
-                                    /* La variable $val représente ici un tableau qui recense les cas particuliers */
-                                    $t = $val;
-                                    /* Pour chacune des distributions dont le nom de la dépendance diffère */
-                                    foreach ($t as $cle => $val) {
-                                        $newStruct['BuildDepends'][$compiler][$cle] = $val;
-                                    }
-                                }
-                            }
-                        }
-                    }
+		    $this->check_builddependency($val, 'BuildDepends');
                 }
                 /* Les autres champs (de 1er niveau) ne seront pas modifiés */
-            } elseif ($cle == 'Packages') {
+            } elseif ($key == 'Packages') {
                 /* La variable $glob contient un tableau mentionnant les paquets qu'on souhaite créer */
                 $glob = $val;
                 /* Pour chaque paquet */
-                foreach ($glob as $cle => $val) {
+                foreach ($glob as $key => $val) {
                     /* La variable $package contient le nom du paquet */
-                    $package = $cle;
+                    $package = $key;
                     /* Contient les champs fils relatifs au paquet courant */
                     $tab = $val;
                     /* Pour chacun des champs du paquet courant */
-                    foreach ($tab as $cle => $val) {
+                    foreach ($tab as $key => $val) {
                         /* La clé désigne un champ "Type" ou "Files" */
-                        if ($cle == 'Type' || $cle == 'Files') {
+                        if ($key == 'Type' || $key == 'Files') {
                             /* Ces deux clés n'ont pas besoin d'être normalisées */
-                            $newStruct['Packages'][$package][$cle] = $val;
+                            $this->newStruct['Packages'][$package][$key] = $val;
                             /* Les autres clés */
                         } else {
                             /* Stocke le nom du champ courant */
-                            $champ = $cle;
+                            $champ = $key;
                             /* Si le champ courant ("RunTimeDependency", "BeforeBuild"
                              * ou "AfterBuild") ne contient rien */
                             if (empty($val)) {
                                 /* La variable $val est vide mais elle est quand même assignée à la clé courante
                                  * car le fichier YaML de Paquito doit nécessairement posséder cette clé */
-                                $newStruct['Packages'][$package][$cle] = $val;
+                                $this->newStruct['Packages'][$package][$key] = $val;
                             } else {
                                 /* Stocke le contenu du champ actuel */
                                 $Table = $val;
                                 /* Pour chacune des dépendances ("RunTimeDependency") ou
                                  * commandes ("BeforeBuild" ou "AfterBuild") */
-                                foreach ($Table as $cle => $val) {
-                                    /* Nom du "runtime"/"command" courant */
-                                    $elem = $cle;
+                                foreach ($Table as $key => $val) {
+				    /* Nom du "runtime"/"command" courant */
+                                    $elem = $key;
                                     $tab = $val;
                                     /* S'il n'y a pas de cas particuliers (c'est-à-dire que le nom de la
                                      * dépendance ou que la commande est pareil pour toutes les distributions) */
                                     if (count($tab) == 1) {
-                                        $newStruct['Packages'][$package][$champ][$elem]['Common'] = $tab[0];
+                                        $this->newStruct['Packages'][$package][$champ][$elem]['Common'] = $tab[0];
                                     } else {
                                         $j = 1;
                                         /* Pour chacun des éléments (comprenant le nom supposément commun de la
                                          * dépendance ou la commande commune ainsi que les variations par distribution) */
-                                        foreach ($tab as $cle => $val) {
+                                        foreach ($tab as $key => $val) {
                                             /* Le premier cas particulier aura un traitement différent (ajout du
                                              * mot-clé "Common" et réorganisation de la structure en conséquence) */
                                             if ($j) {
                                                 /* La variable $val représente ici le nom
                                                  * supposément commun de la dépendence ou la commande */
-                                                $newStruct['Packages'][$package][$champ][$elem]['Common'] = $val;
+                                                $this->newStruct['Packages'][$package][$champ][$elem]['Common'] = $val;
                                                 $j--;
                                             } else {
                                                 /* La variable $val représente ici un tableau
@@ -133,8 +117,8 @@ class Normalize extends Command
                                                 $t = $val;
                                                 /* Pour chacune des distributions dont
                                                  * le nom de la dépendance/commande diffère */
-                                                foreach ($t as $cle => $val) {
-                                                    $newStruct['Packages'][$package][$champ][$elem][$cle] = $val;
+                                                foreach ($t as $key => $val) {
+                                                    $this->newStruct['Packages'][$package][$champ][$elem][$key] = $val;
                                                 }
                                             }
                                         }
@@ -145,10 +129,58 @@ class Normalize extends Command
                     }
                 }
             } else {
-                $newStruct[$cle] = $val;
+                $this->newStruct[$key] = $val;
             }
         }
+	$this->getApplication()->data = $this->newStruct ;
+	/* Optionnal argument (output file, which will be parsed) */
+	$output_file = $input->getArgument('output');
+	/* If the optionnal argument is present */
+	if ($output_file) {
+		/* Get references of the command write() */
+		$command = $this->getApplication()->find('write');
+		/* Declare the arguments in a array (arguments has to gave like this) */
+		$arguments = array(
+			'command' => 'write',
+			'output'    => $output_file,
+		);
+		$array_input = new ArrayInput($arguments);
+		/* Run command */
+		$command->run($array_input, $output);
+	}
+    }
 
-        return $newStruct;
+    protected function check_builddependency($array, $field)
+    {
+	    /* For each of existing "compiler", "runtime"... */
+	    foreach ($array as $key => $value) {
+		    /* Store the name of the current "compiler"... */
+		    $cd_name = $key;
+		    /* Store the value of the current "compiler"... */
+		    $cd_field = $value;
+		    /* There are not particular cases (in others words, the command/dependency is the same for every distribution) */
+		    if (count($cd_field) == 1) {
+			    $this->newStruct[$field][$cd_name]['Common'] = $cd_field[0];
+		    /* If there are particular cases (in others words, one or several distributions have specific command/dependency) */
+		    } else {
+			    $j = 1;
+			    /* For each element (which has the common command/dependency and the varieties by distribution) */
+			    foreach ($cd_field as $key => $value) {
+				    /* The first particular case will be a different treatement (adding of the keyword "Common" and reorganization of the structure accordingly) */
+				    if ($j) {
+					    /* The variable $value represents here the common command/dependency */
+					    $this->newStruct[$field][$cd_name]['Common'] = $value;
+					    $j--;
+				    } else {
+					    /* The variable $value represents here a array which owns the particular cases */
+					    $t = $value;
+					    /* For each of the distributions where the name of the command/distribution differs */
+					    foreach ($t as $key => $value) {
+						    $this->newStruct[$field][$cd_name][$key] = $value;
+					    }
+				    }
+			    }
+		    }
+	    }
     }
 }

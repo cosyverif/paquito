@@ -41,21 +41,21 @@ class Check extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         /* Get path and name of the input file */
-    $input_file = $input->getArgument('input');
-    /* Get references of the command parse() */
-    $command = $this->getApplication()->find('parse');
-    /* Declare the arguments in a array (arguments has to gave like this) */
-    $arguments = array(
-        'command' => 'parse',
-        'input'    => $input_file,
-    );
-        $array_input = new ArrayInput($arguments);
-    /* Run command */
-    $command->run($array_input, $output);
+	$input_file = $input->getArgument('input');
+	/* Get references of the command parse() */
+	$command = $this->getApplication()->find('parse');
+	/* Declare the arguments in a array (arguments has to gave like this) */
+	$arguments = array(
+		'command' => 'parse',
+		'input'    => $input_file,
+	);
+	$array_input = new ArrayInput($arguments);
+	/* Run command */
+	$command->run($array_input, $output);
 
-    /* Get structure of YaML file (which was parsed) */
-    $struct = $this->getApplication()->data;
-    /* Launch Logger module */
+	/* Get structure of YaML file (which was parsed) */
+	$struct = $this->getApplication()->data;
+	/* Launch Logger module */
         $logger = new ConsoleLogger($output);
 
         /* Analysis the size of the structure (which has to own the expected 10 fields of the first level) */
@@ -157,8 +157,8 @@ class Check extends Command
                                     return -1;
                                 }
                                 /* Stocke le contenu du champ actuel */
-                                $Table = $val;
-                                $this->check_command_dependency($Table, $logger);
+                                //$Table = $val;
+                                $this->check_command_dependency($val, $logger);
                             }
                         }
                     }
