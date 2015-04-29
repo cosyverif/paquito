@@ -16,7 +16,7 @@ class Update extends Command
     {
         $this
             ->setName('update')
-            ->setDescription('Updates clitor to the latest version')
+            ->setDescription('Updates paquito to the latest version')
         ;
     }
 
