@@ -15,5 +15,7 @@ check:
 parse:
         exist: "L'élément %filename% n'existe pas ou n'est pas un fichier régulier"
         right: "Droits insuffisants pour lire le fichier %filename%"
+prune:
+        exist: "Distribution inconnue"
 write:
         save: "Erreur lors de l'écriture dans le fichier %output_file%"

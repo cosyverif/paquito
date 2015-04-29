@@ -11,13 +11,13 @@ use Symfony\Component\Console\Input\ArrayInput;
 
 class Check extends Command
 {
-    /* First level keys (of Paquito configuration files) */
+    /* First level keys (of the Paquito configuration files) */
     public $first_level_keys = array('Name', 'Version', 'Homepage', 'Description', 'Copyright', 'Maintainer', 'Authors', 'BuildDepends', 'Packages');
     /* Known distributions */
     public $dist = array('Debian', 'Archlinux', 'Fedora');
     /* Known versions */
     public $v_dist = array('All', 'Stable', 'Testing', 'Wheezy', 'Jessy');
-    /* Packages types */
+    /* Package types */
     public $typePackage = array('binary', 'library', 'source', 'arch_independant');
 
     protected function configure()
@@ -40,11 +40,11 @@ class Check extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        /* Get path and name of the input file */
+        /* Get the path and the name of the input file */
 	$input_file = $input->getArgument('input');
-	/* Get references of the command parse() */
+	/* Get the references of the command parse() */
 	$command = $this->getApplication()->find('parse');
-	/* Declare the arguments in a array (arguments has to gave like this) */
+	/* Declare the arguments in a array (arguments have to be given like this) */
 	$arguments = array(
 		'command' => 'parse',
 		'input'    => $input_file,
@@ -53,12 +53,12 @@ class Check extends Command
 	/* Run command */
 	$command->run($array_input, $output);
 
-	/* Get structure of YaML file (which was parsed) */
+	/* Get the structure of the YaML file (which was parsed) */
 	$struct = $this->getApplication()->data;
 	/* Launch Logger module */
         $logger = new ConsoleLogger($output);
 
-        /* Analysis the size of the structure (which has to own the expected 10 fields of the first level) */
+        /* Analysis of the size of the structure (which has to own the expected 10 fields of the first level) */
         if (count($struct) != 10) {
             $logger->error($this->getApplication()->translator->trans('check.number'));
 
@@ -187,13 +187,13 @@ class Check extends Command
     {
         /* For each "compiler", "runtime" or "command" */
         foreach ($array as $key => $value) {
-            /* The content of the current "compiler", "runtime"... is empty (it has to contents at least the name of the command/dependency) */
+            /* The content of the current "compiler", "runtime"... is empty (it has to contain at least the name of the command/dependency) */
             if (empty($value)) {
                 $logger->error($this->getApplication()->translator->trans('check.void', array('%key%' => $key)));
 
                 return -1;
             }
-            /* The content of the current "compiler"... is not a array */
+            /* The content of the current "compiler"... is not an array */
             if (!is_array($value)) {
                 $logger->error($this->getApplication()->translator->trans('check.tab_depends', array('%key%' => $key)));
 
@@ -203,15 +203,15 @@ class Check extends Command
             $cd_name = $key;
             /* Store the value of the current "compiler"... */
             $cd_field = $value;
-            /* For each field of the current "compiler"... (the fields contents the common command/distribution and one sub-array by distribution) */
+            /* For each field of the current "compiler"... (the fields contain the common command/distribution and one sub-array of the distribution) */
             foreach ($cd_field as $key => $value) {
-                /* The current field is a array */
+                /* The current field is an array */
                 if (is_array($value)) {
                     /* Store the name of the common distribution name */
                     $distrib = $value;
                     /* For each field of the current distribution (in others words, its versions) */
                     foreach ($distrib as $key => $value) {
-                        /* Unknow distribution name or the distribution is not managed */
+                        /* Unknown distribution name or the distribution is not managed */
                         if (!in_array($key, $this->dist)) {
                             $logger->error($this->getApplication()->translator->trans('check.dist', array('%key%' => $key)));
 
@@ -219,13 +219,13 @@ class Check extends Command
                         }
                         /* Store the structure of the current distribution */
                         $version = $value;
-                        /* No information is stored to the current distribution */
+                        /* No information is stored for the current distribution */
                         if (empty($version)) {
                             $logger->error($this->getApplication()->translator->trans('check.content_field', array('%key%' => $key, '%field_name%' => 'All')));
 
                             return -1;
                         }
-                        /* The content of the current distribution is not a array */
+                        /* The content of the current distribution is not an array */
                         if (!is_array($version)) {
                             $logger->error($this->getApplication()->translator->trans('check.tab_field', array('%key%' => $key)));
 
@@ -233,7 +233,7 @@ class Check extends Command
                         }
                         /* For each version of the current distribution */
                         foreach ($version as $key => $val) {
-                            /* There is only one key (which has to "All", so all versions of the current distribution are the same name of dependency) */
+                            /* There is only one key (which has to "All", so all versions of the current distribution have the same name of dependency) */
                             if (count($version) == 1) {
                                 /* The key is not "All" */
                                 if ($key != 'All') {
@@ -248,7 +248,7 @@ class Check extends Command
 
                                 return -1;
                             }
-                            /* The current version don't contents any name of dependency */
+                            /* The current version doesn't contain any name of dependency */
                             if (empty($val)) {
                                 $logger->error($this->getApplication()->translator->trans('check.void', array('%key%' => $key)));
 

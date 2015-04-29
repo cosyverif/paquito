@@ -3,6 +3,7 @@
 require_once __DIR__.'/../vendor/autoload.php';
 
 use \Symfony\Component\Console\Application;
+use \Symfony\Component\Translation\IdentityTranslator;
 use \Symfony\Component\Translation\Translator;
 use \Symfony\Component\Translation\Loader\YamlFileLoader;
 use \Paquito\Command\Update;
@@ -16,7 +17,7 @@ use \Paquito\Command\Normalize;
 error_reporting(E_ALL | E_STRICT);
 
 $application = new Application('paquito', '0.1');
-
+$application->data = null ;
 // Register commands:
 $application->add(new Update());
 $application->add(new Parse());
@@ -24,10 +25,9 @@ $application->add(new Check());
 $application->add(new Prune());
 $application->add(new Write());
 $application->add(new Normalize());
-
 // Add i18n:
 // http://symfony.com/doc/master/components/translation/usage.html
-$application->translator = new Translator(Locale::getDefault());
+$application->translator = new Translator(\Locale::getDefault());
 $application->translator->setFallbackLocale(array('en'));
 $application->translator->addLoader('yaml', new YamlFileLoader());
 foreach (new DirectoryIterator(__DIR__.'/i18n/') as $file) {

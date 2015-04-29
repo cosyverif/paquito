@@ -8,6 +8,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Component\Console\Logger\ConsoleLogger;
+use Symfony\Component\Console\Input\ArrayInput;
 
 class Prune extends Command
 {
@@ -20,38 +21,57 @@ class Prune extends Command
             ->setName('prune')
             ->setDescription('Prune a structure')
             ->addArgument(
-                'structure',
+                'input',
                 InputArgument::REQUIRED,
-                'Data structure of a YaML file'
+                'Name of a YaML file'
+            )
+            ->addArgument(
+                'output',
+                InputArgument::OPTIONAL,
+                'Name of a YaML file'
             )
             ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $struct = $input->getArgument('structure');
+        /* Get path and name of the input file */
+	$input_file = $input->getArgument('input');
+	/* Get references of the command parse() */
+	$command = $this->getApplication()->find('normalize');
+	/* Declare the arguments in a array (arguments has to gave like this) */
+	$arguments = array(
+		'command' => 'normalize',
+		'input'    => $input_file,
+	);
+	$array_input = new ArrayInput($arguments);
+	/* Run command */
+	$command->run($array_input, $output);
+
+	/* Get structure of YaML file (which was parsed and checked) */
+	$struct = $this->getApplication()->data;
+	/* Launch Logger module */
         $logger = new ConsoleLogger($output);
-        $new_struct = array();
-        /* Récupérer le nom de la distribution (le "2> /dev/null" est pour éviter de récupérer le message
-         * d'erreur "No LSB modules are available.", qui peut éventuellement apparaitre) */
-        /* Notes techniques : la fonction trim() est utilisée pour retirer le retour chariot (qui semble être ajouté par shell_exec(),
-         * l'option -r de sed est pour activer les expressions régulières avancées et pour s'affranchir de mettre des antislashes aux
-         * parenthèses...  */
-        $dist = trim(shell_exec('lsb_release -a 2> /dev/null | grep "Distributor ID" | sed -nr \'s/^.+	([A-Za-z ]+)$/\1/p\''));
-        #$dist = "Debian" ; // DEBUG
-        switch ($dist) {
-        case 'Debian':
-            $ver = ucfirst(trim(shell_exec('lsb_release -a 2> /dev/null | grep "Codename:" | grep -Eo "([A-Za-z]+)$"')));
-            #$ver = "Wheezy" ;
+
+	/* This array will contain the new structure */
+	$new_struct = array();
+	/* The file /etc/os-release contains the informations about the distribution (where is executed this program)*/
+	$array_ini = parse_ini_file("/etc/os-release") ;
+	/* Get the name of the distribution */
+	$dist = ucfirst($array_ini['ID']) ;
+	switch ($dist) {
+	case 'Debian':
+	    preg_match('/[a-z]+/', $array_ini['VERSION'], $match) ;
+	    $ver = ucfirst($match[0]) ;
             break;
-        case 'Arch Linux':
+	case 'Arch':
+	    /* TODO Install on Archlinux the package "filesystem" */
             $dist = 'Archlinux';
-            $ver = 'rolling';
             break;
         case 'Fedora':
             break;
         default:
-            $logger->err('Distribution inconnue');
+            $logger->error($this->getApplication()->translator->trans('prune.exist'));
 
             return -1;
         }
@@ -78,8 +98,8 @@ class Prune extends Command
                                     if (array_key_exists($ver, $val['Debian'])) {
                                         $new_struct['BuildDepends'][$compiler]['Common'] = $val['Debian'][$ver];
                                         /* La version est référencée (par le nom de branche, comme par exemple "testing") */
-                                    } elseif (array_key_exists(array_search($ver, $GLOBALS['dv_dist']), $val['Debian'])) {
-                                        $new_struct['BuildDepends'][$compiler]['Common'] = $val['Debian'][array_search($ver, $GLOBALS['dv_dist'])];
+                                    } elseif (array_key_exists(array_search($ver, $this->dv_dist), $val['Debian'])) {
+                                        $new_struct['BuildDepends'][$compiler]['Common'] = $val['Debian'][array_search($ver, $this->dv_dist)];
                                         /* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
                                     } else {
                                         $new_struct['BuildDepends'][$compiler]['Common'] = $val['Debian'][0]['All'];
@@ -144,8 +164,8 @@ class Prune extends Command
                                                     $new_struct['Packages'][$package][$champ][$elem] = $tab['Debian'][$ver];
                                                     /* La version est référencée (par le nom de branche, comme
                                                      *  par exemple "testing") */
-                                                } elseif (array_key_exists(array_search($ver, $GLOBALS['dv_dist']), $tab['Debian'])) {
-                                                    $new_struct['Packages'][$package][$champ][$elem] = $tab['Debian'][array_search($ver, $GLOBALS['dv_dist'])];
+                                                } elseif (array_key_exists(array_search($ver, $this->dv_dist), $tab['Debian'])) {
+                                                    $new_struct['Packages'][$package][$champ][$elem] = $tab['Debian'][array_search($ver, $this->dv_dist)];
                                                     /* La version de la distribution en cours d'exécution
                                                      *  n'est pas spécifiée, le cas général de la distribution ("All")
                                                      *  s'applique donc */
@@ -174,6 +194,21 @@ class Prune extends Command
             }
         }
 
-        return $new_struct;
+	$this->getApplication()->data = $new_struct ;
+	/* Optionnal argument (output file, which will be parsed) */
+	$output_file = $input->getArgument('output');
+	/* If the optionnal argument is present */
+	if ($output_file) {
+		/* Get references of the command write() */
+		$command = $this->getApplication()->find('write');
+		/* Declare the arguments in a array (arguments has to gave like this) */
+		$arguments = array(
+			'command' => 'write',
+			'output'    => $output_file,
+		);
+		$array_input = new ArrayInput($arguments);
+		/* Run command */
+		$command->run($array_input, $output);
+	}
     }
 }

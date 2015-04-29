@@ -15,5 +15,7 @@ check:
 parse:
         exist: "The element %filename% don't exists or is not a regular file"
         right: "The file %filename% can't to be read"
+prune:
+        exist: "Unknown distribution"
 write:
         save: "Error during writing in the file %output_file%"
