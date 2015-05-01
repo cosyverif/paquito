@@ -1,0 +1,43 @@
+Name: Hello-World
+
+Version: 1.2
+
+Homepage: https://www.paquito.fr
+
+Summary: Programme Hello-World
+
+Description: Ce programme va nous permettre d'afficher un simple helloworld sur la console
+
+Copyright: la licence
+
+Maintainer: Paul <Paul@gmail.com> 
+
+Authors:  
+      - sarah <sarah@gmail.com>
+      - corentin <corentin@gmail.com>
+
+BuildDepends:
+        Compiler1:
+                - g++
+                - Archlinux:
+                        All: REMPLIR
+
+Packages:
+        HelloWorld:
+                Type: binary
+                Files:
+                        /usr/bin/: src/hello-world
+                        /usr/share/hello-world/: src/program.c
+                RunTimeDepends:
+                        RunTime1:
+                                - tcc
+                BeforeBuild:
+                        Command1:
+                                - cd src/
+                        Command2:
+                                - g++ main.cc -o hello-world
+                        Command3:
+                                - chmod 755 hello-world
+                        Command4:
+                                - cd ..
+                AfterBuild:

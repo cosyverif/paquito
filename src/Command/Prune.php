@@ -13,7 +13,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 class Prune extends Command
 {
     /* Traduction versions Debian */
-    public $dv_dist = array('Stable' => 'Wheezy', 'Testing' => 'Jessy');
+    public $dv_dist = array('Stable' => 'Wheezy', 'Testing' => 'Jessie');
 
     protected function configure()
     {
@@ -88,7 +88,7 @@ class Prune extends Command
                         $tab = $val;
                         /* Il n'y aucun cas particulier, le cas général s'applique donc */
                         if (count($tab) == 1) {
-                            $new_struct['BuildDepends'][$compiler]['Common'] = $tab[0];
+                            $new_struct['BuildDepends'][$compiler]['Common'] = $tab['Common'];
                         } else {
                             /* La distribution est cité et a donc une dépendance différente */
                             if (array_key_exists($dist, $tab)) {
@@ -113,7 +113,7 @@ class Prune extends Command
                                 }
                                 /* La distribution n'est pas citée, le cas général ("Common") s'applique donc */
                             } else {
-                                $new_struct['BuildDepends'][$compiler]['Common'] = $tab[0];
+                                $new_struct['BuildDepends'][$compiler]['Common'] = $tab['Common'];
                             }
                         }
                     }
@@ -155,33 +155,33 @@ class Prune extends Command
                                     /* S'il n'y a pas de cas particuliers (c'est-à-dire que le nom de la
                                      * dépendance ou que la commande est pareil pour toutes les distributions) */
                                     if (count($tab) == 1) {
-                                        $new_struct['Packages'][$package][$champ][$elem] = $tab['Common'];
+                                        $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Common'];
                                     } else {
                                         if (array_key_exists($dist, $tab)) {
                                             if ($dist == 'Debian') {
                                                 /* La version est référencée (par son nom, comme par exemple "wheezy") */
                                                 if (array_key_exists($ver, $tab['Debian'])) {
-                                                    $new_struct['Packages'][$package][$champ][$elem] = $tab['Debian'][$ver];
+                                                    $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Debian'][$ver];
                                                     /* La version est référencée (par le nom de branche, comme
                                                      *  par exemple "testing") */
                                                 } elseif (array_key_exists(array_search($ver, $this->dv_dist), $tab['Debian'])) {
-                                                    $new_struct['Packages'][$package][$champ][$elem] = $tab['Debian'][array_search($ver, $this->dv_dist)];
+                                                    $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Debian'][array_search($ver, $this->dv_dist)];
                                                     /* La version de la distribution en cours d'exécution
                                                      *  n'est pas spécifiée, le cas général de la distribution ("All")
                                                      *  s'applique donc */
                                                 } else {
-                                                    $new_struct['Packages'][$package][$champ][$elem] = $tab['Debian']['All'];
+                                                    $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Debian']['All'];
                                                 }
                                                 /* La distribution est Archlinux */
                                             } elseif ($dist == 'Archlinux') {
                                                 /* Archlinux n'ayant pas de versions, le contenu du champ "All" s'applique systématiquement */
-                                                $new_struct['Packages'][$package][$champ][$elem] = $tab['Archlinux']['All'];
+                                                $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Archlinux']['All'];
                                             } elseif ($dist == 'Fedora') {
                                                 #TODO
                                             }
                                             /* La distribution n'est pas citée, le cas général ("Common") s'applique donc */
                                         } else {
-                                            $new_struct['Packages'][$package][$champ][$elem] = $tab['Common'];
+                                            $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Common'];
                                         }
                                     }
                                 }

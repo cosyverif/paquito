@@ -150,15 +150,18 @@ class Check extends Command
                             }
                             /* Le champ courant est "RunTimeDepends", "BeforeBuild" ou "AfterBuild" */
                             if ($key == 'RunTimeDepends' || $key == 'BeforeBuild' || $key == 'AfterBuild') {
-                                /* Le champ courant ne contient pas un tableau */
-                                if (!empty($val) && !is_array($val)) {
-                                    $logger->error($this->getApplication()->translator->trans('check.tab_field', array('%key%' => $key)));
+				/* "BuildDepends" contient quelque chose */
+				if (!empty($val)) {
+					/* Le champ courant ne contient pas un tableau */
+					if (!is_array($val)) {
+						$logger->error($this->getApplication()->translator->trans('check.tab_field', array('%key%' => $key)));
 
-                                    return -1;
-                                }
-                                /* Stocke le contenu du champ actuel */
-                                //$Table = $val;
-                                $this->check_command_dependency($val, $logger);
+						return -1;
+					}
+					/* Stocke le contenu du champ actuel */
+					//$Table = $val;
+					$this->check_command_dependency($val, $logger);
+				}
                             }
                         }
                     }
