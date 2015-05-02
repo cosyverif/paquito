@@ -9,8 +9,9 @@ Fichier PKGBUILD:
 
 c'est un simple fichier texte  qui explique comment se déroule la création du paquet il contient deux parties:
 
-a.une partie concernant les informations sur le paquet : nom, version ,dépendances ...ect.
-b.2éme partie : fonction **build()** qui se charge de la création de l'arborescence du paquet et de la compilation.
+a. une partie concernant les informations sur le paquet : nom, version ,dépendances ...ect.
+
+b. 2ème partie : fonction **build()** qui se charge de la création de l'arborescence du paquet et de la compilation.
 
 
 Contenu du fichier:
@@ -221,7 +222,20 @@ Si on fait un ls on aura le résultat suivant:
 **$ ls**
  pkg/ PKGBUILD nom-version.tar.gz
 
-Le fameux tar.gz est notre paquet.
-Pour lancer l'installation :
+L'archive **tar.gz** résultante est notre paquet. Pour l'installer :
 
-**$ yaourt -U nom-version.tar.gz**
+**$ pacman -U nom-version.tar.gz**
+
+Pour désinstaller le paquet :
+
+**$ pacman -R nom_du_paquet**
+
+### Commandes suplémentaires
+
+Obtenir les méta-données du paquet :
+
+**$ pacman -Qip nom_du_paquet.tar.gz**
+
+Obtenir la liste des fichiers du paquet :
+
+**$ pacman -Qlp nom_du_paquet.tar.gz**

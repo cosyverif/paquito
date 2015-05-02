@@ -20,7 +20,7 @@ BuildDepends:
         Compiler1:
                 - g++
                 - Archlinux:
-                        All: REMPLIR
+                        All: gcc
 
 Packages:
         HelloWorld:
@@ -37,7 +37,5 @@ Packages:
                         Command2:
                                 - g++ main.cc -o hello-world
                         Command3:
-                                - chmod 755 hello-world
-                        Command4:
                                 - cd ..
                 AfterBuild:

@@ -36,36 +36,38 @@ class Prune extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         /* Get path and name of the input file */
-	$input_file = $input->getArgument('input');
-	/* Get references of the command parse() */
-	$command = $this->getApplication()->find('normalize');
-	/* Declare the arguments in a array (arguments has to gave like this) */
-	$arguments = array(
-		'command' => 'normalize',
-		'input'    => $input_file,
-	);
-	$array_input = new ArrayInput($arguments);
-	/* Run command */
-	$command->run($array_input, $output);
+    $input_file = $input->getArgument('input');
+    /* Get references of the command parse() */
+    $command = $this->getApplication()->find('normalize');
+    /* Declare the arguments in a array (arguments has to gave like this) */
+    $arguments = array(
+        'command' => 'normalize',
+        'input'    => $input_file,
+    );
+        $array_input = new ArrayInput($arguments);
+    /* Run command */
+    $command->run($array_input, $output);
 
-	/* Get structure of YaML file (which was parsed and checked) */
-	$struct = $this->getApplication()->data;
-	/* Launch Logger module */
+    /* Get structure of YaML file (which was parsed and checked) */
+    $struct = $this->getApplication()->data;
+    /* Launch Logger module */
         $logger = new ConsoleLogger($output);
 
-	/* This array will contain the new structure */
-	$new_struct = array();
-	/* The file /etc/os-release contains the informations about the distribution (where is executed this program)*/
-	$array_ini = parse_ini_file("/etc/os-release") ;
-	/* Get the name of the distribution */
-	$dist = ucfirst($array_ini['ID']) ;
-	switch ($dist) {
-	case 'Debian':
-	    preg_match('/[a-z]+/', $array_ini['VERSION'], $match) ;
-	    $ver = ucfirst($match[0]) ;
+    /* This array will contain the new structure */
+    $new_struct = array();
+    /* The file /etc/os-release contains the informations about the distribution (where is executed this program)*/
+    /* TODO Sous Archlinux, la fonction parse_ini_files() ne marchera pas si la variable "open_basedir" du fichier /etc/php/php.ini
+     * n'inclue pas le chemin /usr/lib/ (qui est la vraie localisation du fichier "os-release" */
+    $array_ini = parse_ini_file('/etc/os-release');
+    /* Get the name of the distribution */
+    $dist = ucfirst($array_ini['ID']);
+        switch ($dist) {
+    case 'Debian':
+        preg_match('/[a-z]+/', $array_ini['VERSION'], $match);
+        $ver = ucfirst($match[0]);
             break;
-	case 'Arch':
-	    /* TODO Install on Archlinux the package "filesystem" */
+    case 'Arch':
+        /* TODO Install on Archlinux the package "filesystem" */
             $dist = 'Archlinux';
             break;
         case 'Fedora':
@@ -107,7 +109,7 @@ class Prune extends Command
                                     /* La distribution est Archlinux */
                                 } elseif ($dist == 'Archlinux') {
                                     /* Archlinux n'ayant pas de versions, le contenu du champ "All" s'applique systématiquement */
-                                    $new_struct['BuildDepends'][$compiler]['Common'] = $val['Archlinux'][0]['All'];
+                                    $new_struct['BuildDepends'][$compiler]['Common'] = $val['Archlinux']['All'];
                                 } elseif ($dist == 'Fedora') {
                                     #TODO
                                 }
@@ -194,21 +196,21 @@ class Prune extends Command
             }
         }
 
-	$this->getApplication()->data = $new_struct ;
-	/* Optionnal argument (output file, which will be parsed) */
-	$output_file = $input->getArgument('output');
-	/* If the optionnal argument is present */
-	if ($output_file) {
-		/* Get references of the command write() */
-		$command = $this->getApplication()->find('write');
-		/* Declare the arguments in a array (arguments has to gave like this) */
-		$arguments = array(
-			'command' => 'write',
-			'output'    => $output_file,
-		);
-		$array_input = new ArrayInput($arguments);
-		/* Run command */
-		$command->run($array_input, $output);
-	}
+        $this->getApplication()->data = $new_struct;
+    /* Optionnal argument (output file, which will be parsed) */
+    $output_file = $input->getArgument('output');
+    /* If the optionnal argument is present */
+    if ($output_file) {
+        /* Get references of the command write() */
+        $command = $this->getApplication()->find('write');
+        /* Declare the arguments in a array (arguments has to gave like this) */
+        $arguments = array(
+            'command' => 'write',
+            'output'    => $output_file,
+        );
+        $array_input = new ArrayInput($arguments);
+        /* Run command */
+        $command->run($array_input, $output);
+    }
     }
 }

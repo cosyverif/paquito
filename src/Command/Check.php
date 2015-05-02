@@ -41,21 +41,21 @@ class Check extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         /* Get the path and the name of the input file */
-	$input_file = $input->getArgument('input');
-	/* Get the references of the command parse() */
-	$command = $this->getApplication()->find('parse');
-	/* Declare the arguments in a array (arguments have to be given like this) */
-	$arguments = array(
-		'command' => 'parse',
-		'input'    => $input_file,
-	);
-	$array_input = new ArrayInput($arguments);
-	/* Run command */
-	$command->run($array_input, $output);
+    $input_file = $input->getArgument('input');
+    /* Get the references of the command parse() */
+    $command = $this->getApplication()->find('parse');
+    /* Declare the arguments in a array (arguments have to be given like this) */
+    $arguments = array(
+        'command' => 'parse',
+        'input'    => $input_file,
+    );
+        $array_input = new ArrayInput($arguments);
+    /* Run command */
+    $command->run($array_input, $output);
 
-	/* Get the structure of the YaML file (which was parsed) */
-	$struct = $this->getApplication()->data;
-	/* Launch Logger module */
+    /* Get the structure of the YaML file (which was parsed) */
+    $struct = $this->getApplication()->data;
+    /* Launch Logger module */
         $logger = new ConsoleLogger($output);
 
         /* Analysis of the size of the structure (which has to own the expected 10 fields of the first level) */
@@ -150,18 +150,18 @@ class Check extends Command
                             }
                             /* Le champ courant est "RunTimeDepends", "BeforeBuild" ou "AfterBuild" */
                             if ($key == 'RunTimeDepends' || $key == 'BeforeBuild' || $key == 'AfterBuild') {
-				/* "BuildDepends" contient quelque chose */
-				if (!empty($val)) {
-					/* Le champ courant ne contient pas un tableau */
-					if (!is_array($val)) {
-						$logger->error($this->getApplication()->translator->trans('check.tab_field', array('%key%' => $key)));
+                                /* "BuildDepends" contient quelque chose */
+                if (!empty($val)) {
+                    /* Le champ courant ne contient pas un tableau */
+                    if (!is_array($val)) {
+                        $logger->error($this->getApplication()->translator->trans('check.tab_field', array('%key%' => $key)));
 
-						return -1;
-					}
-					/* Stocke le contenu du champ actuel */
-					//$Table = $val;
-					$this->check_command_dependency($val, $logger);
-				}
+                        return -1;
+                    }
+                    /* Stocke le contenu du champ actuel */
+                    //$Table = $val;
+                    $this->check_command_dependency($val, $logger);
+                }
                             }
                         }
                     }
@@ -169,21 +169,21 @@ class Check extends Command
             }
         }
 
-	/* Optionnal argument (output file, which will be parsed) */
-	$output_file = $input->getArgument('output');
-	/* If the optionnal argument is present */
-	if ($output_file) {
-		/* Get references of the command write() */
-		$command = $this->getApplication()->find('write');
-		/* Declare the arguments in a array (arguments has to gave like this) */
-		$arguments = array(
-			'command' => 'write',
-			'output'    => $output_file,
-		);
-		$array_input = new ArrayInput($arguments);
-		/* Run command */
-		$command->run($array_input, $output);
-	}
+    /* Optionnal argument (output file, which will be parsed) */
+    $output_file = $input->getArgument('output');
+    /* If the optionnal argument is present */
+    if ($output_file) {
+        /* Get references of the command write() */
+        $command = $this->getApplication()->find('write');
+        /* Declare the arguments in a array (arguments has to gave like this) */
+        $arguments = array(
+            'command' => 'write',
+            'output'    => $output_file,
+        );
+        $array_input = new ArrayInput($arguments);
+        /* Run command */
+        $command->run($array_input, $output);
+    }
     }
 
     protected function check_command_dependency($array, ConsoleLogger $logger)
