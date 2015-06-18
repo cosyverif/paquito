@@ -42,7 +42,7 @@ class Write extends Command
         /* Declare the arguments in a array (arguments has to gave like this) */
         $arguments = array(
             'command' => 'parse',
-            'input'    => $input_file,
+            'input' => $input_file,
         );
         $array_input = new ArrayInput($arguments);
         /* Run command */

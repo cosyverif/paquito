@@ -39,7 +39,7 @@ class Generate extends Command
     /* Declare the arguments in a array (arguments have to be given like this) */
     $arguments = array(
         'command' => 'prune',
-        'input'    => $input_file,
+        'input' => $input_file,
     );
         $array_input = new ArrayInput($arguments);
     /* Run command */
@@ -56,23 +56,24 @@ class Generate extends Command
     $dist = ucfirst($array_ini['ID']);
         switch ($dist) {
     case 'Debian':
-             $package_system = 'apt-get -y install';
+        $package_system = 'apt-get -y install';
         break;
     case 'Arch':
         /* TODO Install on Archlinux the package "filesystem" */
-            $dist = 'Archlinux';
-             $package_system = 'pacman --noconfirm -S';
-            break;
-        case 'Fedora':
-             $package_system = 'yum -y install';
-            break;
-        default:
-            $logger->error($this->getApplication()->translator->trans('prune.exist'));
+        $dist = 'Archlinux';
+        $package_system = 'pacman --noconfirm -S';
+        break;
+    case 'Centos':
+        $package_system = 'yum -y install';
+        break;
+    default:
+        $logger->error($this->getApplication()->translator->trans('prune.exist'));
 
-            return -1;
+        return -1;
     }
     /* Get the architecture of the current machine */
-    /* TODO La fonction posix_name() ne fonctionnera pas sous Archlinux si l'extension de PHP "posix" (extension=posix.so) est commentée dans le fichier /etc/php/php.ini */
+    /* TODO La fonction posix_name() ne fonctionnera pas sous Archlinux si l'extension de PHP "posix" (extension=posix.so) est commentée dans le fichier /etc/php/php.ini
+     * Sous CentOS, il faut télécharger le paquet php-process pour utiliser les fonctions POSIX */
     $arch = posix_uname();
         $arch = $arch['machine'];
     /* This variable will contains the list of dependencies (to build) */
@@ -100,14 +101,9 @@ class Generate extends Command
 
             $dirname = $key.'_'.$struct['Version'].'_'.$arch;
             /* Create the directory of the package */
-            if (!mkdir($dirname) && !is_dir($dirname)) {
-                die('Echec lors de la création des répertoires...');
-            }
-
+        $this->_mkdir($dirname);
             /* Create the directory "DEBIAN/" (which is required) */
-            if (!mkdir($dirname.'/DEBIAN') && !is_dir($dirname.'/DEBIAN')) {
-                echo('Echec lors de la création des répertoires...');
-            }
+        $this->_mkdir($dirname.'/DEBIAN');
 
             /* This variable will contains the list of dependencies (to run) */
             $list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['RunTimeDepends']));
@@ -166,13 +162,9 @@ class Generate extends Command
             $name = $key;
             $dirname = $key.'-'.$struct['Version'].'-'.$arch;
             /* Create the directory of the package */
-            if (!mkdir($dirname) && !is_dir($dirname)) {
-                die('Echec lors de la création des répertoires...');
-            }
+        $this->_mkdir($dirname);
             /* Create the directory "src/" (which contains the sources) */
-            if (!mkdir($dirname.'/src/') && !is_dir($dirname.'/src/')) {
-                echo('Echec lors de la création des répertoires...');
-            }
+        $this->_mkdir($dirname.'/src/');
             /* Translation to Archlinux syntax */
             $list_buildepend = "'".str_replace(' ', "'", $list_buildepend)."'";
             /* This variable will contains the list of dependencies (to run) */
@@ -270,6 +262,157 @@ class Generate extends Command
             fclose($handle);
     /* To come back in usual directory (to write the output file in the right place */
         chdir($pwd);
+        } elseif ($dist == 'Centos') {
+            /* The package type is not a binary */
+            /* TODO Adapter pour les librairies et les autres types */
+            if ($value['Type'] != 'binary') {
+                $arch = 'all';
+            }
+            $name = $key;
+            $dirname = "$key-$struct[Version]-$arch";
+        /* Creates the directories for building package (always in the home directory) */
+        echo shell_exec('rpmdev-setuptree');
+
+            /* This variable will contains the list of dependencies (to run) */
+            $list_rundepend = $this->generate_list_dependencies($struct_package['RunTimeDepends']);
+            $array_field = array('#Maintainer' => $struct['Maintainer'],
+                    'Name' => $name,
+                    'Version' => $struct['Version'],
+            'Release' => '1%{?dist}',
+            'Summary' => $name,
+                    'License' => "$struct[Copyright]",
+            'URL' => $struct['Homepage'],
+            #'BuildRoot' => getcwd()."/$dirname/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)",
+            'BuildRequires' => $list_buildepend,
+            'Requires' => $list_rundepend,
+        );
+            /* Create and open the file "control" (in write mode) */
+            $handle = fopen("$_SERVER[HOME]/rpmbuild/SPECS/p.spec", 'w');
+            /* For each field that will contains the file "control" */
+            foreach ($array_field as $key => $value) {
+                if (fwrite($handle, "$key: $value\n") === false) {
+                    echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+
+                    return -1;
+                }
+            }
+        /* Write the description */
+        if (fwrite($handle, "\n%description\n$struct[Summary]\n") === false) {
+            echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+
+            return -1;
+        }
+
+            /* To come back in actual directory if a "cd" command is present in pre-build commands */
+            $pwd = getcwd();
+            /* If there are pre-build commands */
+            /* IMPORTANT The build() function is not used because the pre-commands work directly in the src/ directory (of the package), and
+             * several unexpected files will be included in the package. It is simpler to use Paquito. */
+            if (!empty($struct_package['BeforeBuild'])) {
+                /* Execute each command */
+                foreach ($struct_package['BeforeBuild'] as $key => $value) {
+                    /* "cd" commands don't work (each shell_exec() has its owns shell), so it has to translates in chdir() functions */
+                    if (preg_match('/cd (.+)/', $value['Common'], $matches)) {
+                        chdir($matches[1]);
+                    } else {
+                        echo shell_exec($value['Common']);
+                    }
+                }
+            }
+            /* To come back in usual directory if a "cd" command was present in pre-build commands */
+            chdir($pwd);
+
+        /* Write the "cd" commands in the package() function */
+            /* TODO Faire wildcard */
+            if (fwrite($handle, "\n%install\n") === false) {
+                echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+
+                return -1;
+            }
+        /* The file section uses macros to include files */
+        $spec_files = array(
+            array('/usr/bin' => 'bindir'),
+            array('/usr/share' => 'datadir'),
+            array('/usr/share/doc' => 'defaultdocdir'),
+            array('/usr/share/man' => 'mandir'),
+            array('/usr/include' => 'includedir'),
+            array('/usr/lib' => 'libdir'),
+            array('/usr/sbin' => 'sbindir'),
+            array('/var' => 'localstatedir'),
+            array('/etc' => 'sysconfdir'), );
+        /* List of files to include */
+        $spec_files_add = array();
+
+            #"bindir" => "/usr/bin",
+            #"datadir" => "/usr/share",
+            #"defaultdocdir" => "/usr/share/doc",
+            #"includedir" => "/usr/include",
+            #"libdir" => "/usr/lib",
+            #"localstatedir" => "/var",
+            #"mandir" => "/usr/share/man",
+            #"sbindir" => "/usr/sbin",
+            #"sysconfdir" => "/etc");
+            foreach ($struct_package['Files'] as $key => $value) {
+                /* The destination file will be in a sub-directory */
+                if (strrpos($key, '/') !== false) {
+                    /* Split the path in a array */
+                    $explode_array = explode('/', ltrim($key, '/'));
+                    /* Remove the name of the file */
+            unset($explode_array[count($explode_array) - 1]);
+                    /* Transform the array in a string */
+            $directory = implode('/', $explode_array);
+
+                    foreach ($spec_files as $tab) {
+                        $val = key($tab);
+                        if (substr("/$directory", 0, strlen($val)) == $val) {
+                            $path = substr("/$directory", strlen($val));
+                            if (strlen($path) == 0) {
+                                $spec_files_add[] = '%{_'.$tab[$val].'}/*';
+                            } else {
+                                $spec_files_add[] = '%{_'.$tab[$val].'}'.$path.'/*';
+                            }
+                        }
+                    }
+
+                    /* Write the "mkdir" command in the package() function */
+                    if (fwrite($handle, "\tmkdir -p \$RPM_BUILD_ROOT/$directory/\n") === false) {
+                        echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+
+                        return -1;
+                    }
+                }
+                /* The last character is a slash (in others words, the given path is a directory) */
+                /* IMPORTANT We use this function instead of is_dir() because is_dir() works only in directories
+                 * mentioned by the open_basedir directive (in php.ini) */
+                if (substr($key, -1) == '/') {
+                    $dest = $key.basename($value);
+                } else {
+                    $dest = $key;
+                }
+                if (fwrite($handle, "\tcp --preserve ".ltrim($dest, '/')." \$RPM_BUILD_ROOT/".ltrim($key, '/')."\n") === false) {
+                    echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+
+                    return -1;
+                }
+            }
+            /* Move the files in the src/ directory of the package directory */
+        $this->move_files("$_SERVER[HOME]/rpmbuild/BUILD/", $struct_package['Files']);
+
+            if (fwrite($handle, "\n%files\n") === false) {
+                echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+
+                return -1;
+            }
+            foreach ($spec_files_add as $value) {
+                if (fwrite($handle, "$value\n") === false) {
+                    echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+
+                    return -1;
+                }
+            }
+        /* Launch the creation of the package */
+        shell_exec('rpmbuild -ba ~/rpmbuild/SPECS/p.spec');
+            fclose($handle);
         }
     }
     /* Optionnal argument (output file, which will be parsed) */
@@ -281,7 +424,7 @@ class Generate extends Command
         /* Declare the arguments in a array (arguments has to gave like this) */
         $arguments = array(
             'command' => 'write',
-            'output'  => $output_file,
+            'output' => $output_file,
         );
         $array_input = new ArrayInput($arguments);
         /* Run command */
@@ -302,7 +445,7 @@ class Generate extends Command
                 unset($explode_array[count($explode_array) - 1]);
                 /* Transform the array in a string */
                 $directory = implode('/', $explode_array);
-                /* Create recursively the directories */
+        /* Create recursively the directories */
                 if (!mkdir($dest_directory.'/'.$directory.'/', 0777, true) && !is_dir($dest_directory.'/'.$directory.'/')) {
                     echo("Echec lors de la création des répertoires...\n");
 
@@ -341,5 +484,14 @@ class Generate extends Command
     }
     /* Delete superfluous element (space) */
     return $list = ltrim($list, ' ');
+    }
+
+    /* This function is like mkdir() but checks also if this last fails */
+    protected function _mkdir($name)
+    {
+        /* is_dir() is here to controls if the directory existed */
+        if (!mkdir($name) && !is_dir($name)) {
+            die('Echec lors de la création des répertoires...');
+        }
     }
 }

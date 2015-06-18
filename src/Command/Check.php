@@ -14,9 +14,14 @@ class Check extends Command
     /* First level keys (of the Paquito configuration files) */
     public $first_level_keys = array('Name', 'Version', 'Homepage', 'Description', 'Copyright', 'Maintainer', 'Authors', 'BuildDepends', 'Packages');
     /* Known distributions */
-    public $dist = array('Debian', 'Archlinux', 'Fedora');
-    /* Known versions */
-    public $v_dist = array('All', 'Stable', 'Testing', 'Wheezy', 'Jessy');
+    public $dist = array('Debian', 'Archlinux', 'Centos');
+    /* Known versions (Debian) */
+    public $versions = array(
+        array('All', 'Stable', 'Testing', 'Wheezy', 'Jessy'), /* Debian */
+        array('All', '6.6', '7.0'), ); /* CentOS */
+    #public $v_deb = array('All', 'Stable', 'Testing', 'Wheezy', 'Jessy');
+    /* Known versions (CentOS) */
+    #public $v_cent = array('All', '6.6', '7.0');
     /* Package types */
     public $typePackage = array('binary', 'library', 'source', 'arch_independant');
 
@@ -47,7 +52,7 @@ class Check extends Command
     /* Declare the arguments in a array (arguments have to be given like this) */
     $arguments = array(
         'command' => 'parse',
-        'input'    => $input_file,
+        'input' => $input_file,
     );
         $array_input = new ArrayInput($arguments);
     /* Run command */
@@ -151,17 +156,17 @@ class Check extends Command
                             /* Le champ courant est "RunTimeDepends", "BeforeBuild" ou "AfterBuild" */
                             if ($key == 'RunTimeDepends' || $key == 'BeforeBuild' || $key == 'AfterBuild') {
                                 /* "BuildDepends" contient quelque chose */
-                if (!empty($val)) {
-                    /* Le champ courant ne contient pas un tableau */
-                    if (!is_array($val)) {
-                        $logger->error($this->getApplication()->translator->trans('check.tab_field', array('%key%' => $key)));
+                    if (!empty($val)) {
+                        /* Le champ courant ne contient pas un tableau */
+                        if (!is_array($val)) {
+                            $logger->error($this->getApplication()->translator->trans('check.tab_field', array('%key%' => $key)));
 
-                        return -1;
+                            return -1;
+                        }
+                        /* Stocke le contenu du champ actuel */
+                        //$Table = $val;
+                        $this->check_command_dependency($val, $logger);
                     }
-                    /* Stocke le contenu du champ actuel */
-                    //$Table = $val;
-                    $this->check_command_dependency($val, $logger);
-                }
                             }
                         }
                     }
@@ -178,7 +183,7 @@ class Check extends Command
         /* Declare the arguments in a array (arguments has to gave like this) */
         $arguments = array(
             'command' => 'write',
-            'output'    => $output_file,
+            'output' => $output_file,
         );
         $array_input = new ArrayInput($arguments);
         /* Run command */
@@ -220,6 +225,7 @@ class Check extends Command
 
                             return -1;
                         }
+                        $distribution = $key;
                         /* Store the structure of the current distribution */
                         $version = $value;
                         /* No information is stored for the current distribution */
@@ -235,7 +241,10 @@ class Check extends Command
                             return -1;
                         }
                         /* For each version of the current distribution */
-                        foreach ($version as $key => $val) {
+            foreach ($version as $key => $val) {
+                /* Depending of the distribution, this ID will be defined to find the good array of versions */
+                /* IMPORTANT 0 is the ID of Debian */
+                $id_dist = 0;
                             /* There is only one key (which has to "All", so all versions of the current distribution have the same name of dependency) */
                             if (count($version) == 1) {
                                 /* The key is not "All" */
@@ -245,19 +254,25 @@ class Check extends Command
                                     return -1;
                                 }
                             }
-                            /* The current version is unknown or not managed */
-                            if (!in_array($key, $this->v_dist)) {
-                                $logger->error($this->getApplication()->translator->trans('check.version', array('%key%' => $key)));
 
-                                return -1;
-                            }
+                /* Verifies the versions depending on the distribution */
+                if ($distribution == 'Centos') {
+                    $id_dist = 1;
+                }
+                /* The current version is unknown or not managed */
+                if (!in_array($key, $this->versions[$id_dist])) {
+                    $logger->error($this->getApplication()->translator->trans('check.version', array('%key%' => $key)));
+
+                    return -1;
+                }
+
                             /* The current version doesn't contain any name of dependency */
                             if (empty($val)) {
                                 $logger->error($this->getApplication()->translator->trans('check.void', array('%key%' => $key)));
 
                                 return -1;
                             }
-                        }
+            }
                     }
                 } elseif (empty($value)) {
                     $logger->error($this->getApplication()->translator->trans('check.common_empty', array('%name%' => $cd_name)));

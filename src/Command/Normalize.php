@@ -39,7 +39,7 @@ class Normalize extends Command
     /* Declare the arguments in a array (arguments has to gave like this) */
     $arguments = array(
         'command' => 'check',
-        'input'    => $input_file,
+        'input' => $input_file,
     );
         $array_input = new ArrayInput($arguments);
     /* Run command */
@@ -110,7 +110,7 @@ class Normalize extends Command
                                                 /* La variable $val représente ici le nom
                                                  * supposément commun de la dépendence ou la commande */
                                                 $this->newStruct['Packages'][$package][$champ][$elem]['Common'] = $val;
-                                                $j--;
+                                                --$j;
                                             } else {
                                                 /* La variable $val représente ici un tableau
                                                  * qui recense les cas particuliers */
@@ -142,7 +142,7 @@ class Normalize extends Command
         /* Declare the arguments in a array (arguments has to gave like this) */
         $arguments = array(
             'command' => 'write',
-            'output'    => $output_file,
+            'output' => $output_file,
         );
         $array_input = new ArrayInput($arguments);
         /* Run command */
@@ -170,7 +170,7 @@ class Normalize extends Command
                     if ($j) {
                         /* The variable $value represents here the common command/dependency */
                         $this->newStruct[$field][$cd_name]['Common'] = $value;
-                        $j--;
+                        --$j;
                     } else {
                         /* The variable $value represents here a array which owns the particular cases */
                         $t = $value;

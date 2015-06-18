@@ -10,9 +10,9 @@ Description: Ce programme va nous permettre d'afficher un simple helloworld sur 
 
 Copyright: la licence
 
-Maintainer: Paul <Paul@gmail.com> 
+Maintainer: Paul <Paul@gmail.com>
 
-Authors:  
+Authors:
       - sarah <sarah@gmail.com>
       - corentin <corentin@gmail.com>
 
@@ -21,6 +21,8 @@ BuildDepends:
                 - g++
                 - Archlinux:
                         All: gcc
+                - Centos:
+                        All: gcc-c++
 
 Packages:
         HelloWorld:

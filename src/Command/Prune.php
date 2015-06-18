@@ -42,7 +42,7 @@ class Prune extends Command
     /* Declare the arguments in a array (arguments has to gave like this) */
     $arguments = array(
         'command' => 'normalize',
-        'input'    => $input_file,
+        'input' => $input_file,
     );
         $array_input = new ArrayInput($arguments);
     /* Run command */
@@ -70,7 +70,12 @@ class Prune extends Command
         /* TODO Install on Archlinux the package "filesystem" */
             $dist = 'Archlinux';
             break;
-        case 'Fedora':
+        case 'Centos':
+        preg_match('/[0-9](\.[0-9])?/', $array_ini['VERSION'], $match);
+        $ver = $match[0];
+        if (strlen($ver) == 1) {
+            $ver = $ver.'.0';
+        }
             break;
         default:
             $logger->error($this->getApplication()->translator->trans('prune.exist'));
@@ -110,8 +115,15 @@ class Prune extends Command
                                 } elseif ($dist == 'Archlinux') {
                                     /* Archlinux n'ayant pas de versions, le contenu du champ "All" s'applique systématiquement */
                                     $new_struct['BuildDepends'][$compiler]['Common'] = $val['Archlinux']['All'];
-                                } elseif ($dist == 'Fedora') {
-                                    #TODO
+                                    /* La distribution est CentOS */
+                                } elseif ($dist == 'Centos') {
+                                    /* La version est référencée (pour CentOS, toujours par son numéro de version) */
+                                    if (array_key_exists($ver, $val['Centos'])) {
+                                        $new_struct['BuildDepends'][$compiler]['Common'] = $val['Centos'][$ver];
+                                        /* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
+                                    } else {
+                                        $new_struct['BuildDepends'][$compiler]['Common'] = $val['Centos']['All'];
+                                    }
                                 }
                                 /* La distribution n'est pas citée, le cas général ("Common") s'applique donc */
                             } else {
@@ -178,8 +190,15 @@ class Prune extends Command
                                             } elseif ($dist == 'Archlinux') {
                                                 /* Archlinux n'ayant pas de versions, le contenu du champ "All" s'applique systématiquement */
                                                 $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Archlinux']['All'];
-                                            } elseif ($dist == 'Fedora') {
-                                                #TODO
+                                            } elseif ($dist == 'Centos') {
+                                                /* La version est référencée (pour CentOS, toujours par son numéro de version) */
+                            if (array_key_exists($ver, $val['Centos'])) {
+                                $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Centos'][$ver];
+                                /* La version de la distribution en cours d'exécution n'est pas
+                                 * spécifiée, le cas général de la distribution ("All") s'applique donc */
+                            } else {
+                                $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Centos']['All'];
+                            }
                                             }
                                             /* La distribution n'est pas citée, le cas général ("Common") s'applique donc */
                                         } else {
@@ -206,7 +225,7 @@ class Prune extends Command
         /* Declare the arguments in a array (arguments has to gave like this) */
         $arguments = array(
             'command' => 'write',
-            'output'    => $output_file,
+            'output' => $output_file,
         );
         $array_input = new ArrayInput($arguments);
         /* Run command */
