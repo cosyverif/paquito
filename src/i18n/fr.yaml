@@ -12,6 +12,9 @@ check:
         package: "Mauvais type de paquet (%val%)"
         tab_runtime_command: "Le contenu de %key% doit être sous forme d'un tableau"
         common_empty: "Le champ %name% ne possède pas de commande/dépendence commune"
+generate:
+        copy: "Echec de la copie de %src% vers %dst%"
+        mkdir: "Echec de la création du répertoire %dir%"
 parse:
         exist: "L'élément %filename% n'existe pas ou n'est pas un fichier régulier"
         right: "Droits insuffisants pour lire le fichier %filename%"

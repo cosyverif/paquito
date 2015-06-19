@@ -8,10 +8,13 @@ check:
         content_field: "The field %key% has to content at less the field %field_name%"
         tab_field: "The field %key% has to be a array"
         name_field: "The name of the field has to be %field_name% (%key%)"
-        version: "The version is incorrects (%key%)"
+        version: "The version is incorrect (%key%)"
         package: "Bad type of package (%val%)"
         tab_runtime_command: "The content of %key% has to be like a array"
         common_empty: "The field %name% don't owns a common command/dependency"
+generate:
+        copy: "Copy of %src% to %dst% failed"
+        mkdir: "Creation of the directory %dir% failed"
 parse:
         exist: "The element %filename% don't exists or is not a regular file"
         right: "The file %filename% can't to be read"

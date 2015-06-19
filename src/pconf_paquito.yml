@@ -1,0 +1,38 @@
+Name: Paquito
+
+Version: 0.1
+
+Homepage: https://www.paquito.fr
+
+Summary: Programme de packaging Paquito
+
+Description: Création automatique de paquet Debian (DEB), Archlinux (PKG) et CentOS (RPM) à partir de sources
+
+Copyright: La licence
+
+Maintainer: Corentin <coco@gmail.com>
+
+Authors:
+      - sarah <sarah@gmail.com>
+      - corentin <corentin@gmail.com>
+
+BuildDepends:
+
+Packages:
+        Paquito:
+                Type: binary
+                Files:
+                        /usr/bin/: Paquito-src/paquito
+                RunTimeDepends:
+                        RunTime1:
+                                - php
+                BeforeBuild:
+                        Command1:
+                                - cd Paquito-src/
+                        Command2:
+                                - bin/create-phar.sh
+                        Command3:
+                                - cd ..
+                AfterBuild:
+                        Command1:
+                                - chmod 755 /usr/bin/paquito

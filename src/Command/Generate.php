@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 
 class Generate extends Command
 {
+	private $logger ;
     protected function configure()
     {
         $this
@@ -48,7 +49,7 @@ class Generate extends Command
     /* Get the structure of the YaML file (which was parsed) */
     $struct = $this->getApplication()->data;
     /* Launch Logger module */
-        $logger = new ConsoleLogger($output);
+    $this->logger = new ConsoleLogger($output);
 
     /* The file /etc/os-release contains the informations about the distribution (where is executed this program)*/
     $array_ini = parse_ini_file('/etc/os-release');
@@ -67,7 +68,7 @@ class Generate extends Command
         $package_system = 'yum -y install';
         break;
     default:
-        $logger->error($this->getApplication()->translator->trans('prune.exist'));
+        $this->logger->error($this->getApplication()->translator->trans('prune.exist'));
 
         return -1;
     }
@@ -101,9 +102,9 @@ class Generate extends Command
 
             $dirname = $key.'_'.$struct['Version'].'_'.$arch;
             /* Create the directory of the package */
-        $this->_mkdir($dirname);
+	    $this->_mkdir($dirname);
             /* Create the directory "DEBIAN/" (which is required) */
-        $this->_mkdir($dirname.'/DEBIAN');
+	    $this->_mkdir($dirname.'/DEBIAN');
 
             /* This variable will contains the list of dependencies (to run) */
             $list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['RunTimeDepends']));
@@ -121,14 +122,14 @@ class Generate extends Command
             /* For each field that will contains the file "control" */
             foreach ($array_field as $key => $value) {
                 if (fwrite($handle, "$key: $value\n") === false) {
-                    echo "Erreur d'écriture dans le fichier".$key.'/DEBIAN/control'."\n";
+		    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/DEBIAN/control")));
 
                     return -1;
                 }
             }
             /* Add a line at the end (required) */
             if (fwrite($handle, "\n") === false) {
-                echo "Erreur d'écriture dans le fichier".$key.'/DEBIAN/control'."\n";
+		    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/DEBIAN/control")));
 
                 return -1;
             }
@@ -184,7 +185,7 @@ class Generate extends Command
             /* For each field that will contains the file "control" */
             foreach ($array_field as $key => $value) {
                 if (fwrite($handle, "$key=$value\n") === false) {
-                    echo "Erreur d'écriture dans le fichier".$key.'/PKGBUILD'."\n";
+		    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/PKGBUILD")));
 
                     return -1;
                 }
@@ -211,7 +212,7 @@ class Generate extends Command
             /* Write the "cd" commands in the package() function */
             /* TODO Faire wildcard */
             if (fwrite($handle, "\npackage() {\n") === false) {
-                echo "Erreur d'écriture dans le fichier".$key.'/PKGBUILD'."\n";
+		    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/PKGBUILD")));
 
                 return -1;
             }
@@ -226,7 +227,7 @@ class Generate extends Command
                     $directory = implode('/', $explode_array);
                     /* Write the "mkdir" command in the package() function */
                     if (fwrite($handle, "\tmkdir -p \$pkgdir/$directory/\n") === false) {
-                        echo "Erreur d'écriture dans le fichier".$key.'/PKGBUILD'."\n";
+			    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/PKGBUILD")));
 
                         return -1;
                     }
@@ -240,13 +241,13 @@ class Generate extends Command
                     $dest = $key;
                 }
                 if (fwrite($handle, "\tcp --preserve ".ltrim($dest, '/')." \$pkgdir/".ltrim($key, '/')."\n") === false) {
-                    echo "Erreur d'écriture dans le fichier".$key.'/PKGBUILD'."\n";
+		    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/PKGBUILD")));
 
                     return -1;
                 }
             }
             if (fwrite($handle, "}\n") === false) {
-                echo "Erreur d'écriture dans le fichier".$key.'/PKGBUILD'."\n";
+		$this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/PKGBUILD")));
 
                 return -1;
             }
@@ -270,35 +271,38 @@ class Generate extends Command
             }
             $name = $key;
             $dirname = "$key-$struct[Version]-$arch";
-        /* Creates the directories for building package (always in the home directory) */
-        echo shell_exec('rpmdev-setuptree');
+	    /* Creates the directories for building package (always in the home directory) */
+	    echo shell_exec('rpmdev-setuptree');
 
             /* This variable will contains the list of dependencies (to run) */
-            $list_rundepend = $this->generate_list_dependencies($struct_package['RunTimeDepends']);
+	    $list_rundepend = $this->generate_list_dependencies($struct_package['RunTimeDepends']);
             $array_field = array('#Maintainer' => $struct['Maintainer'],
                     'Name' => $name,
                     'Version' => $struct['Version'],
-            'Release' => '1%{?dist}',
-            'Summary' => $name,
+		    'Release' => '1%{?dist}',
+		    'Summary' => $name,
                     'License' => "$struct[Copyright]",
-            'URL' => $struct['Homepage'],
-            #'BuildRoot' => getcwd()."/$dirname/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)",
-            'BuildRequires' => $list_buildepend,
-            'Requires' => $list_rundepend,
-        );
-            /* Create and open the file "control" (in write mode) */
+		    'URL' => $struct['Homepage'],
+		    'Requires' => $list_rundepend,
+	    );
+	    /* The RPM packager doesn't want void fields (else error) */
+	    if (strlen($list_buildepend) > 0) {
+		$array_field['BuildRequires'] = $list_buildepend ;
+	    }
+
+            /* Create and open the file "p.spec" (in write mode) */
             $handle = fopen("$_SERVER[HOME]/rpmbuild/SPECS/p.spec", 'w');
-            /* For each field that will contains the file "control" */
+            /* For each field that will contains the file "p.spec" */
             foreach ($array_field as $key => $value) {
                 if (fwrite($handle, "$key: $value\n") === false) {
-                    echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+		    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$_SERVER[HOME]rpmbuild/SPECS/p.spec")));
 
                     return -1;
                 }
             }
         /* Write the description */
         if (fwrite($handle, "\n%description\n$struct[Summary]\n") === false) {
-            echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+		$this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$_SERVER[HOME]rpmbuild/SPECS/p.spec")));
 
             return -1;
         }
@@ -322,36 +326,27 @@ class Generate extends Command
             /* To come back in usual directory if a "cd" command was present in pre-build commands */
             chdir($pwd);
 
-        /* Write the "cd" commands in the package() function */
+        /* Write the %install section */
             /* TODO Faire wildcard */
-            if (fwrite($handle, "\n%install\n") === false) {
-                echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+            if (fwrite($handle, "\n%install\n\trm -rf %{buildroot}\n") === false) {
+		    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$_SERVER[HOME]rpmbuild/SPECS/p.spec")));
 
                 return -1;
             }
         /* The file section uses macros to include files */
         $spec_files = array(
-            array('/usr/bin' => 'bindir'),
-            array('/usr/share' => 'datadir'),
-            array('/usr/share/doc' => 'defaultdocdir'),
-            array('/usr/share/man' => 'mandir'),
-            array('/usr/include' => 'includedir'),
-            array('/usr/lib' => 'libdir'),
-            array('/usr/sbin' => 'sbindir'),
-            array('/var' => 'localstatedir'),
-            array('/etc' => 'sysconfdir'), );
+            array('/usr/bin' => 'bin'),
+            array('/usr/share' => 'data'),
+            array('/usr/share/doc' => 'defaultdoc'),
+            array('/usr/share/man' => 'man'),
+            array('/usr/include' => 'include'),
+            array('/usr/lib' => 'lib'),
+            array('/usr/sbin' => 'sbin'),
+            array('/var' => 'localstate'),
+            array('/etc' => 'sysconf'), );
         /* List of files to include */
         $spec_files_add = array();
 
-            #"bindir" => "/usr/bin",
-            #"datadir" => "/usr/share",
-            #"defaultdocdir" => "/usr/share/doc",
-            #"includedir" => "/usr/include",
-            #"libdir" => "/usr/lib",
-            #"localstatedir" => "/var",
-            #"mandir" => "/usr/share/man",
-            #"sbindir" => "/usr/sbin",
-            #"sysconfdir" => "/etc");
             foreach ($struct_package['Files'] as $key => $value) {
                 /* The destination file will be in a sub-directory */
                 if (strrpos($key, '/') !== false) {
@@ -367,16 +362,16 @@ class Generate extends Command
                         if (substr("/$directory", 0, strlen($val)) == $val) {
                             $path = substr("/$directory", strlen($val));
                             if (strlen($path) == 0) {
-                                $spec_files_add[] = '%{_'.$tab[$val].'}/*';
+                                $spec_files_add[] = '%{_'.$tab[$val].'dir}/*';
                             } else {
-                                $spec_files_add[] = '%{_'.$tab[$val].'}'.$path.'/*';
+                                $spec_files_add[] = '%{_'.$tab[$val].'dir}'.$path.'/*';
                             }
                         }
                     }
 
-                    /* Write the "mkdir" command in the package() function */
+                    /* Write the "mkdir" command in the %install  section */
                     if (fwrite($handle, "\tmkdir -p \$RPM_BUILD_ROOT/$directory/\n") === false) {
-                        echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+			    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$_SERVER[HOME]rpmbuild/SPECS/p.spec")));
 
                         return -1;
                     }
@@ -390,29 +385,48 @@ class Generate extends Command
                     $dest = $key;
                 }
                 if (fwrite($handle, "\tcp --preserve ".ltrim($dest, '/')." \$RPM_BUILD_ROOT/".ltrim($key, '/')."\n") === false) {
-                    echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+			$this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$_SERVER[HOME]rpmbuild/SPECS/p.spec")));
 
                     return -1;
                 }
             }
             /* Move the files in the src/ directory of the package directory */
-        $this->move_files("$_SERVER[HOME]/rpmbuild/BUILD/", $struct_package['Files']);
+	    $this->move_files("$_SERVER[HOME]/rpmbuild/BUILD/", $struct_package['Files']);
 
             if (fwrite($handle, "\n%files\n") === false) {
-                echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+		    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$_SERVER[HOME]rpmbuild/SPECS/p.spec")));
 
                 return -1;
             }
             foreach ($spec_files_add as $value) {
                 if (fwrite($handle, "$value\n") === false) {
-                    echo "Erreur d'écriture dans le fichier $_SERVER[HOME]/rpmbuild/SPECS/p.spec\n";
+		    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$_SERVER[HOME]rpmbuild/SPECS/p.spec")));
 
                     return -1;
                 }
+	    }
+
+            /* If there are post-build commands */
+            if (!empty($struct_package['AfterBuild'])) {
+		    /* Write the %post section */
+		    if (fwrite($handle, "\n%post\n") === false) {
+			    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$_SERVER[HOME]rpmbuild/SPECS/p.spec")));
+
+			    return -1;
+		    }
+		    /* Write each command */
+		    foreach ($struct_package['AfterBuild'] as $key => $value) {
+			    if (fwrite($handle, "\t$value[Common]\n") === false) {
+				    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$_SERVER[HOME]rpmbuild/SPECS/p.spec")));
+
+				    return -1;
+			    }
+		    }
             }
-        /* Launch the creation of the package */
-        shell_exec('rpmbuild -ba ~/rpmbuild/SPECS/p.spec');
-            fclose($handle);
+
+	    /* Launch the creation of the package */
+	    echo shell_exec('rpmbuild -ba ~/rpmbuild/SPECS/p.spec');
+	    fclose($handle);
         }
     }
     /* Optionnal argument (output file, which will be parsed) */
@@ -447,7 +461,7 @@ class Generate extends Command
                 $directory = implode('/', $explode_array);
         /* Create recursively the directories */
                 if (!mkdir($dest_directory.'/'.$directory.'/', 0777, true) && !is_dir($dest_directory.'/'.$directory.'/')) {
-                    echo("Echec lors de la création des répertoires...\n");
+		    $this->logger->error($this->getApplication()->translator->trans('generate.mkdir', array('%dir%' => $dest_directory.'/'.$directory.'/')));
 
                     return -1;
                 }
@@ -457,14 +471,14 @@ class Generate extends Command
                 $explode_array = explode('/', ltrim($value, '/'));
                 /* Copy the file in the directory package */
                 if (!copy($value, $dest_directory.$key.$explode_array[count($explode_array) - 1])) {
-                    echo "La copie $value du fichier a échouée\n";
+			$this->logger->error($this->getApplication()->translator->trans('generate.copy', array('%src%' => $value, '%dst%' => $dest_directory.$key.$explode_array[count($explode_array) - 1])));
 
                     return -1;
                 }
             } else {
                 /* Copy the file in the directory package */
                 if (!copy($value, $dest_directory.$key)) {
-                    echo "La copie $value du fichier a échouée\n";
+			$this->logger->error($this->getApplication()->translator->trans('generate.copy', array('%src%' => $value, '%dst%' => $dest_directory.$key.$explode_array[count($explode_array) - 1])));
 
                     return -1;
                 }
@@ -491,7 +505,7 @@ class Generate extends Command
     {
         /* is_dir() is here to controls if the directory existed */
         if (!mkdir($name) && !is_dir($name)) {
-            die('Echec lors de la création des répertoires...');
+		$this->logger->error($this->getApplication()->translator->trans('generate.mkdir', array('%dir%' => $name)));
         }
     }
 }
