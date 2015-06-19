@@ -17,6 +17,8 @@ Authors:
       - corentin <corentin@gmail.com>
 
 BuildDepends:
+        Compiler1:
+                - TCP
 
 Packages:
         Paquito:
@@ -26,6 +28,8 @@ Packages:
                 RunTimeDepends:
                         RunTime1:
                                 - php
+                                - Debian:
+                                      All: php5
                 BeforeBuild:
                         Command1:
                                 - cd Paquito-src/

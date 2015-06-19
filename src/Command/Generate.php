@@ -73,10 +73,11 @@ class Generate extends Command
         return -1;
     }
     /* Get the architecture of the current machine */
-    /* TODO La fonction posix_name() ne fonctionnera pas sous Archlinux si l'extension de PHP "posix" (extension=posix.so) est commentée dans le fichier /etc/php/php.ini
+    /* TODO La fonction posix_name() ne fonctionnera pas sous Archlinux si l'extension de PHP "posix"
+     * (extension=posix.so) est commentée dans le fichier /etc/php/php.ini
      * Sous CentOS, il faut télécharger le paquet php-process pour utiliser les fonctions POSIX */
     $arch = posix_uname();
-        $arch = $arch['machine'];
+        $arch['machine'] = $arch['machine'];
     /* This variable will contains the list of dependencies (to build) */
     $list_buildepend = $this->generate_list_dependencies($struct['BuildDepends']);
 #	/* Get all build dependencies */
@@ -113,7 +114,8 @@ class Generate extends Command
                     'Section' => 'unknown',
                     'Priority' => 'optional',
                     'Maintainer' => $struct['Maintainer'],
-                    'Architecture' => $arch,
+		    'Architecture' => $arch,
+		    #'Build-Depends' => $list_buildepend,
                     'Depends' => $list_rundepend,
                     'Homepage' => $struct['Homepage'],
                     'Description' => $struct['Summary']."\n ".$struct['Description'], );

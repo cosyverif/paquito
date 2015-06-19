@@ -67,7 +67,7 @@ class Check extends Command
         if (count($struct) != 10) {
             $logger->error($this->getApplication()->translator->trans('check.number'));
 
-            return -1;
+            exit(-1);
         }
 
         /* Recherche parmi les clés de premier niveau connues celles qui n'apparaissent pas dans la structure */
@@ -76,7 +76,7 @@ class Check extends Command
             if (!array_key_exists($value, $struct)) {
                 $logger->error($this->getApplication()->translator->trans('check.field', array('%value%' => $value)));
 
-                return -1;
+                exit(-1);
             }
             if ($value == 'BuildDepends') {
                 /* "BuildDepends" contient quelque chose */
@@ -88,7 +88,7 @@ class Check extends Command
                     if (!is_array($Depends)) {
                         $logger->error($this->getApplication()->translator->trans('check.tab_compiler'));
 
-                        return -1;
+                        exit(-1);
                     }
                     $this->check_command_dependency($Depends, $logger);
                 }
@@ -98,7 +98,7 @@ class Check extends Command
                 if (empty($struct[$value])) {
                     $logger->error($this->getApplication()->translator->trans('check.void', array('%key%' => $value)));
 
-                    return -1;
+                    exit(-1);
                 } else {
                     /* Stocke la structure contenant l'ensemble des paquets */
                     $Packages = $struct[$value];
@@ -106,7 +106,7 @@ class Check extends Command
                     if (!is_array($Packages)) {
                         $logger->error($this->getApplication()->translator->trans('check.tab_field', array('%key%' => 'Packages')));
 
-                        return -1;
+                        exit(-1);
                     }
                     /* Pour chaque paquet */
                     foreach ($Packages as $key => $val) {
@@ -114,13 +114,13 @@ class Check extends Command
                         if (empty($val)) {
                             $logger->error($this->getApplication()->translator->trans('check.void', array('%key%' => $key)));
 
-                            return -1;
+                            exit(-1);
                         }
                         /* La structure du paquet courant n'est pas un tableau */
                         if (!is_array($val)) {
                             $logger->error($this->getApplication()->translator->trans('check.tab_field', array('%key%' => $key)));
 
-                            return -1;
+                            exit(-1);
                         }
                         /* Stocke les champs du paquet courant */
                         $champs = $val;
@@ -131,45 +131,45 @@ class Check extends Command
                                 if (empty($val)) {
                                     $logger->error($this->getApplication()->translator->trans('check.void', array('%key%' => $key)));
 
-                                    return -1;
+                                    exit(-1);
                                 }
                                 /* Le type n'est pas connu */
                                 if (!in_array($val, $this->typePackage)) {
                                     $logger->error($this->getApplication()->translator->trans('check.package', array('%val%' => $val)));
 
-                                    return -1;
+                                    exit(-1);
                                 }
                             } elseif ($key == 'Files') {
                                 /* Aucun fichier n'est donné pour le paquet courant */
                                 if (empty($val)) {
                                     $logger->error($this->getApplication()->translator->trans('check.void', array('%key%' => $key)));
 
-                                    return -1;
+                                    exit(-1);
                                 }
                                 /* Les fichiers ne sont pas représentés sous forme d'un fichier */
                                 if (!is_array($val)) {
                                     $logger->error($this->getApplication()->translator->trans('check.tab_field', array('%key%' => $key)));
 
-                                    return -1;
+                                    exit(-1);
                                 }
                             }
                             /* Le champ courant est "RunTimeDepends", "BeforeBuild" ou "AfterBuild" */
                             if ($key == 'RunTimeDepends' || $key == 'BeforeBuild' || $key == 'AfterBuild') {
                                 /* "BuildDepends" contient quelque chose */
-                    if (!empty($val)) {
-                        /* Le champ courant ne contient pas un tableau */
-                        if (!is_array($val)) {
-                            $logger->error($this->getApplication()->translator->trans('check.tab_field', array('%key%' => $key)));
+				    if (!empty($val)) {
+					    /* Le champ courant ne contient pas un tableau */
+					    if (!is_array($val)) {
+						    $logger->error($this->getApplication()->translator->trans('check.tab_field', array('%key%' => $key)));
 
-                            return -1;
-                        }
-                        /* Stocke le contenu du champ actuel */
-                        //$Table = $val;
-                        $this->check_command_dependency($val, $logger);
-                    }
-                            }
-                        }
-                    }
+						    exit(-1);
+					    }
+					    /* Stocke le contenu du champ actuel */
+					    //$Table = $val;
+					    $this->check_command_dependency($val, $logger);
+				    }
+			    }
+			}
+		    }
                 }
             }
         }
@@ -199,13 +199,13 @@ class Check extends Command
             if (empty($value)) {
                 $logger->error($this->getApplication()->translator->trans('check.void', array('%key%' => $key)));
 
-                return -1;
+                exit(-1);
             }
             /* The content of the current "compiler"... is not an array */
             if (!is_array($value)) {
                 $logger->error($this->getApplication()->translator->trans('check.tab_depends', array('%key%' => $key)));
 
-                return -1;
+                exit(-1);
             }
             /* Store the name of the current "compiler"... */
             $cd_name = $key;
@@ -223,7 +223,7 @@ class Check extends Command
                         if (!in_array($key, $this->dist)) {
                             $logger->error($this->getApplication()->translator->trans('check.dist', array('%key%' => $key)));
 
-                            return -1;
+                            exit(-1);
                         }
                         $distribution = $key;
                         /* Store the structure of the current distribution */
@@ -232,13 +232,13 @@ class Check extends Command
                         if (empty($version)) {
                             $logger->error($this->getApplication()->translator->trans('check.content_field', array('%key%' => $key, '%field_name%' => 'All')));
 
-                            return -1;
+                            exit(-1);
                         }
                         /* The content of the current distribution is not an array */
                         if (!is_array($version)) {
                             $logger->error($this->getApplication()->translator->trans('check.tab_field', array('%key%' => $key)));
 
-                            return -1;
+                            exit(-1);
                         }
                         /* For each version of the current distribution */
             foreach ($version as $key => $val) {
@@ -246,12 +246,12 @@ class Check extends Command
                 /* IMPORTANT 0 is the ID of Debian */
                 $id_dist = 0;
                             /* There is only one key (which has to "All", so all versions of the current distribution have the same name of dependency) */
-                            if (count($version) == 1) {
+		if (count($version) == 1) {
                                 /* The key is not "All" */
                                 if ($key != 'All') {
                                     $logger->error($this->getApplication()->translator->trans('check.name_field', array('%field_name%' => 'All', '%key' => $key)));
 
-                                    return -1;
+                                    exit(-1);
                                 }
                             }
 
@@ -263,21 +263,21 @@ class Check extends Command
                 if (!in_array($key, $this->versions[$id_dist])) {
                     $logger->error($this->getApplication()->translator->trans('check.version', array('%key%' => $key)));
 
-                    return -1;
+                    exit(-1);
                 }
 
                             /* The current version doesn't contain any name of dependency */
                             if (empty($val)) {
                                 $logger->error($this->getApplication()->translator->trans('check.void', array('%key%' => $key)));
 
-                                return -1;
+                                exit(-1);
                             }
             }
                     }
                 } elseif (empty($value)) {
                     $logger->error($this->getApplication()->translator->trans('check.common_empty', array('%name%' => $cd_name)));
 
-                    return -1;
+                    exit(-1);
                 }
             }
         }
