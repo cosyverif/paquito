@@ -1,7 +1,8 @@
 check:
         number: "Le nombre d'éléments du fichier de configuration est incorrect"
         field: "Le champ %value% n'existe pas"
-        tab_compiler: "Le contenu doit être sous forme d'un tableau de compilers"
+        tab_compiler: "Le contenu du champ BuildDepends doit être sous forme d'un tableau de compilers"
+        writing_compiler: "Le nom du champ/compiler %field% n'est pas correctement formulé"
         void: "Le champ %key% est vide"
         tab_depends: "Le contenu du compiler %key% doit être sous forme d'un tableau de dépendances"
         dist: "Erreur dans le nom de la distribution (%key%)"

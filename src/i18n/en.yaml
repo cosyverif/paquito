@@ -1,7 +1,8 @@
 check:
         number: "The number of elements of the configuration file is incorrect"
-        field: "The field %value% don't exists"
-        tab_compiler: "The content has to be like a array of compilers"
+        field: "The field %value% don't exist"
+        tab_compiler: "The content of the BuildDepends field has to be like a array of compilers"
+        writing_compiler: "The name of the %field% compiler/field isn't correctly writen"
         void: "The field %key% is empty"
         tab_depends: "The content of the compiler %key% has to be like a dependencies array"
         dist: "Error in the name of the distribution (%key%)"
@@ -16,7 +17,7 @@ generate:
         copy: "Copy of %src% to %dst% failed"
         mkdir: "Creation of the directory %dir% failed"
 parse:
-        exist: "The element %filename% don't exists or is not a regular file"
+        exist: "The element %filename% don't exist or is not a regular file"
         right: "The file %filename% can't to be read"
 prune:
         exist: "Unknown distribution"

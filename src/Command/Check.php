@@ -89,7 +89,17 @@ class Check extends Command
                         $logger->error($this->getApplication()->translator->trans('check.tab_compiler'));
 
                         exit(-1);
-                    }
+		    }
+		/* Foreach "Compiler" keyword */
+		    foreach($Depends as $key => $value) {
+			    if (preg_match('/^Compiler([1-9][0-9]*)$/', $key) == 0) {
+			    //if (ereg("^Compiler([1-9][0-9]*)$", $key)) {
+			    //if (substr($key, 0, 8) != "Compiler") {
+				    $logger->error($this->getApplication()->translator->trans('check.writing_compiler', array('%field%' => $key)));
+
+				    exit(-1);
+			    }
+		    }
                     $this->check_command_dependency($Depends, $logger);
                 }
                 /* Le champ de premier niveau courant est "Packages" */

@@ -161,13 +161,16 @@ class Generate extends Command
             /* TODO Adapter pour les librairies et les autres types */
             if ($value['Type'] != 'binary') {
                 $arch = 'all';
-            }
-            $name = $key;
+	    } else {
+		    $arch = $arch['machine'];
+	    }
+
+	    $name = $key;
             $dirname = $key.'-'.$struct['Version'].'-'.$arch;
             /* Create the directory of the package */
-        $this->_mkdir($dirname);
+	    $this->_mkdir($dirname);
             /* Create the directory "src/" (which contains the sources) */
-        $this->_mkdir($dirname.'/src/');
+	    $this->_mkdir($dirname.'/src/');
             /* Translation to Archlinux syntax */
             $list_buildepend = "'".str_replace(' ', "'", $list_buildepend)."'";
             /* This variable will contains the list of dependencies (to run) */
@@ -181,7 +184,8 @@ class Generate extends Command
                     'makedepends' => "($list_buildepend)",
                     'url' => $struct['Homepage'],
                     'license' => "('$struct[Copyright]')",
-                    'pkgdesc' => "'$struct[Summary]'", );
+		    'pkgdesc' => "'$struct[Summary]'",
+		    'install' => "('$name.install')", );
             /* Create and open the file "control" (in write mode) */
             $handle = fopen($dirname.'/PKGBUILD', 'w');
             /* For each field that will contains the file "control" */
@@ -252,7 +256,33 @@ class Generate extends Command
 		$this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/PKGBUILD")));
 
                 return -1;
+	    }
+
+	    $handle_script = fopen("$dirname/$name.install", 'w');
+            /* If there are post-build commands */
+            if (!empty($struct_package['AfterBuild'])) {
+		    /* Write the post-installation section */
+		    if (fwrite($handle_script, "post_install() {\n") === false) {
+			    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/$name.install")));
+
+			    return -1;
+		    }
+		    /* Write each command */
+		    foreach ($struct_package['AfterBuild'] as $key => $value) {
+			    if (fwrite($handle_script, "\t$value[Common]\n") === false) {
+				    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/$name.install")));
+
+				    return -1;
+			    }
+		    }
+		    /* Close the post-installation section */
+		    if (fwrite($handle_script, "}\n") === false) {
+			    $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/$name.install")));
+
+			    return -1;
+		    }
             }
+
             /* Move the files in the src/ directory of the package directory */
             $this->move_files($dirname.'/src/', $struct_package['Files']);
             /* Change owner of the package directory (to allow the creation of the package) */
