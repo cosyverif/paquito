@@ -17,14 +17,13 @@ Authors:
       - corentin <corentin@gmail.com>
 
 BuildDepends:
-        Compiler1:
-                - TCP
 
 Packages:
         Paquito:
                 Type: binary
                 Files:
-                        /usr/bin/: Paquito-src/paquito
+                        /usr/share/paquito.phar: Paquito-src/paquito
+                        /usr/bin/paquito: Paquito-src/paquito.sh 
                 RunTimeDepends:
                         RunTime1:
                                 - php
