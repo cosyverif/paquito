@@ -10,7 +10,8 @@
     },
     "require-dev": {
         "fabpot/php-cs-fixer": "*",
-        "kherge/box": "*"
+        "kherge/box": "*",
+	"phpunit/phpunit": "4.7.*"
     },
     "autoload": {
         "psr-4": {
