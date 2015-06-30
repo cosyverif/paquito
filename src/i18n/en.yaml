@@ -6,6 +6,7 @@ check:
         void: "The field %key% is empty"
         bit: "The permissions of the file %file% own a special bit (%permissions%)"
 generate:
+        chdir: "Failed to change directory (%dst%)"
         copy: "Copy of %src% to %dst% failed"
         copyfile: "Copy of %src% to %dst% faile (his name is already taken by a directory)"
         copyexist: "The file %dst% already existed ans has been overwritten by the copy of %src%"

@@ -286,7 +286,11 @@ class Generate extends Command
                 /* "cd" commands don't work (each shell_exec() has its owns
                  * shell), so it has to translates in chdir() functions */
                 if (preg_match('/cd (.+)/', $value, $matches)) {
-                    chdir($matches[1]);
+						if (!chdir($matches[1])) {
+								$this->logger->error($this->getApplication()->translator->trans('generate.chdir', array('%dst%' => $matches[1])));
+
+								exit(-1);
+						}
                 } else {
                     echo shell_exec($value);
                 }
@@ -385,7 +389,11 @@ class Generate extends Command
             foreach ($struct_package['Build']['Commands'] as $key => $value) {
                 /* "cd" commands don't work (each shell_exec() has its owns shell), so it has to translates in chdir() functions */
                 if (preg_match('/cd (.+)/', $value, $matches)) {
-                    chdir($matches[1]);
+						if (!chdir($matches[1])) {
+								$this->logger->error($this->getApplication()->translator->trans('generate.chdir', array('%dst%' => $matches[1])));
+
+								exit(-1);
+						}
                 } else {
                     echo shell_exec($value);
                 }
@@ -523,7 +531,11 @@ class Generate extends Command
             foreach ($struct_package['Build']['Commands'] as $key => $value) {
                 /* "cd" commands don't work (each shell_exec() has its owns shell), so it has to translates in chdir() functions */
                 if (preg_match('/cd (.+)/', $value, $matches)) {
-                    chdir($matches[1]);
+						if (!chdir($matches[1])) {
+								$this->logger->error($this->getApplication()->translator->trans('generate.chdir', array('%dst%' => $matches[1])));
+
+								exit(-1);
+						}
                 } else {
                     echo shell_exec($value);
                 }
