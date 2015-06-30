@@ -63,6 +63,9 @@ class Check extends Command
 					$this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%field%' => 'Permissions', '%value%' => $f_value['Permissions'])));
 
 					exit(-1);
+				} else if (preg_match('/^[0-7]{4}$/', $f_value['Permissions'])) { /* If the permissions mask of a file owns a special bit, warns the user */
+					$this->logger->warning($this->getApplication()->translator->trans('check.bit', array('%file%' => $f_key, '%permissions%' => $f_value['Permissions'])));
+
 				}
 			}
 		}

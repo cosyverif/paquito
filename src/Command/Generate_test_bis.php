@@ -86,9 +86,9 @@ class Generate_test_bis extends Command
            case 'Debian':
                 $this->make_debian($key, $value);
 	        break;
-            case 'Archlinux':
+           /* case 'Archlinux':
                 $this->make_archlinux($key, $value);
-                break;
+				break;*/
             /*case 'Centos':
                 $this->make_centos($key, $value);
 		break;*/
@@ -231,7 +231,7 @@ class Generate_test_bis extends Command
         $this->_fwrite($handle, "\n", "$dirname/DEBIAN/control");
         fclose($handle);
 
-
+ 			/* on execute les tests par defaut */
 
 			if(!array_key_exists('Test',$struct_package)) {
 
@@ -240,29 +240,32 @@ class Generate_test_bis extends Command
 					 	$this->logger->error($this->getApplication()->translator->trans('generate.mkdir', array('%dir%' => $dirname.'/'.$directory.'/')));
 																                    return -1;
 					}
-					/* copier  les tests par defauts dans le répértoire src du répértoire du paquet */
+					/* copier  les tests par defauts dans le répértoire du paquet au niveau du repertoire usr/share/test */
 					copy("./src-test/installation.php","./".$dirname."/".$directory."/installation.php");
 					$handle_post = fopen("$dirname/DEBIAN/postinst", 'w');
 					$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/DEBIAN/postinst");
 					$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.php\n\n", "$dirname/DEBIAN/postinst");
 					$this->_fwrite($handle_post, "phpunit --tap /usr/share/test/installation.php\n\n", "$dirname/DEBIAN/postinst");
-
-
-
-
-				}
+			}
+		/* on execute en plus des tests par defaut les tests fournis par l'utilisateur */
 
 				else {
       
         /* Move the files specified in the configuration file and store the returned array of permissions (for post-installation) */
         $post_permissions = $this->move_files($dirname, $struct_package['Test']['Files']);
-
+		/* copier les tests par defaut dans leur répértoire de destination : usr/share/test */
+		$directory='usr/share/test';
+		copy("./src-test/installation.php","./".$dirname."/".$directory."/installation.php");
         /* If there are commands */
         if (!empty($struct_package['Test']['Commands'])) {
 
         }
 
-				$handle_post = fopen("$dirname/DEBIAN/postinst", 'w');
+		$handle_post = fopen("$dirname/DEBIAN/postinst", 'w');
+		/* commandes du test par defaut */
+		$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.php\n\n", "$dirname/DEBIAN/postinst");
+		$this->_fwrite($handle_post, "phpunit --tap /usr/share/test/installation.php\n\n", "$dirname/DEBIAN/postinst");
+
 				if (isset($struct_package['Test']['Commands'])) {
 					/* Write each command */
 					foreach ($struct_package['Test']['Commands'] as $key => $value) {

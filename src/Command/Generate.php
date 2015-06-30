@@ -126,31 +126,37 @@ class Generate extends Command
                 unset($explode_array[count($explode_array) - 1]);
                 /* Transform the array in a string */
                 $directory = implode('/', $explode_array);
-                /* Create recursively the directories */
-                if (!mkdir($dest_directory.'/'.$directory.'/', 0777, true) && !is_dir($dest_directory.'/'.$directory.'/')) {
-                    $this->logger->error($this->getApplication()->translator->trans('generate.mkdir', array('%dir%' => $dest_directory.'/'.$directory.'/')));
+                /* Create recursively the directories (if don't exist) */
+				if (!is_dir($dest_directory.'/'.$directory.'/')) {
+						if (!mkdir($dest_directory.'/'.$directory.'/', 0755, true)) {
+								$this->logger->error($this->getApplication()->translator->trans('generate.mkdir', array('%dir%' => $dest_directory.'/'.$directory.'/')));
 
-                    return -1;
-                }
+								exit -1;
+						}
+				} else {
+					$this->logger->warning($this->getApplication()->translator->trans('generate.direxist', array('%dir%' => $dest_directory.'/'.$directory.'/')));	
+				}
             }
             if (is_dir($dest_directory.$key)) {
                 /* Split the path in a array */
                 $explode_array = explode('/', ltrim($value['Source'], '/'));
 
                 /* Copy the file in the directory package */
-                if (!copy($value['Source'], $dest_directory.$key.$explode_array[count($explode_array) - 1])) {
-                    $this->logger->error($this->getApplication()->translator->trans('generate.copy', array('%src%' => $value['Source'], '%dst%' => $dest_directory.$key.$explode_array[count($explode_array) - 1])));
+				$this->_copy($value['Source'], $dest_directory.$key.'/'.$explode_array[count($explode_array) - 1]);
+                #if (!copy($value['Source'], $dest_directory.$key.$explode_array[count($explode_array) - 1])) {
+                #    $this->logger->error($this->getApplication()->translator->trans('generate.copy', array('%src%' => $value['Source'], '%dst%' => $dest_directory.$key.$explode_array[count($explode_array) - 1])));
 
-                    return -1;
-                }
+                 #   exit -1;
+                #}
                 $array_perm[$key.$explode_array[count($explode_array) - 1]] = $value['Permissions'];
             } else { /* If the moved file will have a new name (so there is a name at the end of the given path) */
                 /* Copy the file in the directory package */
-                if (!copy($value['Source'], $dest_directory.$key)) {
-                    $this->logger->error($this->getApplication()->translator->trans('generate.copy', array('%src%' => $value['Source'], '%dst%' => $dest_directory.$key)));
+				$this->_copy($value['Source'], $dest_directory.$key);
+			#	if (!copy($value['Source'], $dest_directory.$key)) { /* !!! */
+             #       $this->logger->error($this->getApplication()->translator->trans('generate.copy', array('%src%' => $value['Source'], '%dst%' => $dest_directory.$key)));
 
-                    return -1;
-                }
+              #      exit -1;
+              #  }
                 $array_perm[$key] = $value['Permissions'];
             }
         }
@@ -179,19 +185,48 @@ class Generate extends Command
             }
         }
         /* Delete superfluous element (space) */
-        #return $list = ltrim($list, ' ');
         return ltrim($list, ' ');
-    }
+	}
+		
+	/* This function is like copy() but with checking mecanims */
+    function _copy($source, $destination)
+	{
+			if (file_exists($destination)) {
+					if (is_dir($destination)) {
+							$this->logger->error($this->getApplication()->translator->trans('generate.copyfile', array('%src%' => $source, '%dst%' => $destination)));
 
-    /* This function is like mkdir() but checks also if this last fails */
+							exit(-1);
+					}
+					$this->logger->warning($this->getApplication()->translator->trans('generate.copyexist', array('%src%' => $source, '%dst%' => $destination)));	
+			}
+			if (!copy($source, $destination)) {
+                    $this->logger->error($this->getApplication()->translator->trans('generate.copy', array('%src%' => $source, '%dst%' => $destination)));
+
+                    exit -1;
+			}
+	}
+
+    /* This function is like mkdir() but with checking mecanims */
     protected function _mkdir($name)
     {
-        /* is_dir() is here to controls if the directory existed */
-        if (!mkdir($name) && !is_dir($name)) {
-            $this->logger->error($this->getApplication()->translator->trans('generate.mkdir', array('%dir%' => $name)));
+			/* If the directory would exist */
+			if(file_exists($name)) {
+					/* A file has already the name of the directory that we want create (on Linux, a directory is a file !)
+					 * Else, that means the directory is already created */
+					if (!is_dir($name)) {
+							$this->logger->error($this->getApplication()->translator->trans('generate.dirfile', array('%dir%' => $name)));
 
-            exit(-1);
-        }
+							exit(-1);
+					}
+					$this->logger->warning($this->getApplication()->translator->trans('generate.direxist', array('%dir%' => $name)));	
+			} else {
+					/* We have to create the directory */
+					if (!mkdir($name)) {
+							$this->logger->error($this->getApplication()->translator->trans('generate.mkdir', array('%dir%' => $name)));
+
+							exit(-1);
+					}
+			}
     }
 
     protected function _fwrite($fd, $str, $file)
