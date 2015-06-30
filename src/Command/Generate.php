@@ -492,10 +492,6 @@ class Generate extends Command
         /* Creates the directories for building package (always in the home directory) */
         echo shell_exec('rpmdev-setuptree');
 
-        /* This variable will contains the list of dependencies (to run) */
-        $list_rundepend = $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0);
-        /* This variable will contains the list of dependencies (to build) */
-        $list_buildepend = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
         $array_field = array(
             '#Maintainer' => $this->struct['Maintainer'],
             'Name' => $package_name,
@@ -505,12 +501,15 @@ class Generate extends Command
             'License' => $this->struct['Copyright'],
             'URL' => $this->struct['Homepage'],
             'Packager' => 'Paquito',
-            'Requires' => $list_rundepend,
         );
-        /* The RPM packager doesn't want void fields (else error) */
-        if (strlen($list_buildepend) > 0) {
-            $array_field['BuildRequires'] = $list_buildepend;
-        }
+	if (isset($struct_package['Build']['Dependencies'])) {
+		/* This variable will contains the list of dependencies (to build) */
+		$array_field['BuildRequires'] = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
+	}
+	if (isset($struct_package['Runtime']['Dependencies'])) {
+		/* This variable will contains the list of dependencies (to run) */
+		$array_field['Requires'] = $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0);
+	}
 
         /* Create and open the file "p.spec" (in write mode) */
         $handle = fopen("$_SERVER[HOME]/rpmbuild/SPECS/p.spec", 'w');
@@ -605,7 +604,7 @@ class Generate extends Command
         }
 
         /* If there are pre/post-install commands */
-        if (isset($struct_package['Install'])) {
+        if (isset($struct_package['Install']) || count($post_permissions)) {
 
             /* If there are pre-install commands */
             if (isset($struct_package['Install']['Pre'])) {
