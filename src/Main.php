@@ -12,8 +12,7 @@ use \Paquito\Command\Prune;
 use \Paquito\Command\Write;
 use \Paquito\Command\Normalize;
 use \Paquito\Command\Generate;
-#use \Paquito\Command\Generate_test;
-use \Paquito\Command\Generate_test_bis;
+use \Paquito\Command\Generate_test;
 
 
 // FIXME: erase when release
@@ -32,8 +31,7 @@ $application->add(new Prune());
 $application->add(new Write());
 $application->add(new Normalize());
 $application->add(new Generate());
-#$application->add(new Generate_test());
-$application->add(new Generate_test_bis());
+$application->add(new Generate_test());
 // Add i18n:
 // http://symfony.com/doc/master/components/translation/usage.html
 $application->translator = new Translator(\Locale::getDefault());
