@@ -586,17 +586,11 @@ protected function make_centos($package_name, $struct_package) {
 		$this->_fwrite($handle, "\tcp --preserve $directory/installation.php  \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 
 		
-		/* créer le repertoire /usr/share/test  dans le repertoire BUILD*/
-                if (!mkdir("$_SERVER[HOME]/rpmbuild/BUILD/$directory", 0777, true)) {
-                    $this->logger->error($this->getApplication()->translator->trans('generate.mkdir', array('%dir%' => "$_SERVER[HOME]/rpmbuild/BUILD/$directory")));
-
-                    return -1;
-                }
-
-	       /* copier  les tests par defauts dans le répértoire de destination */
-		copy("./src-test/installation.php","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.php");
-		/* Move the tests files user */
+		      	/* Move the tests files user */
 		$post_permissions = $this->move_files("$_SERVER[HOME]/rpmbuild/BUILD/", $struct_package['Test']['Files']);
+	       	/* copier  les tests par defauts dans le répértoire de destination */
+		copy("./src-test/installation.php","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.php");
+
 	       
 		$this->_fwrite($handle, "\n%files\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 		foreach ($spec_files_add as $value) {
@@ -606,21 +600,23 @@ protected function make_centos($package_name, $struct_package) {
                  /* test Command */
 		$this->_fwrite($handle, "\n%post\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 		/* commandes par defauts */
-		
+
+			
 		$this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.php\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
                 $this->_fwrite($handle, "\tphpunit --tap /usr/share/test/installation.php\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 		/*commandes utilisateur*/
+		
+		if (count($post_permissions)) {
+                    foreach ($post_permissions as $key => $value) {
+                        $this->_fwrite($handle, "\tchmod $value $key\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+                    }
+                }
 
                     foreach ($struct_package['Test']['Commands'] as $value) {
                         $this->_fwrite($handle, "\t$value\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
                     }
                 
-                if (count($post_permissions)) {
-                    foreach ($post_permissions as $key => $value) {
-                        $this->_fwrite($handle, "\tchmod $value $key\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-                    }
-                }
-	}
+               	}
         /* Launch the creation of the package */
         echo shell_exec('rpmbuild -ba ~/rpmbuild/SPECS/pTest.spec');
         fclose($handle);
