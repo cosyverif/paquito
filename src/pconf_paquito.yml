@@ -1,6 +1,6 @@
 Name: Paquito
 
-Version: 0.1
+Version: 0.2
 
 Homepage: https://www.paquito.fr
 
@@ -34,3 +34,5 @@ Packages:
                                 - cd Paquito-src/
                                 - bin/create-phar.sh
                                 - cd ..
+
+                        #base-devel : archlinux en a besoin pour Makepkg

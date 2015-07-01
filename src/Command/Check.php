@@ -83,7 +83,6 @@ class Check extends Command
         $fieldmin = count($array_min);
         foreach ($struct as $key => $value) {
             if (!in_array($key, $array_comparer)) {
-							echo "$fieldbase\n";
                 $this->logger->error($this->getApplication()->translator->trans('check.field', array('%value%' => $key)));
 
                 exit(-1);
