@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -x
+set -e
 
 # Increase system limits for opened files:
 ulimit -Sn 2048
@@ -11,7 +11,9 @@ php='php -c php.ini'
 # Download composer if it does not exist:
 command -v "$php composer.phar" || {
   cd bin
-  curl -S https://getcomposer.org/installer | php -d detect_unicode=0 -c ../php.ini
+ for $i in 1 2 ; do
+       curl -S https://getcomposer.org/installer | php -d detect_unicode=0 -c ../php.ini
+  done
   cd ..
 }
 # Install tools:
