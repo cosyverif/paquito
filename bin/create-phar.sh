@@ -30,8 +30,8 @@ else
 fi
 
 # Check and fix source:
-$php ~/.composer/vendor/bin/php-cs-fixer 
-  fix --verbose --diff --level=symfony src/
+#$php ~/.composer/vendor/bin/php-cs-fixer 
+#  fix --verbose --diff --level=symfony src/
 
 # Build PHAR archive:
 $php -dphar.readonly=0 ~/.composer/vendor/bin/box build
