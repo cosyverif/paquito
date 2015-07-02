@@ -11,7 +11,7 @@ php='php -c php.ini'
 # Download composer if it does not exist:
 command -v "$php composer.phar" || {
   cd bin
- for $i in 1 2 ; do
+ for i in 1 2 ; do
        curl -S https://getcomposer.org/installer | php -d detect_unicode=0 -c ../php.ini
   done
   cd ..
