@@ -20,28 +20,21 @@ $php bin/composer.phar global require kherge/box
 
 # Clean generated files:
 rm -rf ~/paquito
-echo "Retour rm: $?"
 
 # Install dependencies:
 if [ -f composer.lock ]
 then
   $php bin/composer.phar update --no-dev
-echo "Retour update: $?"
 else
   $php bin/composer.phar install --no-dev
-echo "Retour install: $?"
 fi
 
 # Check and fix source:
-#$php ~/.composer/vendor/bin/php-cs-fixer \
-#  fix --verbose --diff --level=symfony src/
-#echo "Retour fix: $?"
+$php ~/.composer/vendor/bin/php-cs-fixer 
+  fix --verbose --diff --level=symfony src/
 
 # Build PHAR archive:
-for i in 1 2 ; do
-	$php -dphar.readonly=0 ~/.composer/vendor/bin/box build
-	echo "Retour PHAR: $?"
-done
+$php -dphar.readonly=0 ~/.composer/vendor/bin/box build
 
 mv paquito.phar paquito
 echo "paquito has been created."
