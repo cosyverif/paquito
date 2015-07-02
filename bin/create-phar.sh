@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e
+set -x
 
 # Increase system limits for opened files:
 ulimit -Sn 2048
