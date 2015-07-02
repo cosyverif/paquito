@@ -468,13 +468,13 @@ class Generate extends Command
         }
 
         /* Change owner of the package directory (to allow the creation of the package) */
-        #system("/bin/chown -R nobody $dirname");
+        system("/bin/chown -R nobody $dirname");
         /* Move in the package directory */
         chdir($dirname);
         /* Launch the creation of the package */
         /* IMPORTANT The makepkg command is launched with nobody user because since February 2015, root user cannot use this command */
-        #echo shell_exec('sudo -u nobody makepkg');
-        echo shell_exec('makepkg');
+        echo shell_exec('sudo -u nobody makepkg');
+        #echo shell_exec('makepkg');
         fclose($handle);
         /* To come back in usual directory (to write the output file in the right place */
         chdir($pwd);
