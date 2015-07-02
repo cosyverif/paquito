@@ -11,9 +11,7 @@ php='php -c php.ini'
 # Download composer if it does not exist:
 command -v "$php composer.phar" || {
   cd bin
- for i in 1 2 ; do
-       curl -S https://getcomposer.org/installer | php -d detect_unicode=0 -c ../php.ini
-  done
+  curl -S https://getcomposer.org/installer | php -d detect_unicode=0 -c ../php.ini
   cd ..
 }
 # Install tools:
@@ -35,9 +33,13 @@ fi
 # Check and fix source:
 $php ~/.composer/vendor/bin/php-cs-fixer \
   fix --verbose --diff --level=symfony src/
+echo "Retour fix: $?"
 
 # Build PHAR archive:
-$php -dphar.readonly=0 ~/.composer/vendor/bin/box build
+for i in 1 2 ; do
+	$php -dphar.readonly=0 ~/.composer/vendor/bin/box build
+	echo "Retour PHAR: $?"
+done
 
 mv paquito.phar paquito
 echo "paquito has been created."
