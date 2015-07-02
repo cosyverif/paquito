@@ -30,7 +30,7 @@ else
 fi
 
 # Check and fix source:
-#$php ~/.composer/vendor/bin/php-cs-fixer 
+#$php ~/.composer/vendor/bin/php-cs-fixer \ 
 #  fix --verbose --diff --level=symfony src/
 
 # Build PHAR archive:
