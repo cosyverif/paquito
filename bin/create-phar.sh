@@ -20,14 +20,16 @@ $php bin/composer.phar global require kherge/box
 
 # Clean generated files:
 rm -rf ~/paquito
+echo "Retour rm: $?"
 
-pwd
 # Install dependencies:
 if [ -f composer.lock ]
 then
   $php bin/composer.phar update --no-dev
+echo "Retour update: $?"
 else
   $php bin/composer.phar install --no-dev
+echo "Retour install: $?"
 fi
 
 # Check and fix source:
