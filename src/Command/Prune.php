@@ -58,29 +58,35 @@ class Prune extends Command
     /* The file /etc/os-release contains the informations about the distribution (where is executed this program)*/
     /* TODO Sous Archlinux, la fonction parse_ini_files() ne marchera pas si la variable "open_basedir" du fichier /etc/php/php.ini
      * n'inclue pas le chemin /usr/lib/ (qui est la vraie localisation du fichier "os-release" */
-    $array_ini = parse_ini_file('/etc/os-release');
-    /* Get the name of the distribution */
-    $this->getApplication()->dist_name = ucfirst($array_ini['ID']);
-        switch ($this->getApplication()->dist_name) {
-    case 'Debian':
-        preg_match('/[a-z]+/', $array_ini['VERSION'], $match);
-        $this->getApplication()->dist_version = ucfirst($match[0]);
-            break;
-    case 'Arch':
-        /* TODO Install on Archlinux the package "filesystem" */
-            $this->getApplication()->dist_name = 'Archlinux';
-            break;
-        case 'Centos':
-        preg_match('/[0-9](\.[0-9])?/', $array_ini['VERSION'], $match);
-        $this->getApplication()->dist_version = $match[0];
-        if (strlen($this->getApplication()->dist_version) == 1) {
-            $this->getApplication()->dist_version = $this->getApplication()->dist_version.'.0';
-        }
-            break;
-        default:
-            $logger->error($this->getApplication()->translator->trans('prune.exist'));
+    if (is_file('/etc/os-release')) {
+	    $array_ini = parse_ini_file('/etc/os-release');
+	    /* Get the name of the distribution */
+	    $this->getApplication()->dist_name = ucfirst($array_ini['ID']);
+	    switch ($this->getApplication()->dist_name) {
+	    case 'Debian':
+		    preg_match('/[a-z]+/', $array_ini['VERSION'], $match);
+		    $this->getApplication()->dist_version = ucfirst($match[0]);
+		    break;
+	    case 'Arch':
+		    /* TODO Install on Archlinux the package "filesystem" */
+		    $this->getApplication()->dist_name = 'Archlinux';
+		    break;
+	    case 'Centos':
+		    preg_match('/[0-9](\.[0-9])?/', $array_ini['VERSION'], $match);
+		    $this->getApplication()->dist_version = $match[0];
+		    if (strlen($this->getApplication()->dist_version) == 1) {
+			    $this->getApplication()->dist_version = $this->getApplication()->dist_version.'.0';
+		    }
+		    break;
+	    default:
+		    $logger->error($this->getApplication()->translator->trans('prune.exist'));
 
-            return -1;
+		    return -1;
+	    }
+    } else {
+	    if (is_file('/etc/arch-release')) {
+		    $this->getApplication()->dist_name = 'Archlinux';
+	    }
     }
 
     /* Copy the initial structure of the configuration file. The new structure will be modified */
