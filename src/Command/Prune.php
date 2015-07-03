@@ -81,12 +81,21 @@ class Prune extends Command
 	    default:
 		    $logger->error($this->getApplication()->translator->trans('prune.exist'));
 
-		    return -1;
+		    exit(-1);
 	    }
     } else {
 	    if (is_file('/etc/arch-release')) {
 		    $this->getApplication()->dist_name = 'Archlinux';
-	    }
+	    } else if (is_file('/etc/centos-release')) {
+		    $this->getApplication()->dist_name = 'Centos';
+		    if (($version = file_get_contents('/etc/centos-release')) === FALSE) {
+			echo "erreur lecture fichier\n";
+			exit(-1);
+		    }
+		    preg_match('/[0-9](\.[0-9])?/', $array_ini['VERSION'], $match);
+		    $this->getApplication()->dist_version = $match[0];
+		    
+	    } 
     }
 
     /* Copy the initial structure of the configuration file. The new structure will be modified */
