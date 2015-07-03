@@ -15,7 +15,7 @@ command -v "$php composer.phar" || {
   cd ..
 }
 # Install tools:
-$php bin/composer.phar global require fabpot/php-cs-fixer
+# $php bin/composer.phar global require fabpot/php-cs-fixer
 $php bin/composer.phar global require kherge/box
 
 # Clean generated files:
