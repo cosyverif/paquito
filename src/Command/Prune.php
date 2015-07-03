@@ -92,7 +92,7 @@ class Prune extends Command
 			echo "erreur lecture fichier\n";
 			exit(-1);
 		    }
-		    preg_match('/[0-9](\.[0-9])?/', $array_ini['VERSION'], $match);
+		    preg_match('/[0-9](\.[0-9])?/', $version, $match);
 		    $this->getApplication()->dist_version = $match[0];
 		    
 	    } 
