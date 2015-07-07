@@ -64,6 +64,40 @@ class Normalize extends Command
 			}
 		}
 
+		protected function check_dependencies($struct,$package,$field,$depend,$tab) {
+
+
+				 /*je parcours la liste des dependances*/
+                        foreach ($tab as $key => $val) {
+                            /*champ contenant le nom de la dépendance*/
+                            $d = $key;
+                            /* la dependance est la méme pour toutes les ditributions*/
+                            if ($val == '*') {
+                                /*il faut normaliser */
+                                $this->newStruct['Packages'][$package][$field][$depend][$d] = array('Debian' => array('All' => $d),'Archlinux' => array('All' => $d),'Centos' => array('All' => $d));
+                            } else {
+
+                                /* tableau contenant les dépendances pour les différentes distributions*/
+                                $dist = $val;
+							 	/* regarder quelle distribution manque*/
+                                 foreach ($this->distribution as $val) {
+                                        if (!array_key_exists($val, $dist)) {
+                                            $this->newStruct['Packages'][$package][$field][$depend][$d][$val] = array('All' => $d);
+                                        }
+                                        /* la distribution existe*/
+										else {
+												/* regarder si la valeur du champ de la distribution n'est pas égale à none */
+										
+											if($struct['Packages'][$package][$field][$depend][$d][$val]!="<none>") {
+													$this->newStruct['Packages'][$package][$field][$depend][$d][$val] = $dist[$val];
+											}
+                                        }
+								 }
+							}
+
+						}
+		}
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         /* Get path and name of the input file */
@@ -114,8 +148,12 @@ class Normalize extends Command
 						/*appeler la fonction check_file */
 						$this->check_file($package,$test,$key,$val);
 					}
-					elseif($key=='Commands') { /* c'est le champ Commands il reste pareil */
-$this->newStruct['Packages'][$package][$test][$key]=$val;
+					elseif($key=='Commands') { 
+					/* c'est le champ Commands il reste pareil */
+							$this->newStruct['Packages'][$package][$test][$key]=$val;
+					}
+					else { /* champ dependencies*/
+							$this->check_dependencies($struct,$package,$test,$key,$val);
 					}
 				}
 			}
@@ -129,55 +167,34 @@ $this->newStruct['Packages'][$package][$test][$key]=$val;
                             /* variable contenant le champ Build ou le champ Runtime */
                 $build = $key;
                 /*variable contenant le contenu du champ Build ou du champ Runtime*/
-                $contenu = $val;
-                            foreach ($contenu as $cle => $val) {
-                                if ($cle == 'Dependencies') {
-                                    /*variable contenant les  champ cle et val*/
-                        $depend = $cle;
-                                    $tab = $val;
-                        /*je parcours la liste des dependances*/
-                        foreach ($tab as $key => $val) {
-                            /*champ contenant le nom de la dépendance*/
-                            $d = $key;
-                            /* la dependance est la méme pour toutes les ditributions*/
-                            if ($val == '*') {
-                                /*il faut normaliser */
-                                $this->newStruct['Packages'][$package][$build][$depend][$d] = array('Debian' => array('All' => $key),'Archlinux' => array('All' => $key),'Centos' => array('All' => $key));
-                            } else {
+				$contenu = $val;
 
-                                /* tableau contenat les dépendances pour les différentes distributions*/
-                                $dist = $val;
-                                /* si les dépendances sont déclarées pour toute le distribution la structure reste la méme*/
-                                if (count($dist) == 3) {
-                                    $this->newStruct['Package'][$package][$build][$depend][$d] = $dist;
-                                } else {
-
-                                    /* regarder quelle distribution manque*/
-                                    foreach ($this->distribution as $val) {
-                                        if (!array_key_exists($val, $dist)) {
-                                            $this->newStruct['Packages'][$package][$build][$depend][$d][$val] = array('All' => $d);
-                                        }
-                                        /* la distribution existe*/
-                                        else {
-                                            $this->newStruct['Packages'][$package][$build][$depend][$d][$val] = $dist[$val];
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                                } elseif ($cle == 'Commands') {
-                                    /* pas de normalisation la structure reste la méme */
-                        $this->newStruct['Packages'][$package][$build][$cle] = $val;
-                                }
-                            }
-                        }
-            }
-                }
-        } else {
+                foreach ($contenu as $cle => $val) {
+						
+						if ($cle == 'Dependencies') {
+                        /*variable contenant les  champ cle et val*/
+                         $depend = $cle;
+						 $tab = $val;
+						 $this->check_dependencies($struct,$package,$build,$depend,$tab);
+						
+						} elseif ($cle == 'Commands') {
+								/* pas de normalisation la structure reste la méme */
+								
+								$this->newStruct['Packages'][$package][$build][$cle] = $val;
+								}
+				}
+						}
+			}
+				}
+		}
+	
+		else {
             /* tout les autres champs restent pareil */
             $this->newStruct[$key] = $val;
         }
-		}
+	}
+
+	print_r($this->newStruct);
 
         $this->getApplication()->data = $this->newStruct;
     /* Optionnal argument (output file, which will be parsed) */

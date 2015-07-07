@@ -169,8 +169,8 @@ class Check extends Command
 						     * have versions of the distributions and "All") */
 						     /* if the distibution dont't have any dependencies */
 						     if(!is_array($v_value)) {
-						     	if($v_value != '<none>') {
-						     		 $this->logger->error($this->getApplication()->translator->trans('check.void', array('%value%' => $v_value)));
+						     	if($v_value != "<none>") {
+						     		 $this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%field%' => $v_key, '%value%' => $v_value)));
 						     		 exit(-1);
 						     		
 						     	}
@@ -197,7 +197,7 @@ class Check extends Command
             }
             /* ----- TEST ----- */
             if (isset($value['Test'])) {
-                $this->check_field('Test', $value['Test'], array('Files','Dependencies' 'Commands'), array());
+                $this->check_field('Test', $value['Test'], array('Files','Dependencies', 'Commands'), array());
 								if (isset($value['Test']['Files'])) {
 									/* For each test file */
 									$this->check_files($value['Test']['Files']);
