@@ -256,18 +256,26 @@ class Generate extends Command
         /* Create the directory "DEBIAN/" (which is required) */
         $this->_mkdir($dirname.'/DEBIAN');
 
-        /* This variable will contains the list of dependencies (to run) */
-        $list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0));
         $array_field = array('Package' => "$package_name",
             'Version' => $this->struct['Version'],
             'Section' => 'unknown',
             'Priority' => 'optional',
             'Maintainer' => $this->struct['Maintainer'],
             'Architecture' => $this->getApplication()->dist_arch,
-            #'Build-Depends' => $list_buildepend,
-            'Depends' => $list_rundepend,
             'Homepage' => $this->struct['Homepage'],
             'Description' => $this->struct['Summary']."\n ".$this->struct['Description'], );
+
+		if (isset($struct_package['Build']['Dependencies'])) {
+				/* This variable will contains the list of dependencies (to build) */
+				$list_buildepend =  str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0));
+				#$array_field['Build-Depends'] = "$list_buildepend";
+		}
+		if (isset($struct_package['Runtime']['Dependencies'])) {
+				/* This variable will contains the list of dependencies (to run) */
+				$list_rundepend =  str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0));
+				$array_field['Depends'] = "$list_rundepend";
+		}
+
         /* Create and open the file "control" (in write mode) */
         $handle = fopen($dirname.'/DEBIAN/control', 'w');
         /* For each field that will contains the file "control" */
