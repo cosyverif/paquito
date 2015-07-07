@@ -147,9 +147,9 @@ class Check extends Command
             if (isset($value['Runtime'])) {
                 $this->check_field('Runtime', $value['Runtime'], array('Dependencies'), array('Dependencies'));
             }
-            $key_dependencies = array('Build', 'Runtime');
-            /* For the "build" and "run" dependencies */
-            for ($i = 0; $i < 2; ++$i) {
+            $key_dependencies = array('Build', 'Runtime','Test');
+            /* For the "build" and "run" and "test" dependencies */
+            for ($i = 0; $i < 3; ++$i) {
                 /* For each dependency */
 		    if(isset($value[$key_dependencies[$i]]['Dependencies'])) {
 			    foreach ($value[$key_dependencies[$i]]['Dependencies'] as $d_key => $d_value) {
