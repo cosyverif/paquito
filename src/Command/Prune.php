@@ -60,161 +60,64 @@ class Prune extends Command
      * n'inclue pas le chemin /usr/lib/ (qui est la vraie localisation du fichier "os-release" */
     $array_ini = parse_ini_file('/etc/os-release');
     /* Get the name of the distribution */
-    $dist = ucfirst($array_ini['ID']);
-        switch ($dist) {
+    $this->getApplication()->dist_name = ucfirst($array_ini['ID']);
+        switch ($this->getApplication()->dist_name) {
     case 'Debian':
         preg_match('/[a-z]+/', $array_ini['VERSION'], $match);
-        $ver = ucfirst($match[0]);
+        $this->getApplication()->dist_version = ucfirst($match[0]);
             break;
     case 'Arch':
         /* TODO Install on Archlinux the package "filesystem" */
-            $dist = 'Archlinux';
+            $this->getApplication()->dist_name = 'Archlinux';
             break;
         case 'Centos':
         preg_match('/[0-9](\.[0-9])?/', $array_ini['VERSION'], $match);
-        $ver = $match[0];
-        if (strlen($ver) == 1) {
-            $ver = $ver.'.0';
+        $this->getApplication()->dist_version = $match[0];
+        if (strlen($this->getApplication()->dist_version) == 1) {
+            $this->getApplication()->dist_version = $this->getApplication()->dist_version.'.0';
         }
             break;
         default:
             $logger->error($this->getApplication()->translator->trans('prune.exist'));
 
             return -1;
-        }
-        foreach ($struct as $cle => $val) {
-            if ($cle == 'BuildDepends') {
-                if (empty($val)) {
-                    $new_struct[$cle] = $val;
-                } else {
-                    $build = $val;
-                    /* Pour chacun des "compilers" existants */
-                    foreach ($build as $cle => $val) {
-                        /* Nom du "compiler" courant */
-                        $compiler = $cle;
-                        $tab = $val;
-                        /* Il n'y aucun cas particulier, le cas général s'applique donc */
-                        if (count($tab) == 1) {
-                            $new_struct['BuildDepends'][$compiler]['Common'] = $tab['Common'];
-                        } else {
-                            /* La distribution est cité et a donc une dépendance différente */
-                            if (array_key_exists($dist, $tab)) {
-                                /* La distribution est Debian */
-                                if ($dist == 'Debian') {
-                                    /* La version est référencée (par son nom, comme par exemple "wheezy") */
-                                    if (array_key_exists($ver, $val['Debian'])) {
-                                        $new_struct['BuildDepends'][$compiler]['Common'] = $val['Debian'][$ver];
-                                        /* La version est référencée (par le nom de branche, comme par exemple "testing") */
-                                    } elseif (array_key_exists(array_search($ver, $this->dv_dist), $val['Debian'])) {
-                                        $new_struct['BuildDepends'][$compiler]['Common'] = $val['Debian'][array_search($ver, $this->dv_dist)];
-                                        /* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
-                                    } else {
-                                        $new_struct['BuildDepends'][$compiler]['Common'] = $val['Debian'][0]['All'];
-                                    }
-                                    /* La distribution est Archlinux */
-                                } elseif ($dist == 'Archlinux') {
-                                    /* Archlinux n'ayant pas de versions, le contenu du champ "All" s'applique systématiquement */
-                                    $new_struct['BuildDepends'][$compiler]['Common'] = $val['Archlinux']['All'];
-                                    /* La distribution est CentOS */
-                                } elseif ($dist == 'Centos') {
-                                    /* La version est référencée (pour CentOS, toujours par son numéro de version) */
-                                    if (array_key_exists($ver, $val['Centos'])) {
-                                        $new_struct['BuildDepends'][$compiler]['Common'] = $val['Centos'][$ver];
-                                        /* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
-                                    } else {
-                                        $new_struct['BuildDepends'][$compiler]['Common'] = $val['Centos']['All'];
-                                    }
-                                }
-                                /* La distribution n'est pas citée, le cas général ("Common") s'applique donc */
-                            } else {
-                                $new_struct['BuildDepends'][$compiler]['Common'] = $tab['Common'];
-                            }
-                        }
-                    }
-                }
-            } elseif ($cle == 'Packages') {
-                /* La variable $glob contient un tableau mentionnant les paquets qu'on souhaite créer */
-                $glob = $val;
-                /* Pour chaque paquet */
-                foreach ($glob as $cle => $val) {
-                    /* La variable $package contient le nom du paquet */
-                    $package = $cle;
-                    /* Contient les champs fils relatifs au paquet courant */
-                    $tab = $val;
-                    /* Pour chacun des champs du paquet courant */
-                    foreach ($tab as $cle => $val) {
-                        /* La clé désigne un champ "Type" ou "Files" */
-                        if ($cle == 'Type' || $cle == 'Files') {
-                            /* Ces deux clés n'ont pas besoin d'être modifiés */
-                            $new_struct['Packages'][$package][$cle] = $val;
-                            /* Les autres clés */
-                        } else {
-                            /* Stocke le nom du champ courant */
-                            $champ = $cle;
-                            /* Si le champ courant ("RunTimeDependency", "BeforeBuild"
-                             * ou "AfterBuild") ne contient rien */
-                            if (empty($val)) {
-                                /* La variable $val est vide mais elle est quand même assignée à la clé courante
-                                 * car le fichier YaML de Paquito doit nécessairement posséder cette clé */
-                                $new_struct['Packages'][$package][$cle] = $val;
-                            } else {
-                                /* Stocke le contenu du champ actuel */
-                                $Table = $val;
-                                /* Pour chacune des dépendances ("RunTimeDependency") ou
-                                 * commandes ("BeforeBuild" ou "AfterBuild") */
-                                foreach ($Table as $cle => $val) {
-                                    /* Nom du "runtime"/"command" courant */
-                                    $elem = $cle;
-                                    $tab = $val;
-                                    /* S'il n'y a pas de cas particuliers (c'est-à-dire que le nom de la
-                                     * dépendance ou que la commande est pareil pour toutes les distributions) */
-                                    if (count($tab) == 1) {
-                                        $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Common'];
-                                    } else {
-                                        if (array_key_exists($dist, $tab)) {
-                                            if ($dist == 'Debian') {
-                                                /* La version est référencée (par son nom, comme par exemple "wheezy") */
-                                                if (array_key_exists($ver, $tab['Debian'])) {
-                                                    $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Debian'][$ver];
-                                                    /* La version est référencée (par le nom de branche, comme
-                                                     *  par exemple "testing") */
-                                                } elseif (array_key_exists(array_search($ver, $this->dv_dist), $tab['Debian'])) {
-                                                    $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Debian'][array_search($ver, $this->dv_dist)];
-                                                    /* La version de la distribution en cours d'exécution
-                                                     *  n'est pas spécifiée, le cas général de la distribution ("All")
-                                                     *  s'applique donc */
-                                                } else {
-                                                    $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Debian']['All'];
-                                                }
-                                                /* La distribution est Archlinux */
-                                            } elseif ($dist == 'Archlinux') {
-                                                /* Archlinux n'ayant pas de versions, le contenu du champ "All" s'applique systématiquement */
-                                                $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Archlinux']['All'];
-                                            } elseif ($dist == 'Centos') {
-                                                /* La version est référencée (pour CentOS, toujours par son numéro de version) */
-                            if (array_key_exists($ver, $val['Centos'])) {
-                                $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Centos'][$ver];
-                                /* La version de la distribution en cours d'exécution n'est pas
-                                 * spécifiée, le cas général de la distribution ("All") s'applique donc */
-                            } else {
-                                $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Centos']['All'];
-                            }
-                                            }
-                                            /* La distribution n'est pas citée, le cas général ("Common") s'applique donc */
-                                        } else {
-                                            $new_struct['Packages'][$package][$champ][$elem]['Common'] = $tab['Common'];
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                $new_struct[$cle] = $val;
+    }
+
+    /* Copy the initial structure of the configuration file. The new structure will be modified */
+    $new_struct = $struct;
+        foreach ($struct['Packages'] as $key => $value) {
+            $key_dependencies = array('Build', 'Runtime');
+            for ($i = 0; $i < 2; ++$i) {
+		    if (isset($struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'])) { 
+			    /* It has to remove the pre-dependencies structure in the new structure, to keep new "dependency" structure */
+			    unset($new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies']);
+			    foreach ($struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'] as $d_key => $d_value) {
+				    if ($this->getApplication()->dist_name == 'Debian') {
+					    /* The version is referenced (by her name, like for example "wheezy") */
+					    if (array_key_exists($this->getApplication()->dist_version, $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Debian'])) {
+						    $new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Debian'][$this->getApplication()->dist_version];
+						    /* La version est référencée (par le nom de branche, comme par exemple "testing") */
+					    } elseif (array_key_exists(array_search($this->getApplication()->dist_version, $this->dv_dist), $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Debian'])) {
+						    $new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Debian'][array_search($this->getApplication()->dist_version, $this->dv_dist)];
+						    /* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
+					    } else {
+						    $new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Debian']['All'];
+					    }
+				    } elseif ($this->getApplication()->dist_name == 'Archlinux') { /* La distribution est Archlinux */
+					    /* Archlinux n'ayant pas de versions, le contenu du champ "All" s'applique systématiquement */
+					    $new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Archlinux']['All'];
+				    } elseif ($this->getApplication()->dist_name == 'Centos') { /* La distribution est CentOS */
+					    /* La version est référencée (pour CentOS, toujours par son numéro de version) */
+					    if (array_key_exists($this->getApplication()->dist_version, $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Centos'])) {
+						    $new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Centos'][$this->getApplication()->dist_version];
+					    } else { /* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
+						    $new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Centos']['All'];
+					    }
+				    }
+			    }
+		    }
             }
         }
-
         $this->getApplication()->data = $new_struct;
     /* Optionnal argument (output file, which will be parsed) */
     $output_file = $input->getArgument('output');

@@ -16,28 +16,26 @@ Authors:
       - sarah <sarah@gmail.com>
       - corentin <corentin@gmail.com>
 
-BuildDepends:
-        Compiler1:
-                - g++
-                - Archlinux:
-                        All: gcc
-                - Centos:
-                        All: gcc-c++
-
 Packages:
-        HelloWorld:
-                Type: binary
-                Files:
-                        /usr/bin/: src/hello-world
-                        /usr/share/hello-world/: src/program.c
-                RunTimeDepends:
-                        RunTime1:
-                                - tcc
-                BeforeBuild:
-                        Command1:
-                                - cd src/
-                        Command2:
-                                - g++ main.cc -o hello-world
-                        Command3:
-                                - cd ..
-                AfterBuild:
+  helloworld:
+    Type:   binary
+    Files:
+      /usr/bin/: src/hello-world
+      /usr/share/hello-world/: src/program.c
+
+    Build:
+      Dependencies:
+        gcc: "*"
+
+      Commands:
+        - cd src/
+        - g++ main.cc -o hello-world
+        - cd ..
+    Runtime:
+      Dependencies:
+        tcc: "*"
+    Test:
+      Files:
+              /usr/share/test/: src-test-user/testExecutable.php
+      Commands:
+        - phpunit --tap /usr/share/test/testExecutable.php

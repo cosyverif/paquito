@@ -1,6 +1,6 @@
 Name: Paquito
 
-Version: 0.1
+Version: 0.2
 
 Homepage: https://www.paquito.fr
 
@@ -16,26 +16,23 @@ Authors:
       - sarah <sarah@gmail.com>
       - corentin <corentin@gmail.com>
 
-BuildDepends:
-
 Packages:
-        Paquito:
+        paquito:
                 Type: binary
                 Files:
                         /usr/share/paquito.phar: Paquito-src/paquito
-                        /usr/bin/paquito: Paquito-src/paquito.sh 
-                RunTimeDepends:
-                        RunTime1:
-                                - php
-                                - Debian:
-                                      All: php5
-                BeforeBuild:
-                        Command1:
+                        /usr/bin/paquito:
+                                Source: Paquito-src/paquito.sh
+                                Permissions: 755
+                Runtime:
+                        Dependencies:
+                                php:
+                                        Debian:
+                                                All: php5
+                Build:
+                        Commands:
                                 - cd Paquito-src/
-                        Command2:
                                 - bin/create-phar.sh
-                        Command3:
                                 - cd ..
-                AfterBuild:
-                        Command1:
-                                - chmod 755 /usr/bin/paquito
+
+                        #base-devel : archlinux en a besoin pour Makepkg

@@ -12,12 +12,17 @@ use \Paquito\Command\Prune;
 use \Paquito\Command\Write;
 use \Paquito\Command\Normalize;
 use \Paquito\Command\Generate;
+use \Paquito\Command\Generate_test;
+
 
 // FIXME: erase when release
 error_reporting(E_ALL | E_STRICT);
 
 $application = new Application('paquito', '0.1');
 $application->data = null;
+$application->dist_name = null;
+$application->dist_version = null;
+$application->dist_arch = null;
 // Register commands:
 $application->add(new Update());
 $application->add(new Parse());
@@ -26,6 +31,7 @@ $application->add(new Prune());
 $application->add(new Write());
 $application->add(new Normalize());
 $application->add(new Generate());
+$application->add(new Generate_test());
 // Add i18n:
 // http://symfony.com/doc/master/components/translation/usage.html
 $application->translator = new Translator(\Locale::getDefault());
