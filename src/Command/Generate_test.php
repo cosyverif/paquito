@@ -205,22 +205,55 @@ class Generate_test extends Command
 
    
    protected function make_debian($package_name, $struct_package)
-    {
+   
+   {
+
+	  if ($struct_package['Type'] == 'binary') {                                                                                                   
+	
+					if ($this->getApplication()->dist_arch == 'x86_64') {
+				                 $this->getApplication()->dist_arch = 'amd64';
+				       } else {
+					              $this->getApplication()->dist_arch = 'i386';
+					   }
+						  } else {
+						             $this->getApplication()->dist_arch = 'all';
+							    }
+
         $dirname = $package_name.'_'.$this->struct['Version'].'_'.$this->getApplication()->dist_arch.'-test';
         /* Create the directory of the package */
         $this->_mkdir($dirname);
         /* Create the directory "DEBIAN/" (which is required) */
-        $this->_mkdir($dirname.'/DEBIAN');
+		$this->_mkdir($dirname.'/DEBIAN');
 
+		/* s'i le champ Dependencies de Test existe on récupére les dependances à l'execution */
+		if(isset($struct_package['Test']['Dependencies'])) {
+
+		$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
+		$array_field['depends'] = "( $package_name, $list_rundepend)";
+		}
+		else {
+				$array_field['depends'] = "( $package_name)";
+		}
+
+		
 				$array_field = array('Package' => "$package_name-test",
             'Version' => $this->struct['Version'],
             'Section' => 'unknown',
             'Priority' => 'optional',
             'Maintainer' => $this->struct['Maintainer'],
             'Architecture' => 'all', 
-            #'Build-Depends' => $list_buildepend,
             'Homepage' => $this->struct['Homepage'],
-            'Description' => $this->struct['Summary']."\n ".$this->struct['Description'], );
+			'Description' => $this->struct['Summary']."\n ".$this->struct['Description'], );
+		
+		/* s'i le champ Dependencies de Test existe on récupére les dependances à l'execution */
+		if(isset($struct_package['Test']['Dependencies'])) {
+
+		$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
+		$array_field['Depends'] = "$package_name, $list_rundepend";
+		}
+		else {
+				$array_field['Depends'] = $package_name;
+		}
         /* Create and open the file "control" (in write mode) */
         $handle = fopen($dirname.'/DEBIAN/control', 'w');
         /* For each field that will contains the file "control" */
@@ -243,11 +276,11 @@ class Generate_test extends Command
 		}
 		
 		/* copier  les tests par defauts dans le répértoire du paquet au niveau du repertoire usr/share/test */
-		copy("./src-test/installation.php","./".$dirname."/".$directory."/installation.php");
+		copy("./src-test/installation.sh","./".$dirname."/".$directory."/installation.sh");
 		$handle_post = fopen("$dirname/DEBIAN/postinst", 'w');
 		$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/DEBIAN/postinst");
-		$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.php\n\n", "$dirname/DEBIAN/postinst");
-		$this->_fwrite($handle_post, "phpunit --tap /usr/share/test/installation.php\n\n", "$dirname/DEBIAN/postinst");
+		$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.sh\n\n", "$dirname/DEBIAN/postinst");
+		$this->_fwrite($handle_post, "/usr/share/test/installation.sh\n\n", "$dirname/DEBIAN/postinst");
 	
 	}
 		/* on execute en plus des tests par defaut les tests fournis par l'utilisateur */
@@ -258,14 +291,14 @@ class Generate_test extends Command
 	$post_permissions = $this->move_files($dirname, $struct_package['Test']['Files']);
        	/* copier les tests par defaut dans leur répértoire de destination : usr/share/test */
 	$directory='usr/share/test';
-	copy("./src-test/installation.php","./".$dirname."/".$directory."/installation.php");
+	copy("./src-test/installation.sh","./".$dirname."/".$directory."/installation.sh");
         /* If there are commands */
 
 	$handle_post = fopen("$dirname/DEBIAN/postinst", 'w');
 	$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/DEBIAN/postinst");
 	/* commandes du test par defaut */
-	$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.php\n\n", "$dirname/DEBIAN/postinst");
-	$this->_fwrite($handle_post, "phpunit --tap /usr/share/test/installation.php\n\n", "$dirname/DEBIAN/postinst");
+	$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.sh\n\n", "$dirname/DEBIAN/postinst");
+	$this->_fwrite($handle_post, "/usr/share/test/installation.sh\n\n", "$dirname/DEBIAN/postinst");
 
 	if (count($post_permissions)) {
 	foreach ($post_permissions as $key => $value) {
@@ -289,24 +322,42 @@ class Generate_test extends Command
  
 
         protected function make_archlinux($package_name, $struct_package)
-    {
+		{
+
+		/* The package type is not a binary */
+        /* TODO Adapter pour les librairies et les autres types */
+        if ($struct_package['Type'] != 'binary') {
+            $this->getApplication()->dist_arch = 'all';
+        } else {
+            $this->getApplication()->dist_arch = $this->getApplication()->dist_arch;
+        }
         $dirname = $package_name.'-'.$this->struct['Version'].'-'.$this->getApplication()->dist_arch.'-test';
         /* Create the directory of the package */
         $this->_mkdir($dirname);
         /* Create the directory "src/" (which contains the sources) */
         $this->_mkdir($dirname.'/src/');
-
-               $array_field = array(
+		
+	               $array_field = array(
             '# Maintainer' => $this->struct['Maintainer'],
             'pkgname' => "$package_name-test",
             'pkgver' => $this->struct['Version'],
             'pkgrel' => 1,
             'arch' => $this->getApplication()->dist_arch,
-            //'depends' => $package_name,
             'url' => $this->struct['Homepage'],
             'license' => "('".$this->struct['Copyright']."')",
             'pkgdesc' => "'".$this->struct['Summary']."'",
-            'install' => "('$package_name.install')", );
+			'install' => "('$package_name.install')", );
+		
+		/* s'i le champ Dependencies de Test existe on récupére les dependances à l'execution */
+		if(isset($struct_package['Test']['Dependencies'])) {
+
+		$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
+		$array_field['depends'] = "( '$package_name'  '$list_rundepend')";
+		}
+		else {
+				$array_field['depends'] = "('$package_name')"	;
+		}
+
         /* Create and open the file "control" (in write mode) */
         $handle = fopen($dirname.'/PKGBUILD', 'w');
         /* For each field that will contains the file "control" */
@@ -326,7 +377,7 @@ class Generate_test extends Command
 		/* répértoire qui contiendra les tests par defaut au moment de l'installation */
 		$directory='usr/share/test';
 		$this->_fwrite($handle, "\tmkdir -p \$pkgdir/$directory/\n", "$dirname/PKGBUILD");
-	       	$this->_fwrite($handle, "\tcp --preserve $directory/installation.php"." \$pkgdir/$directory\n", "$dirname/PKGBUILD");
+	       	$this->_fwrite($handle, "\tcp --preserve $directory/installation.sh"." \$pkgdir/$directory\n", "$dirname/PKGBUILD");
 
 		$this->_fwrite($handle, "}\n", "$dirname/PKGBUILD");
 		/* créer le repertoire /usr/share/test  dans src*/
@@ -337,15 +388,15 @@ class Generate_test extends Command
                 }
 
 	       /* copier  les tests par defauts dans le répértoire src du répértoire du paquet */
-		copy("./src-test/installation.php","./".$dirname."/src/".$directory."/installation.php");
+		copy("./src-test/installation.sh","./".$dirname."/src/".$directory."/installation.sh");
 		/* executer le test dans le post-install*/	
 		$handle_script = fopen("$dirname/$package_name.install", 'w');
 		/* Write the post-installation section */
 		$this->_fwrite($handle_script, "post_install() {\n", "$dirname/$package_name.install");
 		/* donner les doits minimums */
-		//$this->_fwrite($handle_script, "\tchmod 755 /usr/share/test/installation.php\n", "$dirname/$package_name.install");
+		$this->_fwrite($handle_script, "\tchmod 755 /usr/share/test/installation.sh\n", "$dirname/$package_name.install");
 		/* executer le test par defaut*/
-		$this->_fwrite($handle_script, "\tphpunit --tap /usr/share/test/installation.php\n", "$dirname/$package_name.install");
+		$this->_fwrite($handle_script, "\t/usr/share/test/installation.sh\n", "$dirname/$package_name.install");
 
                 /* Close the post-installation section */
                 $this->_fwrite($handle_script, "}\n", "$dirname/$package_name.install");
@@ -390,7 +441,7 @@ else{
 	}
 	/*copier le test par defaut dans le bon répertoire */
 
-	$this->_fwrite($handle, "\tcp --preserve $directory/installation.php"." \$pkgdir/$directory\n", "$dirname/PKGBUILD");
+	$this->_fwrite($handle, "\tcp --preserve $directory/installation.sh"." \$pkgdir/$directory\n", "$dirname/PKGBUILD");
 
 
 	$this->_fwrite($handle, "}\n", "$dirname/PKGBUILD");
@@ -400,15 +451,15 @@ else{
 
 
         /* copier  les tests par defauts dans le répértoire src du répértoire du paquet */
-	copy("./src-test/installation.php","./".$dirname."/src/".$directory."/installation.php");
+	copy("./src-test/installation.sh","./".$dirname."/src/".$directory."/installation.sh");
 	
 	$handle_script = fopen("$dirname/$package_name.install", 'w');
      /* Write the post-installation section */
 	$this->_fwrite($handle_script, "post_install() {\n", "$dirname/$package_name.install");
 	/* Commandes par defaut */
-	$this->_fwrite($handle_script, "\tchmod 755 /usr/share/test/installation.php\n", "$dirname/$package_name.install");
+	$this->_fwrite($handle_script, "\tchmod 755 /usr/share/test/installation.sh\n", "$dirname/$package_name.install");
 	/* executer le test par defaut*/
-	$this->_fwrite($handle_script, "\tphpunit --tap /usr/share/test/installation.php\n", "$dirname/$package_name.install");
+	$this->_fwrite($handle_script, "\t/usr/share/test/installation.sh\n", "$dirname/$package_name.install");
 	
 	if (count($post_permissions)) {
 	       	foreach ($post_permissions as $key => $value) {
