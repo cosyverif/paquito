@@ -2,7 +2,7 @@ FROM centos:6
 
 RUN yum -y update
 RUN yum -y install openssl
-RUN yum -y install php git curl rpmdevtools rmp-build php-process
+RUN yum -y install php git curl rpmdevtools rpm-build php-process
 RUN ls 
 RUN git clone -b docker https://github.com/CosyVerif/paquito.git
 WORKDIR paquito/

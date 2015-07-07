@@ -19,7 +19,7 @@ command -v "$php composer.phar" || {
 $php bin/composer.phar global require kherge/box
 
 # Clean generated files:
-rm -rf ~/paquito
+#rm -rf ~/paquito
 
 # Install dependencies:
 if [ -f composer.lock ]
