@@ -519,7 +519,7 @@ protected function make_centos($package_name, $struct_package) {
 		if(isset($struct_package['Test']['Dependencies'])) {
 
 		$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
-		$array_field['Requires'] =$package_name , $list_rundepend ;
+		$array_field['Requires'] ="$package_name , $list_rundepend" ;
 		}
 		else {
 				$array_field['Requires'] = $package_name ;
@@ -598,7 +598,7 @@ protected function make_centos($package_name, $struct_package) {
                  /* test Command */
                 $this->_fwrite($handle, "\n%post\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
                 $this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.sh\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-                $this->_fwrite($handle, "\t/usr/share/test/installation.php\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+                $this->_fwrite($handle, "\t/usr/share/test/installation.sh\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
                   
 	}
 
@@ -649,6 +649,7 @@ protected function make_centos($package_name, $struct_package) {
 		/* les tests par defaut */
 		/* Write the "mkdir" command in the %install  section */
 		$directory='usr/share/test';
+		//echo "COUCOUCOUCPUC \n";
 		$this->_fwrite($handle, "\tcp --preserve $directory/installation.sh  \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 
 		
