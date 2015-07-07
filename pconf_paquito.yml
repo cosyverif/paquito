@@ -26,10 +26,29 @@ Packages:
                                 Permissions: 755
                 Runtime:
                         Dependencies:
-                                php:
+                                php-cli:
                                         Debian:
-                                                All: php5
+                                                All: php5-cli
+                                php-process:
+                                        Debian: "<none>"
+                                        Archlinux: "<none>"
                 Build:
+                        Dependencies:
+                                base-devel:
+                                        Debian: "<none>"
+                                        Centos: "<none>"
+                                php-xml:
+                                        Debian: "<none>"
+                                        Archlinux: "<none>"
+                                php-process:
+                                        Debian: "<none>"
+                                        Archlinux: "<none>"
+                                rpmdevtools: 
+                                        Debian: "<none>"
+                                        Archlinux: "<none>"
+                                rpm-build:
+                                        Debian: "<none>"
+                                        Archlinux: "<none>"
                         Commands:
                                 - cd Paquito-src/
                                 - bin/create-phar.sh

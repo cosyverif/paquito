@@ -63,7 +63,7 @@ L’entête du fichier SPEC:
 **BuildRoot**:      La valeur par defaut est :%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n) et
 ne devrait pas être modifiée.
 
-**BuildRequires** :  liste de dépendances qui ne sont nécessaires qu'à la constitution du programme (compilateur, entêtes de bibliothèques, outils divers).
+**BuildRequires** :  liste de dépendances qui ne sont nécessaires qu'à la constitution du programme (compilateur, entêtes de bibliothèques, outils divers).
 
 **Requires**:	liste de dépendances qui elles ne sont 
 		uniquement nécessaires qu'au fonctionnement 
@@ -159,11 +159,42 @@ La macro **%defattr** permet de préciser les attributs de nos fichiers, comme l
 
 Cette section contient le journal des modifications effectuées sur le fichier SPEC, aussi appelé changelog.
 
-La construction du RPM:
------------------------
+La construction du RPM
+----------------------
 
 Une fois le fichier SPEC est complet ,les sources du programme (archive) sont placées dans le répertoire ~/rpmbuild/SOURCES et notre fichier spec dans ~/rpmbuild/SPECS. La construction, à l'aide de rpmbuild, s'exécute avec la commande suivante:
 
 **$ rpmbuild -ba ~/rpmbuild/SPECS/nom_du_fichier_SPEC.spec**
      
 Logiquement, à la fin du processus de construction, si tout se passe bien, un paquet **RPM nomPaquet-version-architecture.x86_64.rpm** sera présent dans **~/rpmbuild/RPMS/x86_64**, ainsi que la version **Source RPM** dans **~/rpmbuild/SRPMS**
+
+Installation du RPM
+-------------------
+
+Une fois le paquet RPM créé, son installation s'effectue à l'aide de la commande :
+
+**$ rpm -i nom_du_paquet.rpm**
+
+La désinstallation se fait grâce à la commande :
+
+**$ rpm -e nom_du_paquet**
+
+### Commandes suplémentaires
+
+Pour vérifier les données et les méta-données d'un paquet, l'utilitaire **rpm** contient quelques options :
+
+**-q** (**--query**) : Mode de RPM dédié à l'affichage d'informations sur les paquets
+
+**-i** : (en mode **query**) Consulte les méta-données du paquet (qui représentent en fait le contenu du fichier **.spec**)
+
+**-p** : (en mode **query**) Consulte les méta-données d'un paquet non-installé. Cette option demande donc en paramètre un fichier représentant le paquet
+
+**--filebypkg** : (en mode **query**) Affiche la liste des fichiers contenus dans le paquet
+
+Pour consulter les méta-données d'un paquet : 
+
+**$ rpm -qip nom_du_paquet.rpm**
+
+Pour consulter les données d'un paquet :
+
+**$ rpm -q -filesbypkg -p nom_du_paquet.rpm**
