@@ -491,7 +491,14 @@ else{
 	}
 
 protected function make_centos($package_name, $struct_package) {
-       
+
+
+
+        /* The package type is not a binary */
+        /* TODO Adapter pour les librairies et les autres types */
+        if ($struct_package['Type'] != 'binary') {
+            $this->getApplication()->dist_arch = 'all';
+        }
 
 	$dirname = $package_name - $this->struct['Version'].'-'.$this->getApplication()->dist_arch.'-test';
         /* Creates the directories for building package (always in the home directory) */
@@ -506,12 +513,20 @@ protected function make_centos($package_name, $struct_package) {
             'License' => $this->struct['Copyright'],
             'URL' => $this->struct['Homepage'],
             'Packager' => 'Paquito',
-            'Requires' => $package_name,
-        );
-        /* The RPM packager doesn't want void fields (else error) */
-       // if (strlen($list_buildepend) > 0) {
-          //  $array_field['BuildRequires'] = $list_buildepend;
-       // }
+	);
+
+		/* s'i le champ Dependencies de Test existe on récupére les dependances à l'execution */
+		if(isset($struct_package['Test']['Dependencies'])) {
+
+		$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
+		$array_field['Requires'] =$package_name , $list_rundepend ;
+		}
+		else {
+				$array_field['Requires'] = $package_name ;
+		}
+
+
+       
 
         /* Create and open the file "p.spec" (in write mode) */
         $handle = fopen("$_SERVER[HOME]/rpmbuild/SPECS/pTest.spec", 'w');
@@ -550,7 +565,7 @@ protected function make_centos($package_name, $struct_package) {
 		/* Write the "mkdir" command in the %install  section */
 		$directory='usr/share/test';
                 $this->_fwrite($handle, "\tmkdir -p \$RPM_BUILD_ROOT/$directory/\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-		$this->_fwrite($handle, "\tcp --preserve $directory/installation.php  \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+		$this->_fwrite($handle, "\tcp --preserve $directory/installation.sh  \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 	       
 		foreach ($spec_files as $tab) {
                     $val = key($tab);
@@ -572,7 +587,7 @@ protected function make_centos($package_name, $struct_package) {
                 }
 
 	       /* copier  les tests par defauts dans le répértoire de destination */
-		copy("./src-test/installation.php","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.php");
+		copy("./src-test/installation.sh","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.sh");
 	      
 		$this->_fwrite($handle, "\n%files\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 		foreach ($spec_files_add as $value) {
@@ -582,8 +597,8 @@ protected function make_centos($package_name, $struct_package) {
 
                  /* test Command */
                 $this->_fwrite($handle, "\n%post\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-                $this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.php\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-                $this->_fwrite($handle, "\tphpunit --tap /usr/share/test/installation.php\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+                $this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.sh\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+                $this->_fwrite($handle, "\t/usr/share/test/installation.php\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
                   
 	}
 
@@ -634,13 +649,13 @@ protected function make_centos($package_name, $struct_package) {
 		/* les tests par defaut */
 		/* Write the "mkdir" command in the %install  section */
 		$directory='usr/share/test';
-		$this->_fwrite($handle, "\tcp --preserve $directory/installation.php  \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+		$this->_fwrite($handle, "\tcp --preserve $directory/installation.sh  \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 
 		
 		      	/* Move the tests files user */
 		$post_permissions = $this->move_files("$_SERVER[HOME]/rpmbuild/BUILD/", $struct_package['Test']['Files']);
 	       	/* copier  les tests par defauts dans le répértoire de destination */
-		copy("./src-test/installation.php","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.php");
+		copy("./src-test/installation.sh","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.sh");
 
 	       
 		$this->_fwrite($handle, "\n%files\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
@@ -653,8 +668,8 @@ protected function make_centos($package_name, $struct_package) {
 		/* commandes par defauts */
 
 			
-		$this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.php\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-                $this->_fwrite($handle, "\tphpunit --tap /usr/share/test/installation.php\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+		$this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.sh\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+                $this->_fwrite($handle, "\t/usr/share/test/installation.sh\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 		/*commandes utilisateur*/
 		
 		if (count($post_permissions)) {
