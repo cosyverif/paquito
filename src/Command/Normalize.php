@@ -194,7 +194,6 @@ class Normalize extends Command
         }
 	}
 
-	print_r($this->newStruct);
 
         $this->getApplication()->data = $this->newStruct;
     /* Optionnal argument (output file, which will be parsed) */
