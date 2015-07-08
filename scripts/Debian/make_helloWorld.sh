@@ -6,7 +6,7 @@ docker build -t debian:paquito - < deb-packaging-paquito.Dockerfile
 # We have to run a image to create a container (and get the package)
 ID=$(docker run -t debian:paquito /bin/cat /etc/hostname)
 ID=${ID::-1} # Remove the last char (return)
-docker cp $ID:/paquito/src/paquito_0.2_amd64.deb create-HelloWorld/
+docker cp $ID:/paquito/paquito_0.2_amd64.deb create-HelloWorld/
 
 # Packaging HelloWorld
 cd create-HelloWorld/
