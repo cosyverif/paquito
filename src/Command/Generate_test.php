@@ -263,9 +263,30 @@ class Generate_test extends Command
 				}
         /* Add a line at the end (required) */
         $this->_fwrite($handle, "\n", "$dirname/DEBIAN/control");
-        fclose($handle);
-	
-	/* on execute les tests par defaut */
+		fclose($handle);
+
+       /* Move the files specified in the configuration file and store the returned array of permissions (for defaut test) */
+		$post_permissions = $this->move_files($dirname, $struct_package['Files']);
+	    /* creation du test par defaut */
+		$default = fopen('installation.bats', 'w');
+		$this->_fwrite($default, "#!/usr/bin/env bats\n\n", "installation.bats");
+		/* test d'existance des fichiers */
+		$this->_fwrite($default, '@test   '.'"Existance_Of_Files"'."  {\n\n", "installation.bats");
+		if (count($post_permissions)) {
+				foreach ($post_permissions as $key => $value)
+						$this->_fwrite($default, "[ -f $key ]\n", "installation.bats");
+		}
+		$this->_fwrite($default, "}\n\n", "installation.bats");
+		/* test des droits des fichiers */
+		//$this->_fwrite($default, "test "Rights_Files" {\n", "installation.bats");
+		//if (count($post_permissions)) {
+		//		foreach ($post_permissions as $key => $value)
+		//				$this->_fwrite($default, "[ -f $key ]\n", "installation.bats");
+		//}
+		//$this->_fwrite($default, "}\n", "installation.bats");
+		/* on execute les tests par defaut */
+		fclose($default);
+
 	
 	if(!array_key_exists('Test',$struct_package)) {
 		
@@ -276,11 +297,11 @@ class Generate_test extends Command
 		}
 		
 		/* copier  les tests par defauts dans le répértoire du paquet au niveau du repertoire usr/share/test */
-		copy("./src-test/installation.sh","./".$dirname."/".$directory."/installation.sh");
+		copy("installation.bats","./".$dirname."/".$directory."/installation.bats");
 		$handle_post = fopen("$dirname/DEBIAN/postinst", 'w');
 		$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/DEBIAN/postinst");
-		$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.sh\n\n", "$dirname/DEBIAN/postinst");
-		$this->_fwrite($handle_post, "/usr/share/test/installation.sh\n\n", "$dirname/DEBIAN/postinst");
+		$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.bats\n\n", "$dirname/DEBIAN/postinst");
+		$this->_fwrite($handle_post, "bats --tap /usr/share/test/installation.bats\n\n", "$dirname/DEBIAN/postinst");
 	
 	}
 		/* on execute en plus des tests par defaut les tests fournis par l'utilisateur */
@@ -291,14 +312,14 @@ class Generate_test extends Command
 	$post_permissions = $this->move_files($dirname, $struct_package['Test']['Files']);
        	/* copier les tests par defaut dans leur répértoire de destination : usr/share/test */
 	$directory='usr/share/test';
-	copy("./src-test/installation.sh","./".$dirname."/".$directory."/installation.sh");
+	copy("installation.bats","./".$dirname."/".$directory."/installation.bats");
         /* If there are commands */
 
 	$handle_post = fopen("$dirname/DEBIAN/postinst", 'w');
 	$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/DEBIAN/postinst");
 	/* commandes du test par defaut */
-	$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.sh\n\n", "$dirname/DEBIAN/postinst");
-	$this->_fwrite($handle_post, "/usr/share/test/installation.sh\n\n", "$dirname/DEBIAN/postinst");
+	$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.bats\n\n", "$dirname/DEBIAN/postinst");
+	$this->_fwrite($handle_post, "bats --tap /usr/share/test/installation.bats\n\n", "$dirname/DEBIAN/postinst");
 
 	if (count($post_permissions)) {
 	foreach ($post_permissions as $key => $value) {
