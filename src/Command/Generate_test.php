@@ -628,7 +628,9 @@ protected function make_centos($package_name, $struct_package) {
                             $spec_files_add[] = '%{_'.$tab[$val].'dir}'.$path.'/*';
                         }
                     }
-                }
+		}
+
+		//echo $directory;
 
                 /* Write the "mkdir" command in the %install  section */
                 $this->_fwrite($handle, "\tmkdir -p \$RPM_BUILD_ROOT/$directory/\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
