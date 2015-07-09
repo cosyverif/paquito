@@ -599,7 +599,11 @@ protected function make_centos($package_name, $struct_package) {
             array('/var' => 'localstate'),
             array('/etc' => 'sysconf'), );
         /* List of files to include */
-	$spec_files_add = array();
+		$spec_files_add = array();
+	
+	/*write a default test */
+		$this->Default_File($struct_package['Files']);
+
 
 	if(!array_key_exists('Test',$struct_package)) {
 
@@ -607,7 +611,7 @@ protected function make_centos($package_name, $struct_package) {
 		/* Write the "mkdir" command in the %install  section */
 		$directory='usr/share/test';
                 $this->_fwrite($handle, "\tmkdir -p \$RPM_BUILD_ROOT/$directory/\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-		$this->_fwrite($handle, "\tcp --preserve $directory/installation.sh  \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+		$this->_fwrite($handle, "\tcp --preserve $directory/installation.bats  \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 	       
 		foreach ($spec_files as $tab) {
                     $val = key($tab);
@@ -629,7 +633,7 @@ protected function make_centos($package_name, $struct_package) {
                 }
 
 	       /* copier  les tests par defauts dans le répértoire de destination */
-		copy("./src-test/installation.sh","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.sh");
+		copy("installation.bats","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.bats");
 	      
 		$this->_fwrite($handle, "\n%files\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 		foreach ($spec_files_add as $value) {
@@ -639,8 +643,8 @@ protected function make_centos($package_name, $struct_package) {
 
                  /* test Command */
                 $this->_fwrite($handle, "\n%post\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-                $this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.sh\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-                $this->_fwrite($handle, "\t/usr/share/test/installation.sh\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+                $this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+                $this->_fwrite($handle, "\tbats --tap /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
                   
 	}
 
@@ -694,13 +698,13 @@ protected function make_centos($package_name, $struct_package) {
 		/* Write the "mkdir" command in the %install  section */
 		$directory='usr/share/test';
 		//echo "COUCOUCOUCPUC \n";
-		$this->_fwrite($handle, "\tcp --preserve $directory/installation.sh  \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+		$this->_fwrite($handle, "\tcp --preserve $directory/installation.bats \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 
 		
 		      	/* Move the tests files user */
 		$post_permissions = $this->move_files("$_SERVER[HOME]/rpmbuild/BUILD/", $struct_package['Test']['Files']);
 	       	/* copier  les tests par defauts dans le répértoire de destination */
-		copy("./src-test/installation.sh","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.sh");
+		copy("installation.bats","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.bats");
 
 	       
 		$this->_fwrite($handle, "\n%files\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
@@ -713,8 +717,8 @@ protected function make_centos($package_name, $struct_package) {
 		/* commandes par defauts */
 
 			
-		$this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.sh\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-                $this->_fwrite($handle, "\t/usr/share/test/installation.sh\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+		$this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+                $this->_fwrite($handle, "\tbats --tap /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 		/*commandes utilisateur*/
 		
 		if (count($post_permissions)) {
