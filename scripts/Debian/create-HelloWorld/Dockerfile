@@ -5,7 +5,7 @@ RUN apt-get update
 RUN apt-get -y install php5-cli git curl g++
 RUN dpkg -i paquito_0.2_amd64.deb
 # --- Partie à virer (récupère le pconf_Helloworld.yml pour l'instant détenu dans Paquito) ---
-RUN git clone -b docker https://github.com/CosyVerif/paquito.git
+RUN git clone -b debian-proper https://github.com/CosyVerif/paquito.git
 RUN git clone https://github.com/saucisson/hello-world 
 RUN cp paquito/src/pconf_HelloWorld.yml hello-world/
 # ----------------------
