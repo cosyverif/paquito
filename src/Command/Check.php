@@ -147,9 +147,9 @@ class Check extends Command
             if (isset($value['Runtime'])) {
                 $this->check_field('Runtime', $value['Runtime'], array('Dependencies'), array('Dependencies'));
             }
-            $key_dependencies = array('Build', 'Runtime');
-            /* For the "build" and "run" dependencies */
-            for ($i = 0; $i < 2; ++$i) {
+            $key_dependencies = array('Build', 'Runtime','Test');
+            /* For the "build" and "run" and "test" dependencies */
+            for ($i = 0; $i < 3; ++$i) {
                 /* For each dependency */
 		    if(isset($value[$key_dependencies[$i]]['Dependencies'])) {
 			    foreach ($value[$key_dependencies[$i]]['Dependencies'] as $d_key => $d_value) {
@@ -167,7 +167,18 @@ class Check extends Command
 					    foreach ($d_value as $v_key => $v_value) {
 						    /* Analysis of the "specific distribution dependency" structure (where it has to
 						     * have versions of the distributions and "All") */
+						     /* if the distibution dont't have any dependencies */
+						     if(!is_array($v_value)) {
+						     	if($v_value != "<none>") {
+						     		 $this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%field%' => $v_key, '%value%' => $v_value)));
+						     		 exit(-1);
+						     		
+						     	}
+						     }
+						     else {
 						    $this->check_field($v_key, $v_value, $this->versions[$v_key], array('All'));
+					    		}
+					    	
 					    }
 				    } else { /* If the dependency is the same for all distributions */
 					    if ($d_value != '*') {
@@ -186,7 +197,7 @@ class Check extends Command
             }
             /* ----- TEST ----- */
             if (isset($value['Test'])) {
-                $this->check_field('Test', $value['Test'], array('Files', 'Commands'), array());
+                $this->check_field('Test', $value['Test'], array('Files','Dependencies', 'Commands'), array());
 								if (isset($value['Test']['Files'])) {
 									/* For each test file */
 									$this->check_files($value['Test']['Files']);

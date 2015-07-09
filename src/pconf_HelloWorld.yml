@@ -36,6 +36,6 @@ Packages:
         tcc: "*"
     Test:
       Files:
-              /usr/share/test/: src-test-user/testExecutable.php
+              /usr/share/test/: src-test-user/testExecutable.bats
       Commands:
-        - phpunit --tap /usr/share/test/testExecutable.php
+        - /usr/local/bin/bats --tap /usr/share/test/testExecutable.bats

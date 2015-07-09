@@ -111,6 +111,46 @@ class Generate_test extends Command
         }
     }
 
+	protected function Default_File($files) {
+		
+		$array_perm=array();
+		$explode_array=array();
+		$exec=array();
+		foreach($files as $key => $value) {
+				/* Split the path in a array */
+				$explode_array = explode('/', $value['Source']);
+				$f=$key.$explode_array[count($explode_array) - 1];
+				$array_perm[$f] = $value['Permissions'];
+				if($key=='/usr/bin/') {
+						/* je sauvegarde les executables pour tester pouvoir leur qu'ils ont bien le droit d'execution */
+						array_push($exec,$f);
+				}
+		}
+		
+
+	    /* creation du test par defaut */
+		$default = fopen('installation.bats', 'w');
+		$this->_fwrite($default, "#!/usr/bin/env bats\n\n", "installation.bats");
+		/* test d'existance des fichiers */
+		$this->_fwrite($default, '@test   '.'"Existance_Of_Files"'."  {\n\n", "installation.bats");
+				foreach ($array_perm as $key => $value)
+						$this->_fwrite($default, "[ -f $key ]\n", "installation.bats");
+		
+		$this->_fwrite($default, "}\n\n", "installation.bats");
+		/* test des droits des fichiers executables */
+		$this->_fwrite($default, '@test  '.'"Rights_Files"'."   {\n\n", "installation.bats");
+		foreach ($exec	as $value)
+				//echo "$value \n";
+						$this->_fwrite($default, "[ -x $value ]\n", "installation.bats");
+	
+	   $this->_fwrite($default, "}\n\n", "installation.bats");
+		/* on execute les tests par defaut */
+		fclose($default);
+
+
+
+	}
+
     protected function move_files($dest_directory, $struct)
     {
         /* Array to store the permissions to apply in post-installation commands */
@@ -205,22 +245,55 @@ class Generate_test extends Command
 
    
    protected function make_debian($package_name, $struct_package)
-    {
+   
+   {
+
+	  if ($struct_package['Type'] == 'binary') {                                                                                                   
+	
+					if ($this->getApplication()->dist_arch == 'x86_64') {
+				                 $this->getApplication()->dist_arch = 'amd64';
+				       } else {
+					              $this->getApplication()->dist_arch = 'i386';
+					   }
+						  } else {
+						             $this->getApplication()->dist_arch = 'all';
+							    }
+
         $dirname = $package_name.'_'.$this->struct['Version'].'_'.$this->getApplication()->dist_arch.'-test';
         /* Create the directory of the package */
         $this->_mkdir($dirname);
         /* Create the directory "DEBIAN/" (which is required) */
-        $this->_mkdir($dirname.'/DEBIAN');
+		$this->_mkdir($dirname.'/DEBIAN');
 
+		/* s'i le champ Dependencies de Test existe on récupére les dependances à l'execution */
+		if(isset($struct_package['Test']['Dependencies'])) {
+
+		$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
+		$array_field['depends'] = "( $package_name, $list_rundepend)";
+		}
+		else {
+				$array_field['depends'] = "( $package_name)";
+		}
+
+		
 				$array_field = array('Package' => "$package_name-test",
             'Version' => $this->struct['Version'],
             'Section' => 'unknown',
             'Priority' => 'optional',
             'Maintainer' => $this->struct['Maintainer'],
             'Architecture' => 'all', 
-            #'Build-Depends' => $list_buildepend,
             'Homepage' => $this->struct['Homepage'],
-            'Description' => $this->struct['Summary']."\n ".$this->struct['Description'], );
+			'Description' => $this->struct['Summary']."\n ".$this->struct['Description'], );
+		
+		/* s'i le champ Dependencies de Test existe on récupére les dependances à l'execution */
+		if(isset($struct_package['Test']['Dependencies'])) {
+
+		$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
+		$array_field['Depends'] = "$package_name, $list_rundepend";
+		}
+		else {
+				$array_field['Depends'] = $package_name;
+		}
         /* Create and open the file "control" (in write mode) */
         $handle = fopen($dirname.'/DEBIAN/control', 'w');
         /* For each field that will contains the file "control" */
@@ -230,11 +303,11 @@ class Generate_test extends Command
 				}
         /* Add a line at the end (required) */
         $this->_fwrite($handle, "\n", "$dirname/DEBIAN/control");
-        fclose($handle);
-	
-	/* on execute les tests par defaut */
-	
-	if(!array_key_exists('Test',$struct_package)) {
+		fclose($handle);
+		/* write the files in the default test to test them */
+		$this->Default_File($struct_package['Files']);
+
+      	if(!array_key_exists('Test',$struct_package)) {
 		
 		$directory='usr/share/test';
 		if (!mkdir($dirname.'/'.$directory.'/', 0777, true)) {
@@ -243,11 +316,11 @@ class Generate_test extends Command
 		}
 		
 		/* copier  les tests par defauts dans le répértoire du paquet au niveau du repertoire usr/share/test */
-		copy("./src-test/installation.php","./".$dirname."/".$directory."/installation.php");
+		copy("installation.bats","./".$dirname."/".$directory."/installation.bats");
 		$handle_post = fopen("$dirname/DEBIAN/postinst", 'w');
 		$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/DEBIAN/postinst");
-		$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.php\n\n", "$dirname/DEBIAN/postinst");
-		$this->_fwrite($handle_post, "phpunit --tap /usr/share/test/installation.php\n\n", "$dirname/DEBIAN/postinst");
+		$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.bats\n\n", "$dirname/DEBIAN/postinst");
+		$this->_fwrite($handle_post, "bats --tap /usr/share/test/installation.bats\n\n", "$dirname/DEBIAN/postinst");
 	
 	}
 		/* on execute en plus des tests par defaut les tests fournis par l'utilisateur */
@@ -258,14 +331,14 @@ class Generate_test extends Command
 	$post_permissions = $this->move_files($dirname, $struct_package['Test']['Files']);
        	/* copier les tests par defaut dans leur répértoire de destination : usr/share/test */
 	$directory='usr/share/test';
-	copy("./src-test/installation.php","./".$dirname."/".$directory."/installation.php");
+	copy("installation.bats","./".$dirname."/".$directory."/installation.bats");
         /* If there are commands */
 
 	$handle_post = fopen("$dirname/DEBIAN/postinst", 'w');
 	$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/DEBIAN/postinst");
 	/* commandes du test par defaut */
-	$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.php\n\n", "$dirname/DEBIAN/postinst");
-	$this->_fwrite($handle_post, "phpunit --tap /usr/share/test/installation.php\n\n", "$dirname/DEBIAN/postinst");
+	$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.bats\n\n", "$dirname/DEBIAN/postinst");
+	$this->_fwrite($handle_post, "bats --tap /usr/share/test/installation.bats\n\n", "$dirname/DEBIAN/postinst");
 
 	if (count($post_permissions)) {
 	foreach ($post_permissions as $key => $value) {
@@ -289,24 +362,42 @@ class Generate_test extends Command
  
 
         protected function make_archlinux($package_name, $struct_package)
-    {
+		{
+
+		/* The package type is not a binary */
+        /* TODO Adapter pour les librairies et les autres types */
+        if ($struct_package['Type'] != 'binary') {
+            $this->getApplication()->dist_arch = 'all';
+        } else {
+            $this->getApplication()->dist_arch = $this->getApplication()->dist_arch;
+        }
         $dirname = $package_name.'-'.$this->struct['Version'].'-'.$this->getApplication()->dist_arch.'-test';
         /* Create the directory of the package */
         $this->_mkdir($dirname);
         /* Create the directory "src/" (which contains the sources) */
         $this->_mkdir($dirname.'/src/');
-
-               $array_field = array(
+		
+	               $array_field = array(
             '# Maintainer' => $this->struct['Maintainer'],
             'pkgname' => "$package_name-test",
             'pkgver' => $this->struct['Version'],
             'pkgrel' => 1,
             'arch' => $this->getApplication()->dist_arch,
-            //'depends' => $package_name,
             'url' => $this->struct['Homepage'],
             'license' => "('".$this->struct['Copyright']."')",
             'pkgdesc' => "'".$this->struct['Summary']."'",
-            'install' => "('$package_name.install')", );
+			'install' => "('$package_name.install')", );
+		
+		/* s'i le champ Dependencies de Test existe on récupére les dependances à l'execution */
+		if(isset($struct_package['Test']['Dependencies'])) {
+
+		$list_rundepend = str_replace(' ', ' ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
+		$array_field['depends'] = "( $package_name $list_rundepend)";
+		}
+		else {
+				$array_field['depends'] = "($package_name)"	;
+		}
+
         /* Create and open the file "control" (in write mode) */
         $handle = fopen($dirname.'/PKGBUILD', 'w');
         /* For each field that will contains the file "control" */
@@ -315,9 +406,11 @@ class Generate_test extends Command
         }
         /* To come back in actual directory if a "cd" command is present in pre-build commands */
 	$pwd = getcwd();
-	//echo $pwd;
-	//echo "\n";
-        
+	
+
+		/* write the default file */
+		$this->Default_File($struct_package['Files']);
+
         /* if the field Test not exists*/
 	if(!array_key_exists('Test',$struct_package)) {
 		/* on execute les tests par defaut*/
@@ -326,7 +419,7 @@ class Generate_test extends Command
 		/* répértoire qui contiendra les tests par defaut au moment de l'installation */
 		$directory='usr/share/test';
 		$this->_fwrite($handle, "\tmkdir -p \$pkgdir/$directory/\n", "$dirname/PKGBUILD");
-	       	$this->_fwrite($handle, "\tcp --preserve $directory/installation.php"." \$pkgdir/$directory\n", "$dirname/PKGBUILD");
+	       	$this->_fwrite($handle, "\tcp --preserve $directory/installation.bats"." \$pkgdir/$directory\n", "$dirname/PKGBUILD");
 
 		$this->_fwrite($handle, "}\n", "$dirname/PKGBUILD");
 		/* créer le repertoire /usr/share/test  dans src*/
@@ -337,15 +430,15 @@ class Generate_test extends Command
                 }
 
 	       /* copier  les tests par defauts dans le répértoire src du répértoire du paquet */
-		copy("./src-test/installation.php","./".$dirname."/src/".$directory."/installation.php");
+		copy("installation.bats","./".$dirname."/src/".$directory."/installation.bats");
 		/* executer le test dans le post-install*/	
 		$handle_script = fopen("$dirname/$package_name.install", 'w');
 		/* Write the post-installation section */
 		$this->_fwrite($handle_script, "post_install() {\n", "$dirname/$package_name.install");
 		/* donner les doits minimums */
-		//$this->_fwrite($handle_script, "\tchmod 755 /usr/share/test/installation.php\n", "$dirname/$package_name.install");
+		$this->_fwrite($handle_script, "\tchmod 755 /usr/share/test/installation.bats\n", "$dirname/$package_name.install");
 		/* executer le test par defaut*/
-		$this->_fwrite($handle_script, "\tphpunit --tap /usr/share/test/installation.php\n", "$dirname/$package_name.install");
+		$this->_fwrite($handle_script, "\tbats --tap /usr/share/test/installation.bats\n", "$dirname/$package_name.install");
 
                 /* Close the post-installation section */
                 $this->_fwrite($handle_script, "}\n", "$dirname/$package_name.install");
@@ -390,7 +483,7 @@ else{
 	}
 	/*copier le test par defaut dans le bon répertoire */
 
-	$this->_fwrite($handle, "\tcp --preserve $directory/installation.php"." \$pkgdir/$directory\n", "$dirname/PKGBUILD");
+	$this->_fwrite($handle, "\tcp --preserve $directory/installation.bats"." \$pkgdir/$directory\n", "$dirname/PKGBUILD");
 
 
 	$this->_fwrite($handle, "}\n", "$dirname/PKGBUILD");
@@ -400,15 +493,15 @@ else{
 
 
         /* copier  les tests par defauts dans le répértoire src du répértoire du paquet */
-	copy("./src-test/installation.php","./".$dirname."/src/".$directory."/installation.php");
+	copy("installation.bats","./".$dirname."/src/".$directory."/installation.bats");
 	
 	$handle_script = fopen("$dirname/$package_name.install", 'w');
      /* Write the post-installation section */
 	$this->_fwrite($handle_script, "post_install() {\n", "$dirname/$package_name.install");
 	/* Commandes par defaut */
-	$this->_fwrite($handle_script, "\tchmod 755 /usr/share/test/installation.php\n", "$dirname/$package_name.install");
+	$this->_fwrite($handle_script, "\tchmod 755 /usr/share/test/installation.bats\n", "$dirname/$package_name.install");
 	/* executer le test par defaut*/
-	$this->_fwrite($handle_script, "\tphpunit --tap /usr/share/test/installation.php\n", "$dirname/$package_name.install");
+	$this->_fwrite($handle_script, "\tbats --tap /usr/share/test/installation.bats\n", "$dirname/$package_name.install");
 	
 	if (count($post_permissions)) {
 	       	foreach ($post_permissions as $key => $value) {
@@ -440,7 +533,14 @@ else{
 	}
 
 protected function make_centos($package_name, $struct_package) {
-       
+
+
+
+        /* The package type is not a binary */
+        /* TODO Adapter pour les librairies et les autres types */
+        if ($struct_package['Type'] != 'binary') {
+            $this->getApplication()->dist_arch = 'all';
+        }
 
 	$dirname = $package_name - $this->struct['Version'].'-'.$this->getApplication()->dist_arch.'-test';
         /* Creates the directories for building package (always in the home directory) */
@@ -455,12 +555,20 @@ protected function make_centos($package_name, $struct_package) {
             'License' => $this->struct['Copyright'],
             'URL' => $this->struct['Homepage'],
             'Packager' => 'Paquito',
-            'Requires' => $package_name,
-        );
-        /* The RPM packager doesn't want void fields (else error) */
-       // if (strlen($list_buildepend) > 0) {
-          //  $array_field['BuildRequires'] = $list_buildepend;
-       // }
+	);
+
+		/* s'i le champ Dependencies de Test existe on récupére les dependances à l'execution */
+		if(isset($struct_package['Test']['Dependencies'])) {
+
+		$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
+		$array_field['Requires'] ="$package_name , $list_rundepend" ;
+		}
+		else {
+				$array_field['Requires'] = $package_name ;
+		}
+
+
+       
 
         /* Create and open the file "p.spec" (in write mode) */
         $handle = fopen("$_SERVER[HOME]/rpmbuild/SPECS/pTest.spec", 'w');
@@ -491,7 +599,11 @@ protected function make_centos($package_name, $struct_package) {
             array('/var' => 'localstate'),
             array('/etc' => 'sysconf'), );
         /* List of files to include */
-	$spec_files_add = array();
+		$spec_files_add = array();
+	
+	/*write a default test */
+		$this->Default_File($struct_package['Files']);
+
 
 	if(!array_key_exists('Test',$struct_package)) {
 
@@ -499,7 +611,7 @@ protected function make_centos($package_name, $struct_package) {
 		/* Write the "mkdir" command in the %install  section */
 		$directory='usr/share/test';
                 $this->_fwrite($handle, "\tmkdir -p \$RPM_BUILD_ROOT/$directory/\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-		$this->_fwrite($handle, "\tcp --preserve $directory/installation.php  \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+		$this->_fwrite($handle, "\tcp --preserve $directory/installation.bats  \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 	       
 		foreach ($spec_files as $tab) {
                     $val = key($tab);
@@ -521,7 +633,7 @@ protected function make_centos($package_name, $struct_package) {
                 }
 
 	       /* copier  les tests par defauts dans le répértoire de destination */
-		copy("./src-test/installation.php","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.php");
+		copy("installation.bats","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.bats");
 	      
 		$this->_fwrite($handle, "\n%files\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 		foreach ($spec_files_add as $value) {
@@ -529,10 +641,14 @@ protected function make_centos($package_name, $struct_package) {
 			$this->_fwrite($handle, "\t$value\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 		}
 
-                 /* test Command */
+		/* test Command */
+		//$_SERVER['PATH']=$_SERVER['PATH'].":/usr/local/bin/bats";
+		//echo $_SERVER['PATH']."\n";
+		//exec('export PATH='.$PATH.':/usr/local/bin');
+
                 $this->_fwrite($handle, "\n%post\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-                $this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.php\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-                $this->_fwrite($handle, "\tphpunit --tap /usr/share/test/installation.php\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+                $this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+                $this->_fwrite($handle, "\t/usr/local/bin/bats --tap /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
                   
 	}
 
@@ -562,7 +678,9 @@ protected function make_centos($package_name, $struct_package) {
                             $spec_files_add[] = '%{_'.$tab[$val].'dir}'.$path.'/*';
                         }
                     }
-                }
+		}
+
+		//echo $directory;
 
                 /* Write the "mkdir" command in the %install  section */
                 $this->_fwrite($handle, "\tmkdir -p \$RPM_BUILD_ROOT/$directory/\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
@@ -583,13 +701,14 @@ protected function make_centos($package_name, $struct_package) {
 		/* les tests par defaut */
 		/* Write the "mkdir" command in the %install  section */
 		$directory='usr/share/test';
-		$this->_fwrite($handle, "\tcp --preserve $directory/installation.php  \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+		//echo "COUCOUCOUCPUC \n";
+		$this->_fwrite($handle, "\tcp --preserve $directory/installation.bats \$RPM_BUILD_ROOT/$directory"."\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 
 		
 		      	/* Move the tests files user */
 		$post_permissions = $this->move_files("$_SERVER[HOME]/rpmbuild/BUILD/", $struct_package['Test']['Files']);
 	       	/* copier  les tests par defauts dans le répértoire de destination */
-		copy("./src-test/installation.php","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.php");
+		copy("installation.bats","$_SERVER[HOME]/rpmbuild/BUILD/$directory/installation.bats");
 
 	       
 		$this->_fwrite($handle, "\n%files\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
@@ -602,8 +721,8 @@ protected function make_centos($package_name, $struct_package) {
 		/* commandes par defauts */
 
 			
-		$this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.php\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-                $this->_fwrite($handle, "\tphpunit --tap /usr/share/test/installation.php\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+		$this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+                $this->_fwrite($handle, "\t/usr/local/bin/bats --tap /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 		/*commandes utilisateur*/
 		
 		if (count($post_permissions)) {
