@@ -332,6 +332,7 @@ class Generate extends Command
 
             exit(-1);
 		}
+	chmod("$dirname/debian/rules", 0755);
 
 		if (file_put_contents("$dirname/debian/changelog", "$package_name (".$this->struct['Version'].") unstable; urgency=low\n\n  * Initial Release.\n\n -- ".$this->struct['Maintainer']."  ".date('r')) === false) {
             $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/changelog")));
