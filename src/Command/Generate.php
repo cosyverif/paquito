@@ -258,13 +258,15 @@ class Generate extends Command
         /* Create the directory "debian/source/" (to limit errors) */
 		$this->_mkdir($dirname.'/debian/source');
 
-        $array_field = array('Package' => "$package_name",
-            'Version' => $this->struct['Version'],
+		$array_field = array(
+            'Source' => $package_name,
             'Section' => 'unknown',
             'Priority' => 'optional',
             'Maintainer' => $this->struct['Maintainer'],
+			'Standards-Version' => '3.9.5',
+            'Homepage' => $this->struct['Homepage']."\n", # It has to has a line between the "Homepage" field and the "Package" field
+			'Package' => $package_name,
             'Architecture' => $this->getApplication()->dist_arch,
-            'Homepage' => $this->struct['Homepage'],
             'Description' => $this->struct['Summary']."\n ".$this->struct['Description'], );
 
 		if (isset($struct_package['Build']['Dependencies'])) {
@@ -331,7 +333,7 @@ class Generate extends Command
             exit(-1);
 		}
 
-		if (file_put_contents("$dirname/debian/changelog", "$package_name (".$this->struct['Version'].") unstable; urgency=low\n\t* Initial Release.\n\t*\n\t*  -- ".$this->struct['Maintainer']."  ".date('r')) === false) {
+		if (file_put_contents("$dirname/debian/changelog", "$package_name (".$this->struct['Version'].") unstable; urgency=low\n\n  * Initial Release.\n\n -- ".$this->struct['Maintainer']."  ".date('r')) === false) {
             $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/changelog")));
 
             exit(-1);
@@ -341,7 +343,8 @@ class Generate extends Command
 		 * file which specifies what is the files of the project to packager */
         $handle = fopen("$dirname/debian/$package_name.install", 'w');
 		foreach($post_permissions as $f_key => $f_value) {
-			$this->_fwrite($handle, $f_key, "$dirname/debian/$package_name.install");
+				echo "$f_key\n";
+				$this->_fwrite($handle, ltrim($f_key, '/').' '.ltrim(dirname($f_key), '/')."\n", "$dirname/debian/$package_name.install");
 		}
         fclose($handle);
 
