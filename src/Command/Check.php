@@ -14,7 +14,7 @@ class Check extends Command
     public $logger = null;
     /* First level keys (of the Paquito configuration files) */
     public $keys_first = array('Name', 'Version', 'Homepage', 'Description', 'Summary', 'Copyright', 'Maintainer', 'Authors', 'Packages');
-    public $keys_first_min = array('Name', 'Version', 'Description', 'Summary', 'Packages');
+    public $keys_first_min = array('Name', 'Version', 'Description', 'Summary', 'Copyright', 'Maintainer', 'Packages');
     public $keys_package = array('Type', 'Files', 'Build', 'Install', 'Runtime', 'Test');
     public $keys_package_min = array('Type', 'Files');
     /* Package types */

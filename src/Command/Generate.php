@@ -253,16 +253,20 @@ class Generate extends Command
         $dirname = $package_name.'_'.$this->struct['Version'].'_'.$this->getApplication()->dist_arch;
         /* Create the directory of the package */
         $this->_mkdir($dirname);
-        /* Create the directory "DEBIAN/" (which is required) */
-        $this->_mkdir($dirname.'/DEBIAN');
+        /* Create the directory "debian/" (which is required) */
+        $this->_mkdir($dirname.'/debian');
+        /* Create the directory "debian/source/" (to limit errors) */
+		$this->_mkdir($dirname.'/debian/source');
 
-        $array_field = array('Package' => "$package_name",
-            'Version' => $this->struct['Version'],
+		$array_field = array(
+            'Source' => $package_name,
             'Section' => 'unknown',
             'Priority' => 'optional',
             'Maintainer' => $this->struct['Maintainer'],
+			'Standards-Version' => '3.9.5',
+            'Homepage' => $this->struct['Homepage']."\n", # It has to has a line between the "Homepage" field and the "Package" field
+			'Package' => $package_name,
             'Architecture' => $this->getApplication()->dist_arch,
-            'Homepage' => $this->struct['Homepage'],
             'Description' => $this->struct['Summary']."\n ".$this->struct['Description'], );
 
 		if (isset($struct_package['Build']['Dependencies'])) {
@@ -277,14 +281,15 @@ class Generate extends Command
 		}
 
         /* Create and open the file "control" (in write mode) */
-        $handle = fopen($dirname.'/DEBIAN/control', 'w');
+        $handle = fopen($dirname.'/debian/control', 'w');
         /* For each field that will contains the file "control" */
         foreach ($array_field as $key => $value) {
-            $this->_fwrite($handle, "$key: $value\n", "$dirname/DEBIAN/control");
+            $this->_fwrite($handle, "$key: $value\n", "$dirname/debian/control");
         }
         /* Add a line at the end (required) */
-        $this->_fwrite($handle, "\n", "$dirname/DEBIAN/control");
+        $this->_fwrite($handle, "\n", "$dirname/debian/control");
         fclose($handle);
+
         /* To come back in actual directory if a "cd" command is present in pre-build commands */
         $pwd = getcwd();
         /* If there are pre-build commands */
@@ -309,37 +314,73 @@ class Generate extends Command
         /* Move the files specified in the configuration file and store the returned array of permissions (for post-installation) */
         $post_permissions = $this->move_files($dirname, $struct_package['Files']);
 
+
+		if (file_put_contents("$dirname/debian/source/format", '3.0 (native)') === false) {
+            $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/source/format")));
+
+            exit(-1);
+		}
+
+		if (file_put_contents("$dirname/debian/compat", '9') === false) {
+            $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/compat")));
+
+            exit(-1);
+		}
+
+		if (file_put_contents("$dirname/debian/rules", "#!/usr/bin/make -f\nDPKG_EXPORT_BUILDFLAGS = 1\ninclude /usr/share/dpkg/default.mk\n%:\n\tdh $@") === false) {
+            $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/rules")));
+
+            exit(-1);
+		}
+	chmod("$dirname/debian/rules", 0755);
+
+		if (file_put_contents("$dirname/debian/changelog", "$package_name (".$this->struct['Version'].") unstable; urgency=low\n\n  * Initial Release.\n\n -- ".$this->struct['Maintainer']."  ".date('r')) === false) {
+            $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/changelog")));
+
+            exit(-1);
+		}
+
+		/* Create and open the file "*.install" (in write mode). This is the
+		 * file which specifies what is the files of the project to packager */
+        $handle = fopen("$dirname/debian/$package_name.install", 'w');
+		foreach($post_permissions as $f_key => $f_value) {
+				$this->_fwrite($handle, ltrim($f_key, '/').' '.ltrim(dirname($f_key), '/')."\n", "$dirname/debian/$package_name.install");
+		}
+        fclose($handle);
+
         if (isset($struct_package['Install']['Pre'])) {
-            $handle_pre = fopen("$dirname/DEBIAN/preinst", 'w');
-            $this->_fwrite($handle_pre, "#!/bin/bash\n\n", "$dirname/DEBIAN/preinst");
+            $handle_pre = fopen("$dirname/debian/preinst", 'w');
+            $this->_fwrite($handle_pre, "#!/bin/bash\n\n", "$dirname/debian/preinst");
             foreach ($struct_package['Install']['Pre'] as $value) {
-                $this->_fwrite($handle_pre, "$value\n", "$dirname/DEBIAN/preinst");
+                $this->_fwrite($handle_pre, "$value\n", "$dirname/debian/preinst");
             }
             fclose($handle_pre);
             /* The file "preinst" has to have permissions between 755 and 775 */
-            chmod("$dirname/DEBIAN/preinst", 0755);
+            chmod("$dirname/debian/preinst", 0755);
         }
 
         if (count($post_permissions) || isset($struct_package['Install']['Post'])) {
-            $handle_post = fopen("$dirname/DEBIAN/postinst", 'w');
+            $handle_post = fopen("$dirname/debian/postinst", 'w');
 						if (isset($struct_package['Install']['Post'])) {
 							/* Write each command */
 							foreach ($struct_package['Install']['Post'] as $key => $value) {
-								$this->_fwrite($handle_script, "$value\n", "$dirname/DEBIAN/postinst");
+								$this->_fwrite($handle_script, "$value\n", "$dirname/debian/postinst");
 							}
 						}
             if (count($post_permissions)) {
-                $this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/DEBIAN/postinst");
+                $this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/debian/postinst");
                 foreach ($post_permissions as $key => $value) {
-                    $this->_fwrite($handle_post, "chmod $value $key\n", "$dirname/DEBIAN/postinst");
+                    $this->_fwrite($handle_post, "chmod $value $key\n", "$dirname/debian/postinst");
                 }
             }
             fclose($handle_post);
             /* The file "postinst" has to have permissions between 755 and 775 */
-            chmod("$dirname/DEBIAN/postinst", 0755);
-        }
+            chmod("$dirname/debian/postinst", 0755);
+		}
+
+		chdir($dirname);
         /* Create the DEB package */
-        echo shell_exec("dpkg-deb --build $dirname");
+        echo shell_exec("dpkg-buildpackage -us -uc");
     }
 
     protected function make_archlinux($package_name, $struct_package)
