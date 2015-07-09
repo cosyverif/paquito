@@ -265,25 +265,39 @@ class Generate_test extends Command
         $this->_fwrite($handle, "\n", "$dirname/DEBIAN/control");
 		fclose($handle);
 
-       /* Move the files specified in the configuration file and store the returned array of permissions (for defaut test) */
-		$post_permissions = $this->move_files($dirname, $struct_package['Files']);
+      	/* write the files in the default test to test them */
+		$files=$struct_package['Files'];
+		$array_perm=array();
+		$explode_array=array();
+		$exec=array();
+		foreach($files as $key => $value) {
+				/* Split the path in a array */
+				$explode_array = explode('/', $value['Source']);
+				$f=$key.$explode_array[count($explode_array) - 1];
+				$array_perm[$f] = $value['Permissions'];
+				if($key=='/usr/bin/') {
+						/* je sauvegarde les executables pour tester pouvoir leur qu'ils ont bien le droit d'execution */
+						array_push($exec,$f);
+				}
+		}
+		
+
 	    /* creation du test par defaut */
 		$default = fopen('installation.bats', 'w');
 		$this->_fwrite($default, "#!/usr/bin/env bats\n\n", "installation.bats");
 		/* test d'existance des fichiers */
 		$this->_fwrite($default, '@test   '.'"Existance_Of_Files"'."  {\n\n", "installation.bats");
-		if (count($post_permissions)) {
-				foreach ($post_permissions as $key => $value)
+				foreach ($array_perm as $key => $value)
 						$this->_fwrite($default, "[ -f $key ]\n", "installation.bats");
-		}
+		
 		$this->_fwrite($default, "}\n\n", "installation.bats");
-		/* test des droits des fichiers */
-		//$this->_fwrite($default, "test "Rights_Files" {\n", "installation.bats");
-		//if (count($post_permissions)) {
-		//		foreach ($post_permissions as $key => $value)
-		//				$this->_fwrite($default, "[ -f $key ]\n", "installation.bats");
-		//}
-		//$this->_fwrite($default, "}\n", "installation.bats");
+		/* test des droits des fichiers executables */
+		$this->_fwrite($default, '@test  '.'"Rights_Files"'."   {\n\n", "installation.bats");
+		foreach ($exec	as $value)
+				//echo "$value \n";
+						$this->_fwrite($default, "[ -x $value ]\n", "installation.bats");
+	
+	   $this->_fwrite($default, "}\n\n", "installation.bats");
 		/* on execute les tests par defaut */
 		fclose($default);
 
