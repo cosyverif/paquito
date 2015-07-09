@@ -32,10 +32,19 @@ Packages:
                                 php-process:
                                         Debian: "<none>"
                                         Archlinux: "<none>"
+                                rpm-build:
+                                        Debian:
+                                                All: dh-make
+                                        Archlinux: "<none>"
+                                base-devel:
+                                        Debian:
+                                                All: build-essential
+                                        Centos: "<none>"
                 Build:
                         Dependencies:
                                 base-devel:
-                                        Debian: "<none>"
+                                        Debian:
+                                                All: build-essential
                                         Centos: "<none>"
                                 php-xml:
                                         Debian: "<none>"
@@ -47,7 +56,8 @@ Packages:
                                         Debian: "<none>"
                                         Archlinux: "<none>"
                                 rpm-build:
-                                        Debian: "<none>"
+                                        Debian:
+                                                All: dh-make
                                         Archlinux: "<none>"
                         Commands:
                                 - cd Paquito-src/
