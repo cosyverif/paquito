@@ -111,6 +111,46 @@ class Generate_test extends Command
         }
     }
 
+	protected function Default_File($files) {
+		
+		$array_perm=array();
+		$explode_array=array();
+		$exec=array();
+		foreach($files as $key => $value) {
+				/* Split the path in a array */
+				$explode_array = explode('/', $value['Source']);
+				$f=$key.$explode_array[count($explode_array) - 1];
+				$array_perm[$f] = $value['Permissions'];
+				if($key=='/usr/bin/') {
+						/* je sauvegarde les executables pour tester pouvoir leur qu'ils ont bien le droit d'execution */
+						array_push($exec,$f);
+				}
+		}
+		
+
+	    /* creation du test par defaut */
+		$default = fopen('installation.bats', 'w');
+		$this->_fwrite($default, "#!/usr/bin/env bats\n\n", "installation.bats");
+		/* test d'existance des fichiers */
+		$this->_fwrite($default, '@test   '.'"Existance_Of_Files"'."  {\n\n", "installation.bats");
+				foreach ($array_perm as $key => $value)
+						$this->_fwrite($default, "[ -f $key ]\n", "installation.bats");
+		
+		$this->_fwrite($default, "}\n\n", "installation.bats");
+		/* test des droits des fichiers executables */
+		$this->_fwrite($default, '@test  '.'"Rights_Files"'."   {\n\n", "installation.bats");
+		foreach ($exec	as $value)
+				//echo "$value \n";
+						$this->_fwrite($default, "[ -x $value ]\n", "installation.bats");
+	
+	   $this->_fwrite($default, "}\n\n", "installation.bats");
+		/* on execute les tests par defaut */
+		fclose($default);
+
+
+
+	}
+
     protected function move_files($dest_directory, $struct)
     {
         /* Array to store the permissions to apply in post-installation commands */
@@ -264,45 +304,10 @@ class Generate_test extends Command
         /* Add a line at the end (required) */
         $this->_fwrite($handle, "\n", "$dirname/DEBIAN/control");
 		fclose($handle);
+		/* write the files in the default test to test them */
+		$this->Default_File($struct_package['Files']);
 
-      	/* write the files in the default test to test them */
-		$files=$struct_package['Files'];
-		$array_perm=array();
-		$explode_array=array();
-		$exec=array();
-		foreach($files as $key => $value) {
-				/* Split the path in a array */
-				$explode_array = explode('/', $value['Source']);
-				$f=$key.$explode_array[count($explode_array) - 1];
-				$array_perm[$f] = $value['Permissions'];
-				if($key=='/usr/bin/') {
-						/* je sauvegarde les executables pour tester pouvoir leur qu'ils ont bien le droit d'execution */
-						array_push($exec,$f);
-				}
-		}
-		
-
-	    /* creation du test par defaut */
-		$default = fopen('installation.bats', 'w');
-		$this->_fwrite($default, "#!/usr/bin/env bats\n\n", "installation.bats");
-		/* test d'existance des fichiers */
-		$this->_fwrite($default, '@test   '.'"Existance_Of_Files"'."  {\n\n", "installation.bats");
-				foreach ($array_perm as $key => $value)
-						$this->_fwrite($default, "[ -f $key ]\n", "installation.bats");
-		
-		$this->_fwrite($default, "}\n\n", "installation.bats");
-		/* test des droits des fichiers executables */
-		$this->_fwrite($default, '@test  '.'"Rights_Files"'."   {\n\n", "installation.bats");
-		foreach ($exec	as $value)
-				//echo "$value \n";
-						$this->_fwrite($default, "[ -x $value ]\n", "installation.bats");
-	
-	   $this->_fwrite($default, "}\n\n", "installation.bats");
-		/* on execute les tests par defaut */
-		fclose($default);
-
-	
-	if(!array_key_exists('Test',$struct_package)) {
+      	if(!array_key_exists('Test',$struct_package)) {
 		
 		$directory='usr/share/test';
 		if (!mkdir($dirname.'/'.$directory.'/', 0777, true)) {
@@ -401,9 +406,11 @@ class Generate_test extends Command
         }
         /* To come back in actual directory if a "cd" command is present in pre-build commands */
 	$pwd = getcwd();
-	//echo $pwd;
-	//echo "\n";
-        
+	
+
+		/* write the default file */
+		$this->Default_File($struct_package['Files']);
+
         /* if the field Test not exists*/
 	if(!array_key_exists('Test',$struct_package)) {
 		/* on execute les tests par defaut*/
@@ -412,7 +419,7 @@ class Generate_test extends Command
 		/* répértoire qui contiendra les tests par defaut au moment de l'installation */
 		$directory='usr/share/test';
 		$this->_fwrite($handle, "\tmkdir -p \$pkgdir/$directory/\n", "$dirname/PKGBUILD");
-	       	$this->_fwrite($handle, "\tcp --preserve $directory/installation.sh"." \$pkgdir/$directory\n", "$dirname/PKGBUILD");
+	       	$this->_fwrite($handle, "\tcp --preserve $directory/installation.bats"." \$pkgdir/$directory\n", "$dirname/PKGBUILD");
 
 		$this->_fwrite($handle, "}\n", "$dirname/PKGBUILD");
 		/* créer le repertoire /usr/share/test  dans src*/
@@ -423,15 +430,15 @@ class Generate_test extends Command
                 }
 
 	       /* copier  les tests par defauts dans le répértoire src du répértoire du paquet */
-		copy("./src-test/installation.sh","./".$dirname."/src/".$directory."/installation.sh");
+		copy("installation.bats","./".$dirname."/src/".$directory."/installation.bats");
 		/* executer le test dans le post-install*/	
 		$handle_script = fopen("$dirname/$package_name.install", 'w');
 		/* Write the post-installation section */
 		$this->_fwrite($handle_script, "post_install() {\n", "$dirname/$package_name.install");
 		/* donner les doits minimums */
-		$this->_fwrite($handle_script, "\tchmod 755 /usr/share/test/installation.sh\n", "$dirname/$package_name.install");
+		$this->_fwrite($handle_script, "\tchmod 755 /usr/share/test/installation.bats\n", "$dirname/$package_name.install");
 		/* executer le test par defaut*/
-		$this->_fwrite($handle_script, "\t/usr/share/test/installation.sh\n", "$dirname/$package_name.install");
+		$this->_fwrite($handle_script, "\tbats --tap /usr/share/test/installation.bats\n", "$dirname/$package_name.install");
 
                 /* Close the post-installation section */
                 $this->_fwrite($handle_script, "}\n", "$dirname/$package_name.install");
@@ -476,7 +483,7 @@ else{
 	}
 	/*copier le test par defaut dans le bon répertoire */
 
-	$this->_fwrite($handle, "\tcp --preserve $directory/installation.sh"." \$pkgdir/$directory\n", "$dirname/PKGBUILD");
+	$this->_fwrite($handle, "\tcp --preserve $directory/installation.bats"." \$pkgdir/$directory\n", "$dirname/PKGBUILD");
 
 
 	$this->_fwrite($handle, "}\n", "$dirname/PKGBUILD");
@@ -486,15 +493,15 @@ else{
 
 
         /* copier  les tests par defauts dans le répértoire src du répértoire du paquet */
-	copy("./src-test/installation.sh","./".$dirname."/src/".$directory."/installation.sh");
+	copy("installation.bats","./".$dirname."/src/".$directory."/installation.bats");
 	
 	$handle_script = fopen("$dirname/$package_name.install", 'w');
      /* Write the post-installation section */
 	$this->_fwrite($handle_script, "post_install() {\n", "$dirname/$package_name.install");
 	/* Commandes par defaut */
-	$this->_fwrite($handle_script, "\tchmod 755 /usr/share/test/installation.sh\n", "$dirname/$package_name.install");
+	$this->_fwrite($handle_script, "\tchmod 755 /usr/share/test/installation.bats\n", "$dirname/$package_name.install");
 	/* executer le test par defaut*/
-	$this->_fwrite($handle_script, "\t/usr/share/test/installation.sh\n", "$dirname/$package_name.install");
+	$this->_fwrite($handle_script, "\tbats --tap /usr/share/test/installation.bats\n", "$dirname/$package_name.install");
 	
 	if (count($post_permissions)) {
 	       	foreach ($post_permissions as $key => $value) {
