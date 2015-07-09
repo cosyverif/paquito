@@ -641,10 +641,14 @@ protected function make_centos($package_name, $struct_package) {
 			$this->_fwrite($handle, "\t$value\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 		}
 
-                 /* test Command */
+		/* test Command */
+		//$_SERVER['PATH']=$_SERVER['PATH'].":/usr/local/bin/bats";
+		//echo $_SERVER['PATH']."\n";
+		//exec('export PATH='.$PATH.':/usr/local/bin');
+
                 $this->_fwrite($handle, "\n%post\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
                 $this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-                $this->_fwrite($handle, "\tbats --tap /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+                $this->_fwrite($handle, "\t/usr/local/bin/bats --tap /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
                   
 	}
 
@@ -718,7 +722,7 @@ protected function make_centos($package_name, $struct_package) {
 
 			
 		$this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
-                $this->_fwrite($handle, "\tbats --tap /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+                $this->_fwrite($handle, "\t/usr/local/bin/bats --tap /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 		/*commandes utilisateur*/
 		
 		if (count($post_permissions)) {
