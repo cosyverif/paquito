@@ -38,4 +38,4 @@ Packages:
       Files:
               /usr/share/test/: src-test-user/testExecutable.bats
       Commands:
-        - bats --tap /usr/share/test/testExecutable.bats
+        - /usr/local/bin/bats --tap /usr/share/test/testExecutable.bats
