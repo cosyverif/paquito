@@ -343,7 +343,6 @@ class Generate extends Command
 		 * file which specifies what is the files of the project to packager */
         $handle = fopen("$dirname/debian/$package_name.install", 'w');
 		foreach($post_permissions as $f_key => $f_value) {
-				echo "$f_key\n";
 				$this->_fwrite($handle, ltrim($f_key, '/').' '.ltrim(dirname($f_key), '/')."\n", "$dirname/debian/$package_name.install");
 		}
         fclose($handle);

@@ -2,7 +2,7 @@ Name: Paquito
 
 Version: 0.2
 
-Homepage: https://www.paquito.fr # The "Homepage" must be into quotes, else the "http:" is interpreted
+Homepage: https://www.paquito.fr 
 
 Summary: Programme de packaging Paquito
 
