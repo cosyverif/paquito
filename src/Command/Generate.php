@@ -272,7 +272,9 @@ class Generate extends Command
 		if (isset($struct_package['Build']['Dependencies'])) {
 				/* This variable will contains the list of dependencies (to build) */
 				$list_buildepend =  str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0));
-				#$array_field['Build-Depends'] = "$list_buildepend";
+				$array_field['Build-Depends'] = "$list_buildepend";
+				/* Install the packages required by the Buildtime dependencies */
+				echo shell_exec('apt-get --yes install '.$this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0));
 		}
 		if (isset($struct_package['Runtime']['Dependencies'])) {
 				/* This variable will contains the list of dependencies (to run) */
@@ -415,8 +417,10 @@ class Generate extends Command
 
 	if (isset($struct_package['Build']['Dependencies'])) {
 		/* This variable will contains the list of dependencies (to build) */
-		$list_buildepend = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 1);
-		$array_field['makedepends'] = "($list_buildepend)";
+		# DELETE $list_buildepend = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 1);
+		$array_field['makedepends'] = '('.$this->generate_list_dependencies($struct_package['Build']['Dependencies'], 1).')';
+		/* Install the packages required by the Buildtime dependencies */
+		echo shell_exec('pacman -Sy --noconfirm '.$this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0));
 	}
 	if (isset($struct_package['Runtime']['Dependencies'])) {
 		/* This variable will contains the list of dependencies (to run) */
@@ -557,6 +561,8 @@ class Generate extends Command
 	if (isset($struct_package['Build']['Dependencies'])) {
 		/* This variable will contains the list of dependencies (to build) */
 		$array_field['BuildRequires'] = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
+		/* Install the packages required by the Buildtime dependencies */
+		echo shell_exec('yum -y install '.$this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0));
 	}
 	if (isset($struct_package['Runtime']['Dependencies'])) {
 		/* This variable will contains the list of dependencies (to run) */
