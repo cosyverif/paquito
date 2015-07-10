@@ -396,7 +396,6 @@ class Generate_test extends Command
 	chdir($dirname);
      /* Create the DEB package */
      echo shell_exec("dpkg-buildpackage -us -uc");
-   	 echo "YES \n";
          }
  
 
