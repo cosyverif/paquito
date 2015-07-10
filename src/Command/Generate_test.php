@@ -146,9 +146,9 @@ class Generate_test extends Command
 	   $this->_fwrite($default, "}\n\n", "installation.bats");
 		/* on execute les tests par defaut */
 		fclose($default);
+		/* file package.install */
 
-
-
+		
 	}
 
     protected function move_files($dest_directory, $struct)
@@ -263,49 +263,79 @@ class Generate_test extends Command
         /* Create the directory of the package */
         $this->_mkdir($dirname);
         /* Create the directory "DEBIAN/" (which is required) */
-		$this->_mkdir($dirname.'/DEBIAN');
+		$this->_mkdir($dirname.'/debian');
+		/* Create the directory "debian/source/" (to limit errors) */
+		$this->_mkdir($dirname.'/debian/source');
 
-		/* s'i le champ Dependencies de Test existe on récupére les dependances à l'execution */
-		if(isset($struct_package['Test']['Dependencies'])) {
-
-		$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
-		$array_field['depends'] = "( $package_name, $list_rundepend)";
-		}
-		else {
-				$array_field['depends'] = "( $package_name)";
-		}
-
-		
-				$array_field = array('Package' => "$package_name-test",
-            'Version' => $this->struct['Version'],
+		$array_field = array('Source' => "$package_name-test",
             'Section' => 'unknown',
             'Priority' => 'optional',
             'Maintainer' => $this->struct['Maintainer'],
-            'Architecture' => 'all', 
-            'Homepage' => $this->struct['Homepage'],
-			'Description' => $this->struct['Summary']."\n ".$this->struct['Description'], );
-		
+			'Standards-Version' => '3.9.5',
+            'Homepage' => $this->struct['Homepage']."\n", # It has to has a line between the "Homepage" field and the "Package" field
+			'Package' => "$package_name-test",
+            'Architecture' => $this->getApplication()->dist_arch,
+			'Description' => $this->struct['Summary']."\n ".$this->struct['Description'],
+			);
+
 		/* s'i le champ Dependencies de Test existe on récupére les dependances à l'execution */
 		if(isset($struct_package['Test']['Dependencies'])) {
 
-		$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
-		$array_field['Depends'] = "$package_name, $list_rundepend";
+				$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
+				$array_field['depends'] = "$package_name, $list_rundepend";
 		}
 		else {
-				$array_field['Depends'] = $package_name;
+				$array_field['depends'] = "$package_name";
 		}
-        /* Create and open the file "control" (in write mode) */
-        $handle = fopen($dirname.'/DEBIAN/control', 'w');
+
+
+   		/* Create and open the file "control" (in write mode) */
+        $handle = fopen($dirname.'/debian/control', 'w');
         /* For each field that will contains the file "control" */
         foreach ($array_field as $key => $value) {
-            $this->_fwrite($handle, "$key: $value\n", "$dirname/DEBIAN/control");
+            $this->_fwrite($handle, "$key: $value\n", "$dirname/debian/control");
 				
 				}
         /* Add a line at the end (required) */
-        $this->_fwrite($handle, "\n", "$dirname/DEBIAN/control");
+        $this->_fwrite($handle, "\n", "$dirname/debian/control");
 		fclose($handle);
+
 		/* write the files in the default test to test them */
 		$this->Default_File($struct_package['Files']);
+
+				if (file_put_contents("$dirname/debian/source/format", '3.0 (native)') === false) {
+            $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/source/format")));
+
+            exit(-1);
+		}
+
+		if (file_put_contents("$dirname/debian/compat", '9') === false) {
+            $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/compat")));
+
+            exit(-1);
+		}
+
+		if (file_put_contents("$dirname/debian/rules", "#!/usr/bin/make -f\nDPKG_EXPORT_BUILDFLAGS = 1\ninclude /usr/share/dpkg/default.mk\n%:\n\tdh $@") === false) {
+            $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/rules")));
+
+            exit(-1);
+		}
+	chmod("$dirname/debian/rules", 0755);
+
+		if (file_put_contents("$dirname/debian/changelog", "$package_name-test (".$this->struct['Version'].") unstable; urgency=low\n\n  * Initial Release.\n\n -- ".$this->struct['Maintainer']."  ".date('r')) === false) {
+            $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/changelog")));
+
+            exit(-1);
+		}
+
+		/* Create and open the file "*.install" (in write mode). This is the
+		 * file which specifies what is the files of the project to packager */
+        $hand = fopen("$dirname/debian/$package_name-test.install", 'w');
+		$this->_fwrite($hand,"usr/share/test/installation.bats   usr/share/test"."\n", "$dirname/debian/$package_name-test.install");
+	
+      
+
+		/* defaut test */
 
       	if(!array_key_exists('Test',$struct_package)) {
 		
@@ -317,10 +347,10 @@ class Generate_test extends Command
 		
 		/* copier  les tests par defauts dans le répértoire du paquet au niveau du repertoire usr/share/test */
 		copy("installation.bats","./".$dirname."/".$directory."/installation.bats");
-		$handle_post = fopen("$dirname/DEBIAN/postinst", 'w');
-		$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/DEBIAN/postinst");
-		$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.bats\n\n", "$dirname/DEBIAN/postinst");
-		$this->_fwrite($handle_post, "bats --tap /usr/share/test/installation.bats\n\n", "$dirname/DEBIAN/postinst");
+		$handle_post = fopen("$dirname/debian/postinst", 'w');
+		$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/debian/postinst");
+		$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.bats\n\n", "$dirname/debian/postinst");
+		$this->_fwrite($handle_post, "bats --tap /usr/share/test/installation.bats\n\n", "$dirname/debian/postinst");
 	
 	}
 		/* on execute en plus des tests par defaut les tests fournis par l'utilisateur */
@@ -328,37 +358,46 @@ class Generate_test extends Command
 				else {
       
         /* Move the files specified in the configuration file and store the returned array of permissions (for post-installation) */
-	$post_permissions = $this->move_files($dirname, $struct_package['Test']['Files']);
+		$post_permissions = $this->move_files($dirname, $struct_package['Test']['Files']);
+	   /* Create and open the file "*.install" (in write mode). This is the
+		 * file which specifies what is the files of the project to packager */
+		foreach($post_permissions as $f_key => $f_value) {
+				$this->_fwrite($hand, ltrim($f_key, '/').' '.ltrim(dirname($f_key), '/')."\n", "$dirname/debian/$package_name.install");
+		}
        	/* copier les tests par defaut dans leur répértoire de destination : usr/share/test */
 	$directory='usr/share/test';
 	copy("installation.bats","./".$dirname."/".$directory."/installation.bats");
         /* If there are commands */
 
-	$handle_post = fopen("$dirname/DEBIAN/postinst", 'w');
-	$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/DEBIAN/postinst");
+	$handle_post = fopen("$dirname/debian/postinst", 'w');
+	$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/debian/postinst");
 	/* commandes du test par defaut */
-	$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.bats\n\n", "$dirname/DEBIAN/postinst");
-	$this->_fwrite($handle_post, "bats --tap /usr/share/test/installation.bats\n\n", "$dirname/DEBIAN/postinst");
+	$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.bats\n\n", "$dirname/debian/postinst");
+	$this->_fwrite($handle_post, "bats --tap /usr/share/test/installation.bats\n\n", "$dirname/debian/postinst");
 
 	if (count($post_permissions)) {
 	foreach ($post_permissions as $key => $value) {
-	$this->_fwrite($handle_post, "chmod $value $key\n", "$dirname/DEBIAN/postinst");
+	$this->_fwrite($handle_post, "chmod $value $key\n", "$dirname/debian/postinst");
 	}
 	}
 	/* Write each Command*/
 	foreach ($struct_package['Test']['Commands'] as $key => $value) {
-		$this->_fwrite($handle_post, "$value\n", "$dirname/DEBIAN/postinst");
+		$this->_fwrite($handle_post, "$value\n", "$dirname/debian/postinst");
 					}
 	
 	fclose($handle_post);
 				}
+
+	fclose($hand);
 	
 	/* The file "postinst" has to have permissions between 755 and 775 */
-	chmod("$dirname/DEBIAN/postinst", 0755);
-        
-        /* Create the DEB package */
-        echo shell_exec("dpkg-deb --build $dirname");
-    }
+	chmod("$dirname/debian/postinst", 0755);
+		
+	chdir($dirname);
+     /* Create the DEB package */
+     echo shell_exec("dpkg-buildpackage -us -uc");
+   	 echo "YES \n";
+         }
  
 
         protected function make_archlinux($package_name, $struct_package)
