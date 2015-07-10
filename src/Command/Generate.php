@@ -340,6 +340,7 @@ class Generate extends Command
             exit(-1);
 		}
 
+	
 		/* Create and open the file "*.install" (in write mode). This is the
 		 * file which specifies what is the files of the project to packager */
         $handle = fopen("$dirname/debian/$package_name.install", 'w');
@@ -380,7 +381,9 @@ class Generate extends Command
 
 		chdir($dirname);
         /* Create the DEB package */
-        echo shell_exec("dpkg-buildpackage -us -uc");
+		echo shell_exec("dpkg-buildpackage -us -uc");
+        chdir($pwd);
+
     }
 
     protected function make_archlinux($package_name, $struct_package)
