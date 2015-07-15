@@ -37,13 +37,19 @@ Packages:
                                         Debian:
                                                 All: dh-make
                                         Archlinux: "<none>"
+                                base-devel:
+                                        Debian:
+                                                All: build-essential
+                                        Centos: "<none>"
+                                        Archlinux: "<none>"
+
                 Build:
                         Dependencies:
                                 base-devel:
                                         Debian:
                                                 All: build-essential
                                         Centos: "<none>"
-                                        Archlinux:"<none>"
+                                        Archlinux: "<none>"
                                 php-xml:
                                         Debian: "<none>"
                                         Archlinux: "<none>"
