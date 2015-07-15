@@ -3,7 +3,7 @@ FROM base/archlinux
 COPY paquito-0.2-1-x86_64.pkg.tar.xz . 
 RUN pacman -Sy
 RUN pacman-key --init && pacman-key --refresh-keys
-RUN pacman -S --noconfirm php-cli git curl gcc openssl sudo base-devel 
+RUN pacman -S --noconfirm php-cgi git curl gcc openssl sudo base-devel 
 RUN pacman-db-upgrade
 RUN pacman -S --noconfirm tcc
 RUN pacman -U --noconfirm paquito-0.2-1-x86_64.pkg.tar.xz
