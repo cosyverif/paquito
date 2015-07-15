@@ -262,13 +262,8 @@ class Generate extends Command
             'Source' => $package_name,
             'Section' => 'unknown',
             'Priority' => 'optional',
-            'Maintainer' => $this->struct['Maintainer'],
-			'Standards-Version' => '3.9.5',
-            'Homepage' => $this->struct['Homepage']."\n", # It has to has a line between the "Homepage" field and the "Package" field
-			'Package' => $package_name,
-            'Architecture' => $this->getApplication()->dist_arch,
-            'Description' => $this->struct['Summary']."\n ".$this->struct['Description'], );
-
+            'Maintainer' => $this->struct['Maintainer']);
+		/* The "Build-Depends" must be placed before fields like "Package" or "Depends" (else this field is not recognized) */
 		if (isset($struct_package['Build']['Dependencies'])) {
 				/* This variable will contains the list of dependencies (to build) */
 				$list_buildepend =  str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0));
@@ -276,9 +271,20 @@ class Generate extends Command
 				/* Install the packages required by the Buildtime dependencies */
 				foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
 						/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
-						echo shell_exec("apt-get --yes install $p_value");
+						system("apt-get --yes install $p_value", $out);
+						/* If the output code is more than 0 (error) */
+						if($out) {
+								$this->logger->error($this->getApplication()->translator->trans('generate.command', array('%command%' => "apt-get --yes install $p_value", '%code%' => $out)));
+
+								exit(-1);
+						}
 				}
 		}
+		$array_field['Standards-Version'] = '3.9.5';
+		$array_field['Homepage'] = $this->struct['Homepage']."\n"; # It has to has a line between the "Homepage" field and the "Package" field
+		$array_field['Package'] = $package_name;
+		$array_field['Architecture'] = $this->getApplication()->dist_arch;
+		$array_field['Description'] = $this->struct['Summary']."\n ".$this->struct['Description'];
 		if (isset($struct_package['Runtime']['Dependencies'])) {
 				/* This variable will contains the list of dependencies (to run) */
 				$list_rundepend =  str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0));
@@ -310,7 +316,13 @@ class Generate extends Command
 								exit(-1);
 						}
                 } else {
-                    echo shell_exec($value);
+                    system($value, $out);
+					/* If the output code is more than 0 (error) */
+					if($out) {
+							$this->logger->error($this->getApplication()->translator->trans('generate.command', array('%command%' => $value, '%code%' => $out)));
+
+							exit(-1);
+					}
                 }
             }
         }
@@ -384,11 +396,17 @@ class Generate extends Command
             chmod("$dirname/debian/postinst", 0755);
 		}
 
+		/* The command dpkg-buildpackage must be executed in the package directory */
 		chdir($dirname);
         /* Create the DEB package */
-		echo shell_exec("dpkg-buildpackage -us -uc");
-        chdir($pwd);
+		system("dpkg-buildpackage -us -uc", $out);
+		/* If the output code is more than 0 (error) */
+		if($out) {
+				$this->logger->error($this->getApplication()->translator->trans('generate.command', array('%command%' => "dpkg-buildpackage -us -uc", '%code%' => $out)));
 
+				exit(-1);
+		}
+        chdir($pwd);
     }
 
     protected function make_archlinux($package_name, $struct_package)
