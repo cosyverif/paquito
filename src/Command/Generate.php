@@ -562,7 +562,9 @@ class Generate extends Command
 		/* This variable will contains the list of dependencies (to build) */
 		$array_field['BuildRequires'] = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
 		/* Install the packages required by the Buildtime dependencies */
-		echo shell_exec('yum -y install '.$this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0));
+		foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
+				echo shell_exec("yum -y install $p_value");
+		}
 	}
 	if (isset($struct_package['Runtime']['Dependencies'])) {
 		/* This variable will contains the list of dependencies (to run) */
