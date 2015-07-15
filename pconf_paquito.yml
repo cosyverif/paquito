@@ -37,11 +37,11 @@ Packages:
                                         Debian:
                                                 All: dh-make
                                         Archlinux: "<none>"
-                                #base-devel:
-                                        #Debian:
-                                                #All: build-essential
-                                        #Centos: "<none>"
-                                        #Archlinux:"<none>"
+                                base-devel:
+                                        Debian:
+                                                All: build-essential
+                                        Centos: "<none>"
+                                        Archlinux:"<none>"
                 Build:
                         Dependencies:
                                 base-devel:
