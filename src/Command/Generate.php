@@ -238,6 +238,17 @@ class Generate extends Command
         }
     }
 
+    protected function _system($command)
+	{
+			system($command, $out);
+			/* If the output code is more than 0 (error) */
+			if($out) {
+					$this->logger->error($this->getApplication()->translator->trans('generate.command', array('%command%' => $command, '%code%' => $out)));
+
+					exit(-1);
+			}
+	}
+
     protected function make_debian($package_name, $struct_package)
     {
         if ($struct_package['Type'] == 'binary') {
@@ -271,13 +282,7 @@ class Generate extends Command
 				/* Install the packages required by the Buildtime dependencies */
 				foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
 						/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
-						system("apt-get --yes install $p_value", $out);
-						/* If the output code is more than 0 (error) */
-						if($out) {
-								$this->logger->error($this->getApplication()->translator->trans('generate.command', array('%command%' => "apt-get --yes install $p_value", '%code%' => $out)));
-
-								exit(-1);
-						}
+						$this->_system("apt-get --yes install $p_value");
 				}
 		}
 		$array_field['Standards-Version'] = '3.9.5';
@@ -316,13 +321,7 @@ class Generate extends Command
 								exit(-1);
 						}
                 } else {
-                    system($value, $out);
-					/* If the output code is more than 0 (error) */
-					if($out) {
-							$this->logger->error($this->getApplication()->translator->trans('generate.command', array('%command%' => $value, '%code%' => $out)));
-
-							exit(-1);
-					}
+                    $this->_system($value);
                 }
             }
         }
@@ -399,13 +398,7 @@ class Generate extends Command
 		/* The command dpkg-buildpackage must be executed in the package directory */
 		chdir($dirname);
         /* Create the DEB package */
-		system("dpkg-buildpackage -us -uc", $out);
-		/* If the output code is more than 0 (error) */
-		if($out) {
-				$this->logger->error($this->getApplication()->translator->trans('generate.command', array('%command%' => "dpkg-buildpackage -us -uc", '%code%' => $out)));
-
-				exit(-1);
-		}
+		$this->_system("dpkg-buildpackage -us -uc");
         chdir($pwd);
     }
 
@@ -443,7 +436,7 @@ class Generate extends Command
 		/* Install the packages required by the Buildtime dependencies */
 		foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
 				/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
-				echo shell_exec("pacman -Sy --noconfirm --needed $p_value");
+				$this->_system("pacman -Sy --noconfirm --needed $p_value");
 		}
 	}
 	if (isset($struct_package['Runtime']['Dependencies'])) {
@@ -475,7 +468,7 @@ class Generate extends Command
 								exit(-1);
 						}
                 } else {
-                    echo shell_exec($value);
+                    $this->_system($value);
                 }
             }
         }
@@ -548,12 +541,12 @@ class Generate extends Command
         }
 
         /* Change owner of the package directory (to allow the creation of the package) */
-        system("/bin/chown -R nobody $dirname");
+        $this->_system("/bin/chown -R nobody $dirname");
         /* Move in the package directory */
         chdir($dirname);
         /* Launch the creation of the package */
         /* IMPORTANT The makepkg command is launched with nobody user because since February 2015, root user cannot use this command */
-        echo shell_exec('sudo -u nobody makepkg');
+        $this->_system('sudo -u nobody makepkg');
         #echo shell_exec('makepkg');
         fclose($handle);
         /* To come back in usual directory (to write the output file in the right place */
@@ -587,7 +580,7 @@ class Generate extends Command
 		$array_field['BuildRequires'] = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
 		/* Install the packages required by the Buildtime dependencies */
 		foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
-				echo shell_exec("yum -y install $p_value");
+				$this->_system("yum -y install $p_value");
 		}
 	}
 	if (isset($struct_package['Runtime']['Dependencies'])) {
@@ -620,7 +613,7 @@ class Generate extends Command
 								exit(-1);
 						}
                 } else {
-                    echo shell_exec($value);
+                    $this->_system($value);
                 }
             }
         }
@@ -719,7 +712,7 @@ class Generate extends Command
         }
 
         /* Launch the creation of the package */
-        echo shell_exec('rpmbuild -ba ~/rpmbuild/SPECS/p.spec');
+        $this->_system('rpmbuild -ba ~/rpmbuild/SPECS/p.spec');
         fclose($handle);
     }
 }
