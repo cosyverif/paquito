@@ -420,7 +420,10 @@ class Generate extends Command
 		# DELETE $list_buildepend = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 1);
 		$array_field['makedepends'] = '('.$this->generate_list_dependencies($struct_package['Build']['Dependencies'], 1).')';
 		/* Install the packages required by the Buildtime dependencies */
-		echo shell_exec('pacman -Sy --noconfirm '.$this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0));
+		foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
+				/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
+				echo shell_exec("pacman -Sy --noconfirm --needed $p_value");
+		}
 	}
 	if (isset($struct_package['Runtime']['Dependencies'])) {
 		/* This variable will contains the list of dependencies (to run) */
