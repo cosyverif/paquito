@@ -28,8 +28,10 @@ php="php -d open_basedir= $m_phar $m_posix $m_openssl $m_zip"
 curl -sS https://getcomposer.org/installer | $php
 $php composer.phar install
 
-# Get Paquito source code
-mkdir Paquito-src/ # /!\ Change the destination if this directory changes its name (in the configuration file of Paquito)
-git clone  https://github.com/CosyVerif/paquito
-mv paquito/* Paquito-src
-rm -Rf paquito/
+if [[ ! -z "$1" && $1 == "--package" ]] ; then
+		# Get Paquito source code
+		mkdir Paquito-src/ # /!\ Change the destination if this directory changes its name (in the configuration file of Paquito)
+		git clone  https://github.com/CosyVerif/paquito
+		mv paquito/* Paquito-src
+		rm -Rf paquito/
+fi

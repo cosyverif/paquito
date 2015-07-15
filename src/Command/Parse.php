@@ -35,12 +35,12 @@ class Parse extends Command
         if (!is_file($filename)) {
             $logger->error($this->getApplication()->translator->trans('parse.exist', array('%filename%' => $filename)));
 
-            return -1;
+            exit(-1);
     /* The file is not readable */
         } elseif (!is_readable($filename)) {
             $logger->error($this->getApplication()->translator->trans('parse.right', array('%filename%' => $filename)));
 
-            return -1;
+            exit(-1);
         }
         # Parse the file and return its content like a array (hashmap)
         $this->getApplication()->data = Yaml::parse(file_get_contents($filename));

@@ -1,18 +1,19 @@
 check:
+        bit: "The permissions of the file %file% own a special bit (%permissions%)"
         field: "The field %value% is unexpected"
         incorrect: "The content of the field %field% is incorrect (%value%)"
         missing: "The field %field% doesn't contain all required fields"
         package: "Bad type of package (%val%)"
         void: "The field %key% is empty"
-        bit: "The permissions of the file %file% own a special bit (%permissions%)"
 generate:
         chdir: "Failed to change directory (%dst%)"
+        command: "The command : \"%command%\" has failed (output code %code%)"
         copy: "Copy of %src% to %dst% failed"
         copyfile: "Copy of %src% to %dst% faile (his name is already taken by a directory)"
         copyexist: "The file %dst% already existed ans has been overwritten by the copy of %src%"
-        mkdir: "Creation of the directory %dir% failed"
         direxist: "Creation of the directory %dir% canceled (already exists)"
         dirfile: "Creation of the directory %dir% failed (his name is already taken by a file)"
+        mkdir: "Creation of the directory %dir% failed"
 parse:
         exist: "The element %filename% don't exist or is not a regular file"
         right: "The file %filename% can't to be read"

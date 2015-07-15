@@ -1,12 +1,13 @@
 check:
+        bit: "Les permissions du fichier %file% comportent un bit spécial (%permissions%)"
         field: "Le champ %value% n'est pas attendu"
         incorrect: "Le contenu du champ %field% est incorrect (%value%)"
         missing: "Le champ %field% ne contient pas tous les champs requis"
         package: "Mauvais type de paquet (%val%)"
         void: "Le champ %key% est vide"
-        bit: "Les permissions du fichier %file% comportent un bit spécial (%permissions%)"
 generate:
         chdir: "Echec du changement de répertoire (%dst%)"
+        command: "Echec de la commande : \"%command%\" (code sortie %code%)"
         copy: "Echec de la copie du fichier %src% vers %dst%"
         copyfile: "Echec de la copie du fichier %src% vers %dst% (son nom est déjà pris par un répertoire)"
         copyexist: "Le fichier %dst% existait déjà et a été écrasé par la copie de %src%"
