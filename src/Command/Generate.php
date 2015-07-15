@@ -274,7 +274,10 @@ class Generate extends Command
 				$list_buildepend =  str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0));
 				$array_field['Build-Depends'] = "$list_buildepend";
 				/* Install the packages required by the Buildtime dependencies */
-				echo shell_exec('apt-get --yes install '.$this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0));
+				foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
+						/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
+						echo shell_exec("apt-get --yes install $p_value");
+				}
 		}
 		if (isset($struct_package['Runtime']['Dependencies'])) {
 				/* This variable will contains the list of dependencies (to run) */
