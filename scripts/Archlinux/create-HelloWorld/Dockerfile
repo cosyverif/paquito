@@ -1,17 +1,18 @@
 FROM base/archlinux
 
 COPY paquito-0.2-1-x86_64.pkg.tar.xz . 
-RUN ls -l
 RUN pacman -Sy
 RUN pacman-key --init && pacman-key --refresh-keys
-RUN pacman -S --noconfirm php git curl gcc openssl sudo base-devel tcc
+RUN pacman -S --noconfirm php git curl gcc openssl sudo base-devel 
 RUN pacman-db-upgrade
+RUN pacman -S --noconfirm tcc
 RUN pacman -U --noconfirm paquito-0.2-1-x86_64.pkg.tar.xz
-RUN git clone -b testing https://github.com/CosyVerif/paquito.git
-RUN git clone https://github.com/saucisson/hello-world 
-RUN cp paquito/src/pconf_HelloWorld.yml hello-world/
-WORKDIR hello-world/
-ADD src-test/ src-test/
+RUN git clone https://github.com/sarahhadbi/hello-world
+RUN cp hello-world/pconf_HelloWorld.yml .
+RUN cp -R hello-world/src /src
+RUN ls -al
+# ----------------------
 ADD src-test-user/ src-test-user/
+RUN ls -al 
 RUN paquito generate-test pconf_HelloWorld.yml
 RUN ls -l
