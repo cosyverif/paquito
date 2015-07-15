@@ -41,12 +41,14 @@ Packages:
                                         Debian:
                                                 All: build-essential
                                         Centos: "<none>"
+                                        Archlinux:"<none>"
                 Build:
                         Dependencies:
                                 base-devel:
                                         Debian:
                                                 All: build-essential
                                         Centos: "<none>"
+                                        Archlinux:"<none>"
                                 php-xml:
                                         Debian: "<none>"
                                         Archlinux: "<none>"
