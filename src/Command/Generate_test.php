@@ -427,14 +427,14 @@ class Generate_test extends Command
 			'install' => "('$package_name.install')", );
 		
 		/* s'i le champ Dependencies de Test existe on récupére les dependances à l'execution */
-		if(isset($struct_package['Test']['Dependencies'])) {
+		/*if(isset($struct_package['Test']['Dependencies'])) {
 
 		$list_rundepend = str_replace(' ', ' ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
 		$array_field['depends'] = "( $package_name $list_rundepend)";
 		}
 		else {
 				$array_field['depends'] = "($package_name)"	;
-		}
+		}*/
 
         /* Create and open the file "control" (in write mode) */
         $handle = fopen($dirname.'/PKGBUILD', 'w');
