@@ -20,6 +20,6 @@ docker cp $ID:/helloworld-test_1.2_amd64.deb test-HelloWorld/
 
 # Test HelloWorld
 cd test-HelloWorld/
-tar -zcvf deb-tar-Test.tar.gz Dockerfile installation-Bats.sh helloworld_1.2_amd64.deb helloworld-test_1.2_amd64.deb
+tar -zcvf deb-tar-Test.tar.gz Dockerfile  helloworld_1.2_amd64.deb helloworld-test_1.2_amd64.deb
 cd ..
 docker build -t debian:paquito - < test-HelloWorld/deb-tar-Test.tar.gz
