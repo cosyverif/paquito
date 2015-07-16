@@ -29,7 +29,8 @@ Packages:
                                 php-cli:
                                         Debian:
                                                 All: php5-cli
-                                        Archlinux: "<none>"
+                                        Archlinux:
+                                                All: php-cgi
                                 php-process:
                                         Debian: "<none>"
                                         Archlinux: "<none>"
