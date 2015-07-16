@@ -282,6 +282,12 @@ class Generate_test extends Command
 		if(isset($struct_package['Test']['Dependencies'])) {
 
 				$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
+	/* Install the packages required by the  dependencies */
+				foreach(explode(' ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0)) as $p_value) {
+						/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
+						shell_exec("apt-get --yes install $p_value");
+				}
+
 				$array_field['depends'] = "$package_name, $list_rundepend";
 		}
 		else {
@@ -334,7 +340,14 @@ class Generate_test extends Command
 		$this->_fwrite($hand,"usr/share/test/installation.bats   usr/share/test"."\n", "$dirname/debian/$package_name-test.install");
 	
       
-
+		/* on execute le necessaire pour l'installation de BATS */
+		$path=getcwd();
+		shell_exec('git clone https://github.com/sstephenson/bats.git ');
+		shell_exec('cd bats');
+		chdir('bats');
+		shell_exec('./install.sh /usr/local');
+		chdir($path);
+		shell_exec('rm -rf bats');
 		/* defaut test */
 
       	if(!array_key_exists('Test',$struct_package)) {
@@ -349,6 +362,7 @@ class Generate_test extends Command
 		copy("installation.bats","./".$dirname."/".$directory."/installation.bats");
 		$handle_post = fopen("$dirname/debian/postinst", 'w');
 		$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/debian/postinst");
+		$this->_fwrite($handle_post, "./installation-Bats.sh \n\n", "$dirname/debian/postinst");
 		$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.bats\n\n", "$dirname/debian/postinst");
 		$this->_fwrite($handle_post, "bats --tap /usr/share/test/installation.bats\n\n", "$dirname/debian/postinst");
 	
@@ -372,6 +386,7 @@ class Generate_test extends Command
 	$handle_post = fopen("$dirname/debian/postinst", 'w');
 	$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/debian/postinst");
 	/* commandes du test par defaut */
+	
 	$this->_fwrite($handle_post, "chmod 755 /usr/share/test/installation.bats\n\n", "$dirname/debian/postinst");
 	$this->_fwrite($handle_post, "bats --tap /usr/share/test/installation.bats\n\n", "$dirname/debian/postinst");
 
@@ -430,6 +445,12 @@ class Generate_test extends Command
 		/*if(isset($struct_package['Test']['Dependencies'])) {
 
 		$list_rundepend = str_replace(' ', ' ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
+	/* Install the packages required by the  dependencies */
+			//	foreach(explode(' ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0)) as $p_value) {
+						/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
+					/*	shell_exec("pacman -Sy --noconfirm --needed $p_value");
+			}
+
 		$array_field['depends'] = "( $package_name $list_rundepend)";
 		}
 		else {
@@ -445,6 +466,13 @@ class Generate_test extends Command
         /* To come back in actual directory if a "cd" command is present in pre-build commands */
 	$pwd = getcwd();
 	
+		/* on execute le necessaire pour l'installation de BATS */
+		shell_exec('git clone https://github.com/sstephenson/bats.git ');
+		shell_exec('cd bats');
+		chdir('bats');
+		shell_exec('./install.sh /usr/local');
+		chdir($pwd);
+		shell_exec('rm -rf bats');
 
 		/* write the default file */
 		$this->Default_File($struct_package['Files']);
@@ -598,7 +626,13 @@ protected function make_centos($package_name, $struct_package) {
 		/* s'i le champ Dependencies de Test existe on récupére les dependances à l'execution */
 		if(isset($struct_package['Test']['Dependencies'])) {
 
-		$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
+				$list_rundepend = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
+	/* Install the packages required by the dependencies */
+				foreach(explode(' ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0)) as $p_value) {
+						/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
+						shell_exec("yum -y install  $p_value");
+				}
+
 		$array_field['Requires'] ="$package_name , $list_rundepend" ;
 		}
 		else {
@@ -639,7 +673,14 @@ protected function make_centos($package_name, $struct_package) {
         /* List of files to include */
 		$spec_files_add = array();
 	
-	/*write a default test */
+		/* on execute le necessaire pour l'installation de BATS */
+		shell_exec('git clone https://github.com/sstephenson/bats.git ');
+		shell_exec('cd bats');
+		chdir('bats');
+		shell_exec('./install.sh /usr/local');
+		chdir($pwd);
+		shell_exec('rm -rf bats');
+		/*write a default test */
 		$this->Default_File($struct_package['Files']);
 
 
@@ -679,12 +720,7 @@ protected function make_centos($package_name, $struct_package) {
 			$this->_fwrite($handle, "\t$value\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
 		}
 
-		/* test Command */
-		//$_SERVER['PATH']=$_SERVER['PATH'].":/usr/local/bin/bats";
-		//echo $_SERVER['PATH']."\n";
-		//exec('export PATH='.$PATH.':/usr/local/bin');
-
-                $this->_fwrite($handle, "\n%post\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
+	                $this->_fwrite($handle, "\n%post\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
                 $this->_fwrite($handle, "\tchmod 755 /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
                 $this->_fwrite($handle, "\t/usr/local/bin/bats --tap /usr/share/test/installation.bats\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
                   
@@ -718,8 +754,7 @@ protected function make_centos($package_name, $struct_package) {
                     }
 		}
 
-		//echo $directory;
-
+	
                 /* Write the "mkdir" command in the %install  section */
                 $this->_fwrite($handle, "\tmkdir -p \$RPM_BUILD_ROOT/$directory/\n", "$_SERVER[HOME]rpmbuild/SPECS/pTest.spec");
             }
