@@ -20,6 +20,6 @@ docker cp $ID:/root/rpmbuild/RPMS/x86_64/helloworld-test-1.2-1.el6.x86_64.rpm te
 
 # Test HelloWorld
 cd test-HelloWorld/
-tar -zcvf cent-tar-Test.tar.gz Dockerfile  helloworld-1.2-1.el6.x86_64.rpm helloworld-test-1.2-1.el6.x86_64.rpm tcc-9999-115.1.x86_64.rpm installation-Bats.sh
+tar -zcvf cent-tar-Test.tar.gz Dockerfile  helloworld-1.2-1.el6.x86_64.rpm helloworld-test-1.2-1.el6.x86_64.rpm tcc-9999-115.1.x86_64.rpm 
 cd ..
 docker build -t centos:paquito - < test-HelloWorld/cent-tar-Test.tar.gz
