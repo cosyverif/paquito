@@ -20,6 +20,6 @@ docker cp $ID:/helloworld-1.2-x86_64-test/helloworld-test-1.2-1-x86_64.pkg.tar.x
 
 # Test HelloWorld
 cd test-HelloWorld/
-tar -zcvf arch-tar-Test.tar.gz Dockerfile helloworld-1.2-1-x86_64.pkg.tar.xz helloworld-test-1.2-1-x86_64.pkg.tar.xz installation-Bats.sh
+tar -zcvf arch-tar-Test.tar.gz Dockerfile helloworld-1.2-1-x86_64.pkg.tar.xz helloworld-test-1.2-1-x86_64.pkg.tar.xz 
 cd ..
 docker build -t base/archlinux:paquito - < test-HelloWorld/arch-tar-Test.tar.gz
