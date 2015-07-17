@@ -126,15 +126,23 @@ class Generate extends Command
                 unset($explode_array[count($explode_array) - 1]);
                 /* Transform the array in a string */
                 $directory = implode('/', $explode_array);
-                /* Create recursively the directories (if don't exist) */
-				if (!is_dir($dest_directory.'/'.$directory.'/')) {
+				/* If the directory would exist */
+				if(file_exists($dest_directory.'/'.$directory)) {
+						/* A file has already the name of the directory that we want create (on Linux, a directory is a file !)
+						 * Else, that means the directory is already created */
+						if (!is_dir($dest_directory.'/'.$directory.'/')) {
+							$this->logger->error($this->getApplication()->translator->trans('generate.dirfile', array('%dir%' => $dest_directory.'/'.$directory.'/')));
+
+							exit(-1);
+						}
+						$this->logger->warning($this->getApplication()->translator->trans('generate.direxist', array('%dir%' => $dest_directory.'/'.$directory.'/')));	
+				} else {
+						/* Create recursively the directories (if doesn't exist) */
 						if (!mkdir($dest_directory.'/'.$directory.'/', 0755, true)) {
 								$this->logger->error($this->getApplication()->translator->trans('generate.mkdir', array('%dir%' => $dest_directory.'/'.$directory.'/')));
 
-								exit -1;
+								exit(-1);
 						}
-				} else {
-					$this->logger->warning($this->getApplication()->translator->trans('generate.direxist', array('%dir%' => $dest_directory.'/'.$directory.'/')));	
 				}
             }
             if (is_dir($dest_directory.$key)) {
@@ -378,12 +386,12 @@ class Generate extends Command
 
         if (count($post_permissions) || isset($struct_package['Install']['Post'])) {
             $handle_post = fopen("$dirname/debian/postinst", 'w');
-						if (isset($struct_package['Install']['Post'])) {
-							/* Write each command */
-							foreach ($struct_package['Install']['Post'] as $key => $value) {
-								$this->_fwrite($handle_script, "$value\n", "$dirname/debian/postinst");
-							}
-						}
+			if (isset($struct_package['Install']['Post'])) {
+					/* Write each command */
+					foreach ($struct_package['Install']['Post'] as $key => $value) {
+							$this->_fwrite($handle_post, "$value\n", "$dirname/debian/postinst");
+					}
+			}
             if (count($post_permissions)) {
                 $this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/debian/postinst");
                 foreach ($post_permissions as $key => $value) {
