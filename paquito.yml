@@ -1,0 +1,70 @@
+Name: Paquito
+
+Version: 0.2
+
+Homepage: https://www.paquito.fr 
+
+Summary: Programme de packaging Paquito
+
+Description: Création automatique de paquet Debian (DEB), Archlinux (PKG) et CentOS (RPM) à partir de sources
+
+Copyright: La licence
+
+Maintainer: Corentin <coco@gmail.com>
+
+Authors:
+      - sarah <sarah@gmail.com>
+      - corentin <corentin@gmail.com>
+
+Packages:
+        paquito:
+                Type: binary
+                Files:
+                        /usr/share/paquito.phar: Paquito-src/paquito
+                        /usr/bin/paquito:
+                                Source: Paquito-src/paquito.sh
+                                Permissions: 755
+                Runtime:
+                        Dependencies:
+                                php-cli:
+                                        Debian:
+                                                All: php5-cli
+                                        Archlinux:
+                                                All: php-cgi
+                                php-process:
+                                        Debian: "<none>"
+                                        Archlinux: "<none>"
+                                rpm-build:
+                                        Debian:
+                                                All: dh-make
+                                        Archlinux: "<none>"
+                                base-devel:
+                                        Debian:
+                                                All: build-essential
+                                        Centos: "<none>"
+                                        Archlinux: "<none>"
+
+                Build:
+                        Dependencies:
+                                base-devel:
+                                        Debian:
+                                                All: build-essential
+                                        Centos: "<none>"
+                                        Archlinux: "<none>"
+                                php-xml:
+                                        Debian: "<none>"
+                                        Archlinux: "<none>"
+                                php-process:
+                                        Debian: "<none>"
+                                        Archlinux: "<none>"
+                                rpmdevtools: 
+                                        Debian: "<none>"
+                                        Archlinux: "<none>"
+                                rpm-build:
+                                        Debian:
+                                                All: dh-make
+                                        Archlinux: "<none>"
+                        Commands:
+                                - cd Paquito-src/
+                                - bin/create-phar.sh
+                                - cd ..
