@@ -20,7 +20,7 @@ class Parse extends Command
             ->addArgument(
                 'input',
                 InputArgument::REQUIRED,
-                'Name of a YaML file'
+                'Name of the directory which contains the sources and the paquito.yaml file'
             )
             ;
     }
@@ -28,21 +28,29 @@ class Parse extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         /* Get path and name of the input file */
-        $filename = $input->getArgument('input');
-    /* Launch Logger module */
-    $logger = new ConsoleLogger($output);
-    /* The file not exists */
-        if (!is_file($filename)) {
-            $logger->error($this->getApplication()->translator->trans('parse.exist', array('%filename%' => $filename)));
+        $basename = $input->getArgument('input');
+		/* Launch Logger module */
+		$logger = new ConsoleLogger($output);
+
+		/* Security precaution : if it misses a slash at the end of the $dest_directory variable, add this slash  */
+		if (substr($basename, -1) != '/') {
+				$basename .= '/';
+		}
+
+		/* The file not exists */
+        if (!is_file("$basename"."paquito.yaml")) {
+            $logger->error($this->getApplication()->translator->trans('parse.exist', array('%basename%' => "$basename"."paquito.yaml")));
 
             exit(-1);
-    /* The file is not readable */
-        } elseif (!is_readable($filename)) {
-            $logger->error($this->getApplication()->translator->trans('parse.right', array('%filename%' => $filename)));
+        } elseif (!is_readable("$basename"."paquito.yaml")) { /* If the file is not readable */
+            $logger->error($this->getApplication()->translator->trans('parse.right', array('%basename%' => "$basename"."paquito.yaml")));
 
             exit(-1);
         }
         # Parse the file and return its content like a array (hashmap)
-        $this->getApplication()->data = Yaml::parse(file_get_contents($filename));
+        $this->getApplication()->data = Yaml::parse(file_get_contents("$basename"."paquito.yaml"));
+
+		/* Change the current directory to the project directory */
+		chdir($basename);
     }
 }

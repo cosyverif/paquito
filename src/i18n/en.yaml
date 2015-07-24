@@ -9,14 +9,16 @@ generate:
         chdir: "Failed to change directory (%dst%)"
         command: "The command : \"%command%\" has failed (output code %code%)"
         copy: "Copy of %src% to %dst% failed"
-        copyfile: "Copy of %src% to %dst% faile (his name is already taken by a directory)"
-        copyexist: "The file %dst% already existed ans has been overwritten by the copy of %src%"
+        copyfile: "Copy of %src% to %dst% failed (his name is already taken by a directory)"
+        copyexist: "The file %dst% already exists and has been overwritten by the copy of %src%"
         direxist: "Creation of the directory %dir% canceled (already exists)"
         dirfile: "Creation of the directory %dir% failed (his name is already taken by a file)"
         mkdir: "Creation of the directory %dir% failed"
+        missing: "The element %path% doesn't exist"
+        rmkdir: "Impossible to create the directory chain (%dir% is a regular file)"
 parse:
-        exist: "The element %filename% don't exist or is not a regular file"
-        right: "The file %filename% can't to be read"
+        exist: "The element %basename% doesn't exist or is not a regular file"
+        right: "The file %basename% can't to be read"
 prune:
         exist: "Unknown distribution"
 write:

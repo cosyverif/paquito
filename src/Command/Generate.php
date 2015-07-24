@@ -22,7 +22,7 @@ class Generate extends Command
             ->addArgument(
                 'input',
                 InputArgument::REQUIRED,
-                'Name of a YaML file'
+                'Name of the directory which contains the sources and the paquito.yaml file'
             )
             ->addArgument(
                 'output',
@@ -111,68 +111,90 @@ class Generate extends Command
         }
     }
 
-    protected function move_files($dest_directory, $struct)
-    {
-        /* Array to store the permissions to apply in post-installation commands */
-        $array_perm = array();
-        /* Copy each file in the directory of the current package */
-        /* TODO Faire wildcard */
-        foreach ($struct as $key => $value) {
-            /* The destination file will be in a sub-directory, so we have to create each sub-directory in the destination directory */
-            if (strrpos($key, '/') !== false) {
-                /* Split the path in a array */
-                $explode_array = explode('/', ltrim($key, '/'));
-                /* Remove the name of the file */
-                unset($explode_array[count($explode_array) - 1]);
-                /* Transform the array in a string */
-                $directory = implode('/', $explode_array);
-				/* If the directory would exist */
-				if(file_exists($dest_directory.'/'.$directory)) {
-						/* A file has already the name of the directory that we want create (on Linux, a directory is a file !)
-						 * Else, that means the directory is already created */
-						if (!is_dir($dest_directory.'/'.$directory.'/')) {
-							$this->logger->error($this->getApplication()->translator->trans('generate.dirfile', array('%dir%' => $dest_directory.'/'.$directory.'/')));
+	function move_files($dest_directory, $struct)
+	{
+			/* Array to store the permissions to apply in post-installation commands */
+			$array_perm = array();
+			/* Security precaution : if it misses a slash at the end of the $dest_directory variable, add this slash  */
+			if (substr($dest_directory, -1) != '/') {
+					$dest_directory .= '/';
+			}
+
+			/* Copy each file in the directory of the current package */
+			/* TODO Faire wildcard */
+			foreach ($struct as $key => $value) {
+
+					/* If the source doesn't exist */
+					if (! file_exists($value['Source'])) {
+							$this->logger->error($this->getApplication()->translator->trans('generate.missing', array('%path%' => $value['Source'])));
 
 							exit(-1);
-						}
-						$this->logger->warning($this->getApplication()->translator->trans('generate.direxist', array('%dir%' => $dest_directory.'/'.$directory.'/')));	
-				} else {
-						/* Create recursively the directories (if doesn't exist) */
-						if (!mkdir($dest_directory.'/'.$directory.'/', 0755, true)) {
-								$this->logger->error($this->getApplication()->translator->trans('generate.mkdir', array('%dir%' => $dest_directory.'/'.$directory.'/')));
+					}
 
-								exit(-1);
-						}
-				}
-            }
-            if (is_dir($dest_directory.$key)) {
-                /* Split the path in a array */
-                $explode_array = explode('/', ltrim($value['Source'], '/'));
+					/* If the source is a directory */
+					if (is_file($value['Source'])) {
+							/* If the file will be renamed in its destination */	
+							if (substr($key, -1) != '/') {
+									$explode_array = explode('/', ltrim($key, '/'));
+									/* Get the new name */
+									$filename = end($explode_array);
+									/* If the moved file will be in a directory */
+									if (count($explode_array) > 1) {
+											/* Remove the new name to keep only the destination path */
+											unset($explode_array[count($explode_array) - 1]);
+											/* Transform the array in a string (which is the destination path) */
+											$key = implode('/', $explode_array).'/';
+									}
+							} else { /* The destination file name will be the same than the source */
+									$explode_array = explode('/', ltrim($value['Source'], '/'));
+									/* Get the name */
+									$filename = end($explode_array);
+							}
+					}
 
-                /* Copy the file in the directory package */
-				$this->_copy($value['Source'], $dest_directory.$key.'/'.$explode_array[count($explode_array) - 1]);
-                #if (!copy($value['Source'], $dest_directory.$key.$explode_array[count($explode_array) - 1])) {
-                #    $this->logger->error($this->getApplication()->translator->trans('generate.copy', array('%src%' => $value['Source'], '%dst%' => $dest_directory.$key.$explode_array[count($explode_array) - 1])));
+					/* If the destination directory would exist */
+					if(file_exists($dest_directory.$key)) {
+							/* A file has already the name of the directory that we want create (on Linux, a directory is a file !)
+							 * Else, that means the directory is already created */
+							if (!is_dir($dest_directory.$key)) {
+									$this->logger->error($this->getApplication()->translator->trans('generate.dirfile', array('%dir%' => $dest_directory.$key)));
 
-                 #   exit -1;
-                #}
-                $array_perm[$key.$explode_array[count($explode_array) - 1]] = $value['Permissions'];
-            } else { /* If the moved file will have a new name (so there is a name at the end of the given path) */
-                /* Copy the file in the directory package */
-				$this->_copy($value['Source'], $dest_directory.$key);
-			#	if (!copy($value['Source'], $dest_directory.$key)) { /* !!! */
-             #       $this->logger->error($this->getApplication()->translator->trans('generate.copy', array('%src%' => $value['Source'], '%dst%' => $dest_directory.$key)));
+									exit(-1);
+							}
+							$this->logger->warning($this->getApplication()->translator->trans('generate.direxist', array('%dir%' => $dest_directory.$key)));	
+					} else {
+							/* Create recursively the directories (if doesn't exist)
+							 * IMPORTANT : the PHP mkdir() function can recursively create directories, but here we create manually
+							 * directories in order to detect if there is a file which has the same name than a directory (so this
+							 * directory cannot be created). */
+							$r_dir = rtrim($dest_directory, '/');
+							/* For each directory of the recursive chain */
+							foreach (explode('/', $key) as $r_path) {
+									$r_dir .= "/$r_path";
+									/* If one of the chain directories is a file (so the directory cannot be created) */
+									if (is_file($r_dir)) {
+											$this->logger->error($this->getApplication()->translator->trans('generate.rmkdir', array('%dir%' => $r_dir)));
 
-              #      exit -1;
-              #  }
-                $array_perm[$key] = $value['Permissions'];
-            }
-        }
+											exit(-1);
+									}
+									/* Create gradually the directories */
+									$this->_mkdir($r_dir);
+							}
+					}
 
-        return $array_perm;
-    }
+					if (is_dir($value['Source'])) {
+							/* Copy the file in the directory package */
+							$this->_rcopy($value['Source'], $dest_directory.$key, $array_perm, $value['Permissions']);
+					} else { /* If the source is a file */
+						/* Copy the file in the directory package */
+						$this->_copy($value['Source'], $dest_directory.$key.$filename);
+						$array_perm[$key.$filename] = $value['Permissions'];
+					}
+			}
+			return $array_perm;
+	}
 
-    /* $id :
+    /* @param $id :
      * 0 -> Dependencies separated with spaces
      * 1 -> Dependencies in quotes and separated with spaces */
     protected function generate_list_dependencies($struct, $id)
@@ -211,6 +233,39 @@ class Generate extends Command
                     $this->logger->error($this->getApplication()->translator->trans('generate.copy', array('%src%' => $source, '%dst%' => $destination)));
 
                     exit -1;
+			}
+	}
+
+	/* Recursively copy files from one directory to another
+	 * IMPORTANT The $array_perm argument is a array (owned
+	 * by the move_file() function) passed by reference */
+	function _rcopy($src, $dest, &$array_perm, $perm){
+			/* If source is not a directory stop processing */
+			if (!is_dir($src)) {
+					return false;
+			}
+
+			/* If the destination directory does not exist create it */
+			if (!is_dir($dest)) {
+					$this->_mkdir($dest);
+			}
+
+			/* Open the source directory to read in files
+			 * IMPORTANT The backslash before DirectoryIterator is
+			 * to resolve namespace problem with this class */
+			$i = new \DirectoryIterator($src);
+			foreach ($i as $file) {
+					if ($file->isFile()) {
+							$this->_copy("$src/$file", "$dest/$file");
+
+							/* Remove the package directory of the string */
+							$explode_array = explode('/', ltrim($dest, '/'));
+							array_shift($explode_array);
+							$key = ltrim(implode('/', $explode_array).'/', '/');
+							$array_perm[$key.$file] = $perm;
+					} else if (!$file->isDot() && $file->isDir()) {
+							$this->_rcopy("$src/$file", "$dest/$file", $array_perm, $perm);
+					}
 			}
 	}
 
@@ -351,7 +406,7 @@ class Generate extends Command
             exit(-1);
 		}
 
-		if (file_put_contents("$dirname/debian/rules", "#!/usr/bin/make -f\nDPKG_EXPORT_BUILDFLAGS = 1\ninclude /usr/share/dpkg/default.mk\n%:\n\tdh $@") === false) {
+		if (file_put_contents("$dirname/debian/rules", "#!/usr/bin/make -f\nDPKG_EXPORT_BUILDFLAGS = 1\ninclude /usr/share/dpkg/default.mk\n%:\n\tdh $@\noverride_dh_usrlocal:") === false) {
             $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/rules")));
 
             exit(-1);
