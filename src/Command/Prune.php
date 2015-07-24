@@ -23,7 +23,7 @@ class Prune extends Command
             ->addArgument(
                 'input',
                 InputArgument::REQUIRED,
-                'Name of a YaML file'
+                'Name of the directory which contains the sources and the paquito.yaml file'
             )
             ->addArgument(
                 'output',

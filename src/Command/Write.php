@@ -26,7 +26,7 @@ class Write extends Command
             ->addArgument(
                 'input',
                 InputArgument::OPTIONAL,
-                'Name of a YaML file'
+                'Name of the directory which contains the sources and the paquito.yaml file'
             )
             ;
     }

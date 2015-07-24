@@ -17,8 +17,8 @@ generate:
         missing: "The element %path% doesn't exist"
         rmkdir: "Impossible to create the directory chain (%dir% is a regular file)"
 parse:
-        exist: "The element %filename% doesn't exist or is not a regular file"
-        right: "The file %filename% can't to be read"
+        exist: "The element %basename% doesn't exist or is not a regular file"
+        right: "The file %basename% can't to be read"
 prune:
         exist: "Unknown distribution"
 write:
