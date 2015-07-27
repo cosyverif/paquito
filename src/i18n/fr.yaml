@@ -1,10 +1,10 @@
 check:
         bit: "Les permissions du fichier %file% comportent un bit spécial (%permissions%)"
-        field: "Le champ %value% n'est pas attendu"
+        field: "Le champ %value% n'est pas attendu (champ supérieur : %superior%)"
         incorrect: "Le contenu du champ %field% est incorrect (%value%)"
         missing: "Le champ %field% ne contient pas tous les champs requis"
         package: "Mauvais type de paquet (%val%)"
-        void: "Le champ %key% est vide"
+        void: "Le champ %key% est vide (%superior%)"
 generate:
         chdir: "Echec du changement de répertoire (%dst%)"
         command: "Echec de la commande : \"%command%\" (code sortie %code%)"
