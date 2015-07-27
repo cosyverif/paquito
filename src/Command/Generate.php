@@ -52,33 +52,6 @@ class Generate extends Command
         /* Launch Logger module */
         $this->logger = new ConsoleLogger($output);
 
-        /* The file /etc/os-release contains the informations about the distribution (where is executed this program)*/
-        #$array_ini = parse_ini_file('/etc/os-release');
-        /* Get the name of the distribution */
-        #$this->getApplication()->dist_name = ucfirst($array_ini['ID']);
-        /*switch ($this->getApplication()->dist_name) {
-        case 'Debian':
-            $package_system = 'apt-get -y install';
-            break;
-        case 'Archlinux':
-            /* TODO Install on Archlinux the package "filesystem" */
-            #$this->getApplication()->dist_name = 'Archlinux';
-    /*	    $package_system = 'pacman --noconfirm -S';
-            break;
-        case 'Centos':
-            $package_system = 'yum -y install';
-            break;
-        default:
-            $this->logger->error($this->getApplication()->translator->trans('prune.exist'));
-
-            exit(-1);
-        }*/
-        /* Get the architecture of the current machine */
-        /* TODO La fonction posix_name() ne fonctionnera pas sous Archlinux si l'extension de PHP "posix"
-         * (extension=posix.so) est commentée dans le fichier /etc/php/php.ini
-         * Sous CentOS, il faut télécharger le paquet php-process pour utiliser les fonctions POSIX */
-        $this->getApplication()->dist_arch = posix_uname();
-        $this->getApplication()->dist_arch = $this->getApplication()->dist_arch['machine'];
         /* For each package */
         foreach ($this->struct['Packages'] as $key => $value) {
             $struct_package = $value;
@@ -316,15 +289,15 @@ class Generate extends Command
     {
         if ($struct_package['Type'] == 'binary') {
             if ($this->getApplication()->dist_arch == 'x86_64') {
-                $this->getApplication()->dist_arch = 'amd64';
+                $package_arch = 'amd64';
             } else {
-                $this->getApplication()->dist_arch = 'i386';
+                $package_arch = 'i386';
             }
         } else {
-            $this->getApplication()->dist_arch = 'all';
+            $package_arch = 'all';
         }
 
-        $dirname = $package_name.'_'.$this->struct['Version'].'_'.$this->getApplication()->dist_arch;
+        $dirname = $package_name.'_'.$this->struct['Version'].'_'.$package_arch;
         /* Create the directory of the package */
         $this->_mkdir($dirname);
         /* Create the directory "debian/" (which is required) */
@@ -351,7 +324,7 @@ class Generate extends Command
 		$array_field['Standards-Version'] = '3.9.5';
 		$array_field['Homepage'] = $this->struct['Homepage']."\n"; # It has to has a line between the "Homepage" field and the "Package" field
 		$array_field['Package'] = $package_name;
-		$array_field['Architecture'] = $this->getApplication()->dist_arch;
+		$array_field['Architecture'] = $package_arch;
 		$array_field['Description'] = $this->struct['Summary']."\n ".$this->struct['Description'];
 		if (isset($struct_package['Runtime']['Dependencies'])) {
 				/* This variable will contains the list of dependencies (to run) */
@@ -470,12 +443,12 @@ class Generate extends Command
         /* The package type is not a binary */
         /* TODO Adapter pour les librairies et les autres types */
         if ($struct_package['Type'] != 'binary') {
-            $this->getApplication()->dist_arch = 'all';
-        } else {
-            $this->getApplication()->dist_arch = $this->getApplication()->dist_arch;
-        }
+            $package_arch = 'all';
+		} else {
+			$package_arch = $this->getApplication()->dist_arch;
+		}
 
-        $dirname = $package_name.'-'.$this->struct['Version'].'-'.$this->getApplication()->dist_arch;
+        $dirname = $package_name.'-'.$this->struct['Version'].'-'.$package_arch;
         /* Create the directory of the package */
         $this->_mkdir($dirname);
         /* Create the directory "src/" (which contains the sources) */
@@ -486,7 +459,7 @@ class Generate extends Command
             'pkgname' => "$package_name",
             'pkgver' => $this->struct['Version'],
             'pkgrel' => 1,
-            'arch' => $this->getApplication()->dist_arch,
+            'arch' => $package_arch,
             'url' => $this->struct['Homepage'],
             'license' => "('".$this->struct['Copyright']."')",
             'pkgdesc' => "'".$this->struct['Summary']."'",
@@ -621,10 +594,10 @@ class Generate extends Command
         /* The package type is not a binary */
         /* TODO Adapter pour les librairies et les autres types */
         if ($struct_package['Type'] != 'binary') {
-            $this->getApplication()->dist_arch = 'all';
+            $package_arch = 'all';
         }
         #$name = $key;
-        $dirname = $package_name - $this->struct['Version'].'-'.$this->getApplication()->dist_arch;
+        $dirname = $package_name - $this->struct['Version'].'-'.$package_arch;
         /* Creates the directories for building package (always in the home directory) */
         echo shell_exec('rpmdev-setuptree');
 
