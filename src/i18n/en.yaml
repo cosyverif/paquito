@@ -1,6 +1,6 @@
 check:
         bit: "The permissions of the file %file% own a special bit (%permissions%)"
-        field: "The field %value% is unexpected (superior field : %path%)"
+        field: "The field %value% is unexpected (%path%)"
         incorrect: "%value% : The content of the field %field% is incorrect (%path%)"
         missing: "The field %field% doesn't contain all required fields"
         package: "%val% : Bad type of package (%path%)"
