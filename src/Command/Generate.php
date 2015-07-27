@@ -594,9 +594,11 @@ class Generate extends Command
         /* The package type is not a binary */
         /* TODO Adapter pour les librairies et les autres types */
         if ($struct_package['Type'] != 'binary') {
-            $package_arch = 'all';
-        }
-        #$name = $key;
+				$package_arch = 'all';
+		} else {
+				$package_arch = $this->getApplication()->dist_arch;
+		}
+
         $dirname = $package_name - $this->struct['Version'].'-'.$package_arch;
         /* Creates the directories for building package (always in the home directory) */
         echo shell_exec('rpmdev-setuptree');
