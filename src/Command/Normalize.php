@@ -44,7 +44,7 @@ class Normalize extends Command
 				 	$source = $val;
 					$permission = '755';
 					if($test=='Test'){
-							if(empty(!$val)) {
+							if(!empty($val)) {
 									$this->newStruct['Packages'][$package][$test][$file][$dest] = array('Source' => $source,'Permissions' => $permission);
 							}
 							else {
@@ -52,7 +52,7 @@ class Normalize extends Command
 							}
 					}
 					else {
-							if(empty(!$val)) {
+							if(!empty($val)) {
 									$this->newStruct['Packages'][$package][$file][$dest] = array('Source' => $source,'Permissions' => $permission);
 							}
 							else {
