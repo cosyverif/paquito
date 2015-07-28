@@ -167,7 +167,10 @@ class Generate extends Command
 			return $array_perm;
 	}
 
-    /* @param $id :
+	/* Generates a string which contain a list of dependencies for a package
+	 * IMPORTANT: Manages groups of packages in Archlinux
+	 * @param $struct : Bit of the YAML structure which contains the dependencies
+     * @param $id : Changes the writing format of the returned string
      * 0 -> Dependencies separated with spaces
      * 1 -> Dependencies in quotes and separated with spaces */
     protected function generate_list_dependencies($struct, $id)
@@ -175,18 +178,48 @@ class Generate extends Command
         $list = null;
         /* If there are dependencies */
         if (!empty($struct)) {
-            /* Concatenate all build dependencies on one line */
-            foreach ($struct as $value) {
-                switch ($id) {
-                case 0:
-                    $list .= ' '.$value;
-                    break;
-                case 1:
-                    $list .= " '".$value."'";
-                    break;
-                }
-            }
-        }
+				/* If the current is an Archlinux (where there are package groups) */
+				if ($this->getApplication()->dist_name == 'Archlinux') {
+						/* Get a list of package groups (like "base-devel") */
+						$groups = rtrim(shell_exec("pacman -Qg | awk -F ' ' '{print $1}' | sort -u | sed -e ':a;N;s/\\n/ /;ba'"));
+						/* Transforms the string of package groups in an array (easier to use) */
+						$groups = explode(" ", $groups);
+				}
+				/* Concatenate all build dependencies on one line */
+				foreach ($struct as $value) {
+					/* If the current is an Archlinux (where there are package groups) */
+					if ($this->getApplication()->dist_name == 'Archlinux') {
+						/* If the dependencie is in fact a group */
+						if (in_array($value, $groups)) {
+								/* Get the list of packages which compose the group */
+								$p_groups = rtrim(shell_exec("pacman -Qgq base | sed -e ':a;N;s/\\n/ /;ba'"));
+								$p_groups = explode(" ", $p_groups);
+								/* Foreach package of the group */
+								foreach ($p_groups as $p_value) {
+										switch ($id) {
+										case 0:
+												$list .= ' '.$p_value;
+												break;
+										case 1:
+												$list .= " '".$p_value."'";
+												break;
+										}
+								}
+								continue;
+						}
+					}
+					/* In Archlinux, this next code is not executed
+					 * if the dependencie is a package */
+					switch ($id) {
+					case 0:
+							$list .= ' '.$value;
+							break;
+					case 1:
+							$list .= " '".$value."'";
+							break;
+					}
+				}
+		}
         /* Delete superfluous element (space) */
         return ltrim($list, ' ');
 	}
