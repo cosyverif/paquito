@@ -49,12 +49,12 @@ class Check extends Command
 	protected function check_files($fieldbase, $struct) {
 		foreach ($struct as $f_key => $f_value) {
 			/* If there is not source path (in others words the field is empty) */
-			if (empty($f_value)) {
-				$fieldbase = implode(' -> ', $fieldbase);
-				$this->logger->error($this->getApplication()->translator->trans('check.void', array('%key%' => $f_key, '%path%' => $fieldbase." -> $f_key")));
-
-				exit(-1);
-			}
+		#	if (empty($f_value)) {
+		#		$fieldbase = implode(' -> ', $fieldbase);
+		#		$this->logger->error($this->getApplication()->translator->trans('check.void', array('%key%' => $f_key, '%path%' => $fieldbase." -> $f_key")));
+#
+#				exit(-1);
+#			}
 			/* If the file will have specifics permissions */
 			if (is_array($f_value)) {
 				/* Analysis of the file structure (when there is the permissions) */
