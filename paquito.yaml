@@ -20,9 +20,9 @@ Packages:
         paquito:
                 Type: binary
                 Files:
-                        /usr/share/paquito.phar: Paquito-src/paquito
+                        /usr/share/paquito.phar: paquito
                         /usr/bin/paquito:
-                                Source: Paquito-src/paquito.sh
+                                Source: paquito.sh
                                 Permissions: 755
                 Runtime:
                         Dependencies:
@@ -42,7 +42,6 @@ Packages:
                                         Debian:
                                                 All: build-essential
                                         Centos: "<none>"
-                                        Archlinux: "<none>"
 
                 Build:
                         Dependencies:
@@ -50,7 +49,6 @@ Packages:
                                         Debian:
                                                 All: build-essential
                                         Centos: "<none>"
-                                        Archlinux: "<none>"
                                 php-xml:
                                         Debian: "<none>"
                                         Archlinux: "<none>"
@@ -65,6 +63,4 @@ Packages:
                                                 All: dh-make
                                         Archlinux: "<none>"
                         Commands:
-                                - cd Paquito-src/
                                 - bin/create-phar.sh
-                                - cd ..

@@ -1,10 +1,11 @@
 check:
         bit: "The permissions of the file %file% own a special bit (%permissions%)"
-        field: "The field %value% is unexpected"
-        incorrect: "The content of the field %field% is incorrect (%value%)"
-        missing: "The field %field% doesn't contain all required fields"
-        package: "Bad type of package (%val%)"
-        void: "The field %key% is empty"
+        field: "%path% : The field %value% is unexpected"
+        incorrect: "%path% : The content of the field %field% is incorrect (%value%)"
+        maintainer: "%path% : The maintainer is not correctly formed (%value%)\nThe good way is : FirstName FamilyName <mail@address@com>"
+        missing: "%field% : The field doesn't contain all required fields"
+        package: "%path% : Bad type of package (%value%)"
+        void: "%path% : The field %key% is empty"
 generate:
         chdir: "Failed to change directory (%dst%)"
         command: "The command : \"%command%\" has failed (output code %code%)"

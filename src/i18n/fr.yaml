@@ -1,10 +1,11 @@
 check:
         bit: "Les permissions du fichier %file% comportent un bit spécial (%permissions%)"
-        field: "Le champ %value% n'est pas attendu"
-        incorrect: "Le contenu du champ %field% est incorrect (%value%)"
-        missing: "Le champ %field% ne contient pas tous les champs requis"
-        package: "Mauvais type de paquet (%val%)"
-        void: "Le champ %key% est vide"
+        field: "%path% : Le champ %value% n'est pas attendu"
+        incorrect: "%path% : Le contenu du champ %field% est incorrect (%value%)"
+        maintainer: "%path% : Le mainteneur n'est pas correctement formulé (%value%)\nLa bonne façon de l'écrire est : Prénom Nom <mail@adresse@com>"
+        missing: "%field% : Le champ ne contient pas tous les champs requis"
+        package: "%path% : Mauvais type de paquet (%value%)"
+        void: "%path% : Le champ %key% est vide"
 generate:
         chdir: "Echec du changement de répertoire (%dst%)"
         command: "Echec de la commande : \"%command%\" (code sortie %code%)"

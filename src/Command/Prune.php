@@ -97,6 +97,9 @@ class Prune extends Command
 		    
 	    } 
     }
+	/* Get the architecture of the current machine */
+	$this->getApplication()->dist_arch = posix_uname();
+	$this->getApplication()->dist_arch = $this->getApplication()->dist_arch['machine'];
 
     /* Copy the initial structure of the configuration file. The new structure will be modified */
     $new_struct = $struct;

@@ -52,33 +52,6 @@ class Generate extends Command
         /* Launch Logger module */
         $this->logger = new ConsoleLogger($output);
 
-        /* The file /etc/os-release contains the informations about the distribution (where is executed this program)*/
-        #$array_ini = parse_ini_file('/etc/os-release');
-        /* Get the name of the distribution */
-        #$this->getApplication()->dist_name = ucfirst($array_ini['ID']);
-        /*switch ($this->getApplication()->dist_name) {
-        case 'Debian':
-            $package_system = 'apt-get -y install';
-            break;
-        case 'Archlinux':
-            /* TODO Install on Archlinux the package "filesystem" */
-            #$this->getApplication()->dist_name = 'Archlinux';
-    /*	    $package_system = 'pacman --noconfirm -S';
-            break;
-        case 'Centos':
-            $package_system = 'yum -y install';
-            break;
-        default:
-            $this->logger->error($this->getApplication()->translator->trans('prune.exist'));
-
-            exit(-1);
-        }*/
-        /* Get the architecture of the current machine */
-        /* TODO La fonction posix_name() ne fonctionnera pas sous Archlinux si l'extension de PHP "posix"
-         * (extension=posix.so) est commentée dans le fichier /etc/php/php.ini
-         * Sous CentOS, il faut télécharger le paquet php-process pour utiliser les fonctions POSIX */
-        $this->getApplication()->dist_arch = posix_uname();
-        $this->getApplication()->dist_arch = $this->getApplication()->dist_arch['machine'];
         /* For each package */
         foreach ($this->struct['Packages'] as $key => $value) {
             $struct_package = $value;
@@ -194,7 +167,10 @@ class Generate extends Command
 			return $array_perm;
 	}
 
-    /* @param $id :
+	/* Generates a string which contain a list of dependencies for a package
+	 * IMPORTANT: Manages groups of packages in Archlinux
+	 * @param $struct : Bit of the YAML structure which contains the dependencies
+     * @param $id : Changes the writing format of the returned string
      * 0 -> Dependencies separated with spaces
      * 1 -> Dependencies in quotes and separated with spaces */
     protected function generate_list_dependencies($struct, $id)
@@ -202,18 +178,48 @@ class Generate extends Command
         $list = null;
         /* If there are dependencies */
         if (!empty($struct)) {
-            /* Concatenate all build dependencies on one line */
-            foreach ($struct as $value) {
-                switch ($id) {
-                case 0:
-                    $list .= ' '.$value;
-                    break;
-                case 1:
-                    $list .= " '".$value."'";
-                    break;
-                }
-            }
-        }
+				/* If the current is an Archlinux (where there are package groups) */
+				if ($this->getApplication()->dist_name == 'Archlinux') {
+						/* Get a list of package groups (like "base-devel") */
+						$groups = rtrim(shell_exec("pacman -Qg | awk -F ' ' '{print $1}' | sort -u | sed -e ':a;N;s/\\n/ /;ba'"));
+						/* Transforms the string of package groups in an array (easier to use) */
+						$groups = explode(" ", $groups);
+				}
+				/* Concatenate all build dependencies on one line */
+				foreach ($struct as $value) {
+					/* If the current is an Archlinux (where there are package groups) */
+					if ($this->getApplication()->dist_name == 'Archlinux') {
+						/* If the dependencie is in fact a group */
+						if (in_array($value, $groups)) {
+								/* Get the list of packages which compose the group */
+								$p_groups = rtrim(shell_exec("pacman -Qgq $value | sed -e ':a;N;s/\\n/ /;ba'"));
+								$p_groups = explode(" ", $p_groups);
+								/* Foreach package of the group */
+								foreach ($p_groups as $p_value) {
+										switch ($id) {
+										case 0:
+												$list .= ' '.$p_value;
+												break;
+										case 1:
+												$list .= " '".$p_value."'";
+												break;
+										}
+								}
+								continue;
+						}
+					}
+					/* In Archlinux, this next code is not executed
+					 * if the dependencie is a package */
+					switch ($id) {
+					case 0:
+							$list .= ' '.$value;
+							break;
+					case 1:
+							$list .= " '".$value."'";
+							break;
+					}
+				}
+		}
         /* Delete superfluous element (space) */
         return ltrim($list, ' ');
 	}
@@ -269,7 +275,7 @@ class Generate extends Command
 			}
 	}
 
-    /* This function is like mkdir() but with checking mecanims */
+    /* This function is like mkdir() but with checking mechanisms */
     protected function _mkdir($name)
     {
 			/* If the directory would exist */
@@ -292,6 +298,7 @@ class Generate extends Command
 			}
     }
 
+    /* This function is like _fwrite() but with checking mechanisms */
     protected function _fwrite($fd, $str, $file)
     {
         if (fwrite($fd, $str) === false) {
@@ -301,6 +308,7 @@ class Generate extends Command
         }
     }
 
+    /* This function is like _system() but with checking mechanisms */
     protected function _system($command)
 	{
 			system($command, $out);
@@ -315,16 +323,17 @@ class Generate extends Command
     protected function make_debian($package_name, $struct_package)
     {
         if ($struct_package['Type'] == 'binary') {
+			/* In Debian, the 64 bits is called "amd64" (not "x86_64") */
             if ($this->getApplication()->dist_arch == 'x86_64') {
-                $this->getApplication()->dist_arch = 'amd64';
+                $package_arch = 'amd64';
             } else {
-                $this->getApplication()->dist_arch = 'i386';
+                $package_arch = 'i386';
             }
         } else {
-            $this->getApplication()->dist_arch = 'all';
+            $package_arch = 'all';
         }
 
-        $dirname = $package_name.'_'.$this->struct['Version'].'_'.$this->getApplication()->dist_arch;
+        $dirname = $package_name.'_'.$this->struct['Version'].'_'.$package_arch;
         /* Create the directory of the package */
         $this->_mkdir($dirname);
         /* Create the directory "debian/" (which is required) */
@@ -344,14 +353,16 @@ class Generate extends Command
 				$array_field['Build-Depends'] = "$list_buildepend";
 				/* Install the packages required by the Buildtime dependencies */
 				foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
-						/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
+						/* Installs package */
 						$this->_system("apt-get --yes install $p_value");
 				}
 		}
+		/* IMPORTANT : The fields "Standards-Version", "Homepage"... are placed after "Build-Depends", "Source"... because
+		 * the Debian package wants a specific placing order (else there is an error) */
 		$array_field['Standards-Version'] = '3.9.5';
 		$array_field['Homepage'] = $this->struct['Homepage']."\n"; # It has to has a line between the "Homepage" field and the "Package" field
 		$array_field['Package'] = $package_name;
-		$array_field['Architecture'] = $this->getApplication()->dist_arch;
+		$array_field['Architecture'] = $package_arch;
 		$array_field['Description'] = $this->struct['Summary']."\n ".$this->struct['Description'];
 		if (isset($struct_package['Runtime']['Dependencies'])) {
 				/* This variable will contains the list of dependencies (to run) */
@@ -411,7 +422,7 @@ class Generate extends Command
 
             exit(-1);
 		}
-	chmod("$dirname/debian/rules", 0755);
+		chmod("$dirname/debian/rules", 0755);
 
 		if (file_put_contents("$dirname/debian/changelog", "$package_name (".$this->struct['Version'].") unstable; urgency=low\n\n  * Initial Release.\n\n -- ".$this->struct['Maintainer']."  ".date('r')) === false) {
             $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/changelog")));
@@ -470,12 +481,12 @@ class Generate extends Command
         /* The package type is not a binary */
         /* TODO Adapter pour les librairies et les autres types */
         if ($struct_package['Type'] != 'binary') {
-            $this->getApplication()->dist_arch = 'all';
-        } else {
-            $this->getApplication()->dist_arch = $this->getApplication()->dist_arch;
-        }
+            $package_arch = 'all';
+		} else {
+			$package_arch = $this->getApplication()->dist_arch;
+		}
 
-        $dirname = $package_name.'-'.$this->struct['Version'].'-'.$this->getApplication()->dist_arch;
+        $dirname = $package_name.'-'.$this->struct['Version'].'-'.$package_arch;
         /* Create the directory of the package */
         $this->_mkdir($dirname);
         /* Create the directory "src/" (which contains the sources) */
@@ -486,7 +497,7 @@ class Generate extends Command
             'pkgname' => "$package_name",
             'pkgver' => $this->struct['Version'],
             'pkgrel' => 1,
-            'arch' => $this->getApplication()->dist_arch,
+            'arch' => $package_arch,
             'url' => $this->struct['Homepage'],
             'license' => "('".$this->struct['Copyright']."')",
             'pkgdesc' => "'".$this->struct['Summary']."'",
@@ -498,7 +509,7 @@ class Generate extends Command
 		$array_field['makedepends'] = '('.$this->generate_list_dependencies($struct_package['Build']['Dependencies'], 1).')';
 		/* Install the packages required by the Buildtime dependencies */
 		foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
-				/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
+				/* The option "--needed" of pacman skip the reinstallation of existing packages (in others words, already installed) */
 				$this->_system("pacman -Sy --noconfirm --needed $p_value");
 		}
 	}
@@ -621,10 +632,12 @@ class Generate extends Command
         /* The package type is not a binary */
         /* TODO Adapter pour les librairies et les autres types */
         if ($struct_package['Type'] != 'binary') {
-            $this->getApplication()->dist_arch = 'all';
-        }
-        #$name = $key;
-        $dirname = $package_name - $this->struct['Version'].'-'.$this->getApplication()->dist_arch;
+				$package_arch = 'all';
+		} else {
+				$package_arch = $this->getApplication()->dist_arch;
+		}
+
+        $dirname = $package_name - $this->struct['Version'].'-'.$package_arch;
         /* Creates the directories for building package (always in the home directory) */
         echo shell_exec('rpmdev-setuptree');
 
@@ -638,18 +651,18 @@ class Generate extends Command
             'URL' => $this->struct['Homepage'],
             'Packager' => 'Paquito',
         );
-	if (isset($struct_package['Build']['Dependencies'])) {
-		/* This variable will contains the list of dependencies (to build) */
-		$array_field['BuildRequires'] = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
-		/* Install the packages required by the Buildtime dependencies */
-		foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
-				$this->_system("yum -y install $p_value");
+		if (isset($struct_package['Build']['Dependencies'])) {
+				/* This variable will contains the list of dependencies (to build) */
+				$array_field['BuildRequires'] = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
+				/* Install the packages required by the Buildtime dependencies */
+				foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
+						$this->_system("yum -y install $p_value");
+				}
 		}
-	}
-	if (isset($struct_package['Runtime']['Dependencies'])) {
-		/* This variable will contains the list of dependencies (to run) */
-		$array_field['Requires'] = $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0);
-	}
+		if (isset($struct_package['Runtime']['Dependencies'])) {
+				/* This variable will contains the list of dependencies (to run) */
+				$array_field['Requires'] = $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0);
+		}
 
         /* Create and open the file "p.spec" (in write mode) */
         $handle = fopen("$_SERVER[HOME]/rpmbuild/SPECS/p.spec", 'w');
