@@ -192,7 +192,7 @@ class Generate extends Command
 						/* If the dependencie is in fact a group */
 						if (in_array($value, $groups)) {
 								/* Get the list of packages which compose the group */
-								$p_groups = rtrim(shell_exec("pacman -Qgq base | sed -e ':a;N;s/\\n/ /;ba'"));
+								$p_groups = rtrim(shell_exec("pacman -Qgq $value | sed -e ':a;N;s/\\n/ /;ba'"));
 								$p_groups = explode(" ", $p_groups);
 								/* Foreach package of the group */
 								foreach ($p_groups as $p_value) {
@@ -275,7 +275,7 @@ class Generate extends Command
 			}
 	}
 
-    /* This function is like mkdir() but with checking mecanims */
+    /* This function is like mkdir() but with checking mechanisms */
     protected function _mkdir($name)
     {
 			/* If the directory would exist */
@@ -298,6 +298,7 @@ class Generate extends Command
 			}
     }
 
+    /* This function is like _fwrite() but with checking mechanisms */
     protected function _fwrite($fd, $str, $file)
     {
         if (fwrite($fd, $str) === false) {
@@ -307,6 +308,7 @@ class Generate extends Command
         }
     }
 
+    /* This function is like _system() but with checking mechanisms */
     protected function _system($command)
 	{
 			system($command, $out);
@@ -321,6 +323,7 @@ class Generate extends Command
     protected function make_debian($package_name, $struct_package)
     {
         if ($struct_package['Type'] == 'binary') {
+			/* In Debian, the 64 bits is called "amd64" (not "x86_64") */
             if ($this->getApplication()->dist_arch == 'x86_64') {
                 $package_arch = 'amd64';
             } else {
@@ -350,10 +353,12 @@ class Generate extends Command
 				$array_field['Build-Depends'] = "$list_buildepend";
 				/* Install the packages required by the Buildtime dependencies */
 				foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
-						/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
+						/* Installs package */
 						$this->_system("apt-get --yes install $p_value");
 				}
 		}
+		/* IMPORTANT : The fields "Standards-Version", "Homepage"... are placed after "Build-Depends", "Source"... because
+		 * the Debian package wants a specific placing order (else there is an error) */
 		$array_field['Standards-Version'] = '3.9.5';
 		$array_field['Homepage'] = $this->struct['Homepage']."\n"; # It has to has a line between the "Homepage" field and the "Package" field
 		$array_field['Package'] = $package_name;
@@ -417,7 +422,7 @@ class Generate extends Command
 
             exit(-1);
 		}
-	chmod("$dirname/debian/rules", 0755);
+		chmod("$dirname/debian/rules", 0755);
 
 		if (file_put_contents("$dirname/debian/changelog", "$package_name (".$this->struct['Version'].") unstable; urgency=low\n\n  * Initial Release.\n\n -- ".$this->struct['Maintainer']."  ".date('r')) === false) {
             $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/changelog")));
@@ -504,7 +509,7 @@ class Generate extends Command
 		$array_field['makedepends'] = '('.$this->generate_list_dependencies($struct_package['Build']['Dependencies'], 1).')';
 		/* Install the packages required by the Buildtime dependencies */
 		foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
-				/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
+				/* The option "--needed" of pacman skip the reinstallation of existing packages (in others words, already installed) */
 				$this->_system("pacman -Sy --noconfirm --needed $p_value");
 		}
 	}
@@ -646,18 +651,18 @@ class Generate extends Command
             'URL' => $this->struct['Homepage'],
             'Packager' => 'Paquito',
         );
-	if (isset($struct_package['Build']['Dependencies'])) {
-		/* This variable will contains the list of dependencies (to build) */
-		$array_field['BuildRequires'] = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
-		/* Install the packages required by the Buildtime dependencies */
-		foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
-				$this->_system("yum -y install $p_value");
+		if (isset($struct_package['Build']['Dependencies'])) {
+				/* This variable will contains the list of dependencies (to build) */
+				$array_field['BuildRequires'] = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
+				/* Install the packages required by the Buildtime dependencies */
+				foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
+						$this->_system("yum -y install $p_value");
+				}
 		}
-	}
-	if (isset($struct_package['Runtime']['Dependencies'])) {
-		/* This variable will contains the list of dependencies (to run) */
-		$array_field['Requires'] = $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0);
-	}
+		if (isset($struct_package['Runtime']['Dependencies'])) {
+				/* This variable will contains the list of dependencies (to run) */
+				$array_field['Requires'] = $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0);
+		}
 
         /* Create and open the file "p.spec" (in write mode) */
         $handle = fopen("$_SERVER[HOME]/rpmbuild/SPECS/p.spec", 'w');
