@@ -129,6 +129,14 @@ class Check extends Command
 
         /* Analysis of the root structure */
         $this->check_field(array('Root'), $struct, $this->keys_first, $this->keys_first_min);
+		/* Checks if the string giving the maintainer is well formed */
+		if(! preg_match('/^[A-Z][A-Za-z- ]*[A-Za-z] +<[A-Za-z0-9][A-Za-z0-9._%+-]*[A-Za-z0-9]@[A-Za-z0-9][A-Za-z0-9.-]*[A-Za-z0-9]\.[A-Za-z]{2,4}>$/', $struct['Maintainer'])) {
+			$this->logger->error($this->getApplication()->translator->trans('check.maintainer', array('%value%' => $struct['Maintainer'], '%path%' => "Root -> Maintainer")));
+
+			exit(-1);
+		}
+		/* Remove superfluous spaces (replaces several spaces by one space) */
+		$this->getApplication()->data['Maintainer'] = preg_replace('/\s+/'," ", $this->getApplication()->data['Maintainer']);
         /* For each package */
         foreach ($struct['Packages'] as $key => $value) {
             /* Analysis of the structure to each package */
@@ -136,7 +144,7 @@ class Check extends Command
             /* ----- TYPE ----- */
             /* If the type of package is unknown */
             if (!in_array($value['Type'], $this->keys_type)) {
-                $this->logger->error($this->getApplication()->translator->trans('check.package', array('%val%' => $value['Type'], '%path%' => "Root -> Packages -> $key -> Type")));
+                $this->logger->error($this->getApplication()->translator->trans('check.package', array('%value%' => $value['Type'], '%path%' => "Root -> Packages -> $key -> Type")));
 
                 exit(-1);
             }
@@ -172,7 +180,7 @@ class Check extends Command
 					    foreach ($d_value as $v_key => $v_value) {
 						    /* Analysis of the "specific distribution dependency" structure (where it has to
 						     * have versions of the distributions and "All") */
-						     /* if the distibution dont't have any dependencies */
+						     /* if the distibution doesn't have any dependencies */
 						     if(!is_array($v_value)) {
 						     	if($v_value != "<none>") {
 									$field = implode(' -> ', array('Root', 'Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key, $v_key, $v_value));
