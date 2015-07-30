@@ -178,21 +178,13 @@ class Check extends Command
 					    $this->check_field(array('Root','Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key), $d_value, $this->key_dist, array());
 					    /* For each name of ditribution */
 					    foreach ($d_value as $v_key => $v_value) {
-						    /* Analysis of the "specific distribution dependency" structure (where it has to
-						     * have versions of the distributions and "All") */
-						     /* if the distibution doesn't have any dependencies */
-						     if(!is_array($v_value)) {
-						     	if($v_value != "<none>") {
-									$field = implode(' -> ', array('Root', 'Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key, $v_key, $v_value));
-						     		$this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%field%' => $v_key, '%value%' => $v_value, '%path%' => $field)));
-						     		 exit(-1);
-						     		
-						     	}
-						     }
-						     else {
-								 $this->check_field(array('Root','Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key, $v_key), $v_value, $this->versions[$v_key], array('All'));
-					    		}
-					    	
+							/* Analysis of the "specific distribution dependency" structure (where it has to
+							 * have versions of the distributions and "All") */
+							/* IMPORTANT : The distibution may not have any dependencies OR has a
+							 * common dependency for all versions, so $v_value will not be an array */
+							if(is_array($v_value)) {
+								$this->check_field(array('Root','Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key, $v_key), $v_value, $this->versions[$v_key], array('All'));
+							}
 					    }
 				    } else { /* If the dependency is the same for all distributions */
 					    if ($d_value != '*') {

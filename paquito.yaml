@@ -27,27 +27,22 @@ Packages:
                 Runtime:
                         Dependencies:
                                 php-cli:
-                                        Debian:
-                                                All: php5-cli
-                                        Archlinux:
-                                                All: php-cgi
+                                        Debian: php5-cli
+                                        Archlinux: php-cgi
                                 php-process:
                                         Debian: "<none>"
                                         Archlinux: "<none>"
                                 rpm-build:
-                                        Debian:
-                                                All: dh-make
+                                        Debian: dh-make
                                         Archlinux: "<none>"
                                 base-devel:
-                                        Debian:
-                                                All: build-essential
+                                        Debian: build-essential
                                         Centos: "<none>"
 
                 Build:
                         Dependencies:
                                 base-devel:
-                                        Debian:
-                                                All: build-essential
+                                        Debian: build-essential
                                         Centos: "<none>"
                                 php-xml:
                                         Debian: "<none>"
@@ -59,8 +54,7 @@ Packages:
                                         Debian: "<none>"
                                         Archlinux: "<none>"
                                 rpm-build:
-                                        Debian:
-                                                All: dh-make
+                                        Debian: dh-make
                                         Archlinux: "<none>"
                         Commands:
                                 - bin/create-phar.sh

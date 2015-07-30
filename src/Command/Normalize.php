@@ -76,36 +76,38 @@ class Normalize extends Command
 
 		protected function check_dependencies($struct,$package,$field,$depend,$tab) {
 
-
-				 /*je parcours la liste des dependances*/
-                        foreach ($tab as $key => $val) {
-                            /*champ contenant le nom de la dépendance*/
-                            $d = $key;
-                            /* la dependance est la méme pour toutes les ditributions*/
-                            if ($val == '*') {
-                                /*il faut normaliser */
-                                $this->newStruct['Packages'][$package][$field][$depend][$d] = array('Debian' => array('All' => $d),'Archlinux' => array('All' => $d),'Centos' => array('All' => $d));
-                            } else {
-
-                                /* tableau contenant les dépendances pour les différentes distributions*/
-                                $dist = $val;
-							 	/* regarder quelle distribution manque*/
-                                 foreach ($this->distribution as $val) {
-                                        if (!array_key_exists($val, $dist)) {
-                                            $this->newStruct['Packages'][$package][$field][$depend][$d][$val] = array('All' => $d);
-                                        }
-                                        /* la distribution existe*/
-										else {
-												/* regarder si la valeur du champ de la distribution n'est pas égale à none */
-										
-											if($struct['Packages'][$package][$field][$depend][$d][$val]!="<none>") {
-													$this->newStruct['Packages'][$package][$field][$depend][$d][$val] = $dist[$val];
-											}
-                                        }
-								 }
+			/*je parcours la liste des dependances*/
+			foreach ($tab as $key => $val) {
+				/*champ contenant le nom de la dépendance*/
+				$d = $key;
+				/* la dependance est la méme pour toutes les ditributions*/
+				if ($val == '*') {
+					/*il faut normaliser */
+					$this->newStruct['Packages'][$package][$field][$depend][$d] = array('Debian' => array('All' => $d),'Archlinux' => array('All' => $d),'Centos' => array('All' => $d));
+				} else {
+					/* tableau contenant les dépendances pour les différentes distributions*/
+					$dist = $val;
+					/* regarder quelle distribution manque*/
+					foreach ($this->distribution as $val) {
+						if (!array_key_exists($val, $dist)) {
+							$this->newStruct['Packages'][$package][$field][$depend][$d][$val] = array('All' => $d);
+						} else { /* la distribution existe*/
+							/* regarder si la valeur du champ de la distribution n'est pas égale à none */
+							if ($struct['Packages'][$package][$field][$depend][$d][$val] != "<none>") {
+								/* If the value to the distribution is an array (so the user has used
+								 * "All" or has given a dependency according to the version)  */
+								if (is_array($struct['Packages'][$package][$field][$depend][$d][$val])) {
+									$this->newStruct['Packages'][$package][$field][$depend][$d][$val] = $dist[$val];
+								} else { /* Shortcut "All" : the user has given a dependency name which will be
+									common to all versions of the distribution (like "All") */
+									$this->newStruct['Packages'][$package][$field][$depend][$d][$val]['All'] = $dist[$val];
+								}
 							}
-
 						}
+					}
+				}
+
+			}
 		}
 
     protected function execute(InputInterface $input, OutputInterface $output)
