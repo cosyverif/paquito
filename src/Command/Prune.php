@@ -13,7 +13,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 class Prune extends Command
 {
     /* Traduction versions Debian */
-    public $dv_dist = array('Stable' => 'Wheezy', 'Testing' => 'Jessie');
+    public $dv_dist = array('Debian' => array('Stable' => 'Wheezy', 'Testing' => 'Jessie'), 'Centos' => array('6.6', '7.0'));
 
     protected function configure()
     {
@@ -122,8 +122,8 @@ class Prune extends Command
 								if (array_key_exists($this->getApplication()->dist_version, $depend_struct[$d_key][$this->getApplication()->dist_name])) {
 									$src_field = $this->getApplication()->dist_version;
 									/* La version est référencée (par le nom de branche, comme par exemple "testing") */
-								} elseif (array_key_exists(array_search($this->getApplication()->dist_version, $this->dv_dist), $depend_struct[$d_key][$this->getApplication()->dist_name])) {
-									$src_field = array_search($this->getApplication()->dist_version, $this->dv_dist);
+								} elseif (array_key_exists(array_search($this->getApplication()->dist_version, $this->dv_dist[$this->getApplication()->dist_name]), $depend_struct[$d_key][$this->getApplication()->dist_name])) {
+									$src_field = array_search($this->getApplication()->dist_version, $this->dv_dist[$this->getApplication()->dist_name]);
 								} else { /* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
 									$src_field = 'All';
 								}

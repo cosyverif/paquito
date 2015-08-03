@@ -97,7 +97,15 @@ class Normalize extends Command
 								/* If the value to the distribution is an array (so the user has used
 								 * "All" or has given a dependency according to the version)  */
 								if (is_array($struct['Packages'][$package][$field][$depend][$d][$val])) {
-									$this->newStruct['Packages'][$package][$field][$depend][$d][$val] = $dist[$val];
+										/* If the array is non-associative (so the user has specified several
+										 * common dependencies for all versions of the distribution) */
+										if (array_key_exists(0, $struct['Packages'][$package][$field][$depend][$d][$val])) {
+											/* Shortcut "All" : the user has given several dependency names which will be 
+											* common to all versions of the distribution (like "All") */
+											$this->newStruct['Packages'][$package][$field][$depend][$d][$val]['All'] = $dist[$val];
+										} else {
+											$this->newStruct['Packages'][$package][$field][$depend][$d][$val] = $dist[$val];
+										}
 								} else { /* Shortcut "All" : the user has given a dependency name which will be
 									common to all versions of the distribution (like "All") */
 									$this->newStruct['Packages'][$package][$field][$depend][$d][$val]['All'] = $dist[$val];

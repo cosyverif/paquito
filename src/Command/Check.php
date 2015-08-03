@@ -180,7 +180,7 @@ class Check extends Command
 					    foreach ($d_value as $v_key => $v_value) {
 							/* Analysis of the "specific distribution dependency" structure (where it has to
 							 * have versions of the distributions and "All") */
-							/* IMPORTANT : The distibution may not have any dependencies OR has a
+							/* IMPORTANT : The distibution may not have any dependencies (<none>) OR has a
 							 * common dependency for all versions, so $v_value will not be an array */
 							if(is_array($v_value)) {
 								/* If the array is non-associative (so the user has specified several
@@ -200,7 +200,7 @@ class Check extends Command
 									foreach($v_value as $v_subkey => $v_subvalue) {
 										/* If the array is non-associative (so the user has specified
 										 * several dependencies for the version of the distribution) */
-										if (array_key_exists(0, $v_subvalue)) {
+										if (is_array($v_subvalue) && array_key_exists(0, $v_subvalue)) {
 											/* For each common dependency checks if the value is not an array */
 											foreach($v_subvalue as $v_dependency) {
 												/* If the value is in fact an array (this is an error) */
