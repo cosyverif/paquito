@@ -178,21 +178,41 @@ class Check extends Command
 					    $this->check_field(array('Root','Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key), $d_value, $this->key_dist, array());
 					    /* For each name of ditribution */
 					    foreach ($d_value as $v_key => $v_value) {
-						    /* Analysis of the "specific distribution dependency" structure (where it has to
-						     * have versions of the distributions and "All") */
-						     /* if the distibution doesn't have any dependencies */
-						     if(!is_array($v_value)) {
-						     	if($v_value != "<none>") {
-									$field = implode(' -> ', array('Root', 'Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key, $v_key, $v_value));
-						     		$this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%field%' => $v_key, '%value%' => $v_value, '%path%' => $field)));
-						     		 exit(-1);
-						     		
-						     	}
-						     }
-						     else {
-								 $this->check_field(array('Root','Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key, $v_key), $v_value, $this->versions[$v_key], array('All'));
-					    		}
-					    	
+							/* Analysis of the "specific distribution dependency" structure (where it has to
+							 * have versions of the distributions and "All") */
+							/* IMPORTANT : The distibution may not have any dependencies (<none>) OR has a
+							 * common dependency for all versions, so $v_value will not be an array */
+							if(is_array($v_value)) {
+								/* If the array is non-associative (so the user has specified several
+								 * common dependencies for all versions of the distribution) */
+								if (array_key_exists(0, $v_value)) {
+									/* For each common dependency checks if the value is not an array */
+									foreach($v_value as $v_dependency) {
+										/* If the value is in fact an array (this is an error) */
+										if (is_array($v_dependency)) {
+											$field = implode(' -> ', array('Root', 'Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key, $v_key));
+											$this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%value%' => '', '%path%' => $field, '%field%' => $v_key)));
+										}
+									}
+								} else { /* The distribution structure contains the standard structure (like for example "All", "Wheezy", "Jessie"...) */
+									$this->check_field(array('Root','Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key, $v_key), $v_value, $this->versions[$v_key], array('All'));
+									/* For each field (like "All", "Wheezy", "Jessie"...) */
+									foreach($v_value as $v_subkey => $v_subvalue) {
+										/* If the array is non-associative (so the user has specified
+										 * several dependencies for the version of the distribution) */
+										if (is_array($v_subvalue) && array_key_exists(0, $v_subvalue)) {
+											/* For each common dependency checks if the value is not an array */
+											foreach($v_subvalue as $v_dependency) {
+												/* If the value is in fact an array (this is an error) */
+												if (is_array($v_dependency)) {
+													$field = implode(' -> ', array('Root', 'Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key, $v_key, $v_subkey));
+													$this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%value%' => '', '%path%' => $field, '%field%' => $v_subkey)));
+												}
+											}
+										}
+									}
+								}
+							}
 					    }
 				    } else { /* If the dependency is the same for all distributions */
 					    if ($d_value != '*') {

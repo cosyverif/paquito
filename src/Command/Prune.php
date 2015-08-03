@@ -13,7 +13,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 class Prune extends Command
 {
     /* Traduction versions Debian */
-    public $dv_dist = array('Stable' => 'Wheezy', 'Testing' => 'Jessie');
+    public $dv_dist = array('Debian' => array('Stable' => 'Wheezy', 'Testing' => 'Jessie'), 'Centos' => array('6.6', '7.0'));
 
     protected function configure()
     {
@@ -105,45 +105,50 @@ class Prune extends Command
     $new_struct = $struct;
         foreach ($struct['Packages'] as $key => $value) {
             $key_dependencies = array('Build', 'Runtime', 'Test');
-            for ($i = 0; $i < 3; ++$i) {
-					if (isset($struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'])) { 
-							/* It has to remove the pre-dependencies structure in the new structure, to keep new "dependency" structure */
-							unset($new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies']);
-							foreach ($struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'] as $d_key => $d_value) {
-									if (isset($struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key][$this->getApplication()->dist_name])) {
-											if ($this->getApplication()->dist_name == 'Debian') {
-													/* The version is referenced (by her name, like for example "wheezy") */
-													if (array_key_exists($this->getApplication()->dist_version, $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Debian'])) {
-															$new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Debian'][$this->getApplication()->dist_version];
-															/* La version est référencée (par le nom de branche, comme par exemple "testing") */
-													} elseif (array_key_exists(array_search($this->getApplication()->dist_version, $this->dv_dist), $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Debian'])) {
-															$new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Debian'][array_search($this->getApplication()->dist_version, $this->dv_dist)];
-															/* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
-													} else {
-															$new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Debian']['All'];
-													}
-											} elseif ($this->getApplication()->dist_name == 'Archlinux') { /* La distribution est Archlinux */
-													/* Archlinux n'ayant pas de versions, le contenu du champ "All" s'applique systématiquement */
-													$new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Archlinux']['All'];
-											} elseif ($this->getApplication()->dist_name == 'Centos') { /* La distribution est CentOS */
-													/* La version est référencée (pour CentOS, toujours par son numéro de version) */
-													if (array_key_exists($this->getApplication()->dist_version, $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Centos'])) {
-															$new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Centos'][$this->getApplication()->dist_version];
-													} else { /* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
-															$new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][$d_key]['Centos']['All'];
-													}
-											}
-
-									}
+			/* For each field (in others words 'Build', 'Runtime' and 'Test') */
+			for ($i = 0; $i < 3; ++$i) {
+				/* If there are dependencies in the field Build/Runtime/Test */
+				if (isset($struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'])) { 
+					/* To clear the follow code */
+					$depend_struct = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'];
+					/* It has to remove the pre-dependencies structure in the new structure, to keep new "dependency" structure */
+					unset($new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies']);
+					/* For each dependency */
+					foreach ($depend_struct as $d_key => $d_value) {
+						/* If there is a field having the name of the current distribution */
+						if (isset($depend_struct[$d_key][$this->getApplication()->dist_name])) {
+							if ($this->getApplication()->dist_name != 'Archlinux') {
+								/* The version is referenced (by her name, like for example "wheezy" for Debian ; the version number for CentOS) */
+								if (array_key_exists($this->getApplication()->dist_version, $depend_struct[$d_key][$this->getApplication()->dist_name])) {
+									$src_field = $this->getApplication()->dist_version;
+									/* La version est référencée (par le nom de branche, comme par exemple "testing") */
+								} elseif (array_key_exists(array_search($this->getApplication()->dist_version, $this->dv_dist[$this->getApplication()->dist_name]), $depend_struct[$d_key][$this->getApplication()->dist_name])) {
+									$src_field = array_search($this->getApplication()->dist_version, $this->dv_dist[$this->getApplication()->dist_name]);
+								} else { /* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
+									$src_field = 'All';
+								}
+							} else { /* The distribution is Archlinux */
+								/* Archlinux doesn't have versions (rolling release), the content of the field "All" always applies */
+								$src_field = 'All';
 							}
+							/* If the source field contains a array (in others words, the field contains several dependencies) */
+							if (is_array($depend_struct[$d_key][$this->getApplication()->dist_name][$src_field])) {
+								foreach ($depend_struct[$d_key][$this->getApplication()->dist_name][$src_field] as $dependency) {
+									$new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $dependency ;
+								}
+							} else {
+								$new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $depend_struct[$d_key][$this->getApplication()->dist_name][$src_field];
+							}
+						}
 					}
-					/* Sometimes, the "Build"/"Runtime"/"Test" section can contains only one dependency (any
-					 * other keyword). This dependency, for a specific distribution, can be erased (<none>
-					 * keyword) so the section is empty. If the section is empty, we delete this section */
-					if (empty($new_struct['Packages'][$key][$key_dependencies[$i]])) {
-							unset($new_struct['Packages'][$key][$key_dependencies[$i]]);
-					}
-            }
+				}
+				/* Sometimes, the "Build"/"Runtime"/"Test" section can contains only one dependency (any
+				 * other keyword). This dependency, for a specific distribution, can be erased (<none>
+				 * keyword) so the section is empty. If the section is empty, we delete this section */
+				if (empty($new_struct['Packages'][$key][$key_dependencies[$i]])) {
+					unset($new_struct['Packages'][$key][$key_dependencies[$i]]);
+				}
+			}
         }
         $this->getApplication()->data = $new_struct;
     /* Optionnal argument (output file, which will be parsed) */
