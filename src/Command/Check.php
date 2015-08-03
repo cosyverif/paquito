@@ -48,13 +48,6 @@ class Check extends Command
 		/* Check a structure of files */
 	protected function check_files($fieldbase, $struct) {
 		foreach ($struct as $f_key => $f_value) {
-			/* If there is not source path (in others words the field is empty) */
-		#	if (empty($f_value)) {
-		#		$fieldbase = implode(' -> ', $fieldbase);
-		#		$this->logger->error($this->getApplication()->translator->trans('check.void', array('%key%' => $f_key, '%path%' => $fieldbase." -> $f_key")));
-#
-#				exit(-1);
-#			}
 			/* If the file will have specifics permissions */
 			if (is_array($f_value)) {
 				/* Analysis of the file structure (when there is the permissions) */
@@ -111,12 +104,15 @@ class Check extends Command
     {
         /* Get the path and the name of the input file */
         $input_file = $input->getArgument('input');
+		/* Get presence of the "--local" option */
+        $local = $input->getOption('local');
         /* Get the references of the command parse() */
         $command = $this->getApplication()->find('parse');
         /* Declare the arguments in a array (arguments have to be given like this) */
         $arguments = array(
             'command' => 'parse',
-            'input' => $input_file,
+			'input' => $input_file,
+			'--local' => $local,
         );
         $array_input = new ArrayInput($arguments);
         /* Run command */
@@ -239,6 +235,10 @@ class Check extends Command
 								}
             }
         }
+
+		if ($local) {
+			echo "ok\n";
+		}
 
         /* Optionnal argument (output file, which will be parsed) */
         $output_file = $input->getArgument('output');

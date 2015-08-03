@@ -6,6 +6,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -28,6 +29,12 @@ class Generate_test extends Command
                 'output',
                 InputArgument::OPTIONAL,
                 'Name of a YaML file'
+            )
+            ->addOption(
+                'local',
+				null,
+                InputOption::VALUE_NONE,
+                'Creates a package only for the current distribution, version and architecture'
             )
             ;
     }

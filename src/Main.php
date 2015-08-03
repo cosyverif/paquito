@@ -5,6 +5,7 @@ require_once __DIR__.'/../vendor/autoload.php';
 use \Symfony\Component\Console\Application;
 use \Symfony\Component\Translation\Translator;
 use \Symfony\Component\Translation\Loader\YamlFileLoader;
+use \Symfony\Component\Console\Input\InputOption;
 use \Paquito\Command\Update;
 use \Paquito\Command\Check;
 use \Paquito\Command\Parse;
@@ -19,11 +20,15 @@ use \Paquito\Command\Generate_test;
 error_reporting(E_ALL | E_STRICT);
 
 $application = new Application('paquito', '0.1');
+/* Globals variables */
+$application->conf = null;
 $application->data = null;
 $application->dist_name = null;
 $application->dist_version = null;
 $application->dist_arch = null;
-// Register commands:
+/* Globals options */
+$application->getDefinition()->addOptions([new InputOption('local', 'l', InputOption::VALUE_NONE, 'Creates a package only for the current distribution, version and architecture')]);
+/* Register commands */
 $application->add(new Update());
 $application->add(new Parse());
 $application->add(new Check());

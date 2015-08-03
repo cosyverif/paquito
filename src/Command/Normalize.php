@@ -216,6 +216,10 @@ class Normalize extends Command
 
 
         $this->getApplication()->data = $this->newStruct;
+
+	if (!empty($this->getApplication()->conf)) {
+		echo "ok\n";
+	}
     /* Optionnal argument (output file, which will be parsed) */
     $output_file = $input->getArgument('output');
     /* If the optionnal argument is present */
