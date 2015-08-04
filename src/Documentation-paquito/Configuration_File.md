@@ -240,7 +240,7 @@ It's an array containing the following fields :
  * Dependencies
  * Commands
 
-**Files** : it will be the tests files we will apply on the package , the representation of this field is exactly the same with the **field Files** of paquito (see above) : **destination-in-package : path-to-source** .
+**Files** : it will be the tests files we will apply on the package , the representation of this field is exactly the same with the field Files of paquito (see above) : **destination-in-package : path-to-source** .
 
 **Dependencies**: it's the dependencies we need to execute the tests , the representation of this field is exactly the same with the field Dependencies of paquito (see above) , if there is no dependence don't put this field in the configuration file , if not it will be an error.
 
