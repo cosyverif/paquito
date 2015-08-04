@@ -52,8 +52,8 @@ class Parse extends Command
         # Parse the file and return its content like a array (hashmap)
         $this->getApplication()->data = Yaml::parse(file_get_contents("$basename"."paquito.yaml"));
 
-		/* If the "--local" option is set */
-		if ($local) {
+		/* If the "--local" option is not set */
+		if (! $local) {
 			/* The configuration file of Paquito not exists */
 			if (!is_file('/etc/paquito/conf.yaml')) {
 				$logger->error($this->getApplication()->translator->trans('parse.exist', array('%basename%' => '/etc/paquito/conf.yaml')));

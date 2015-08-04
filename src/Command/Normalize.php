@@ -10,227 +10,248 @@ use Symfony\Component\Console\Input\ArrayInput;
 
 class Normalize extends Command
 {
-    public $newStruct = array();
-    public $distribution = array('Debian','Archlinux','Centos');
+	public $newStruct = array();
+	public $distribution = array('Debian','Archlinux','Centos');
 
-    protected function configure()
-    {
-        $this
-            ->setName('normalize')
-            ->setDescription('Normalize a YaML file')
-            ->addArgument(
-                'input',
-                InputArgument::REQUIRED,
-                'Name of the directory which contains the sources and the paquito.yaml file'
-            )
-            ->addArgument(
-                'output',
-                InputArgument::OPTIONAL,
-                'Name of a YaML file'
-            )
-            ;
-		
-		}
+	protected function configure()
+	{
+		$this
+			->setName('normalize')
+			->setDescription('Normalize a YaML file')
+			->addArgument(
+				'input',
+				InputArgument::REQUIRED,
+				'Name of the directory which contains the sources and the paquito.yaml file'
+			)
+			->addArgument(
+				'output',
+				InputArgument::OPTIONAL,
+				'Name of a YaML file'
+			)
+			;
 
-		protected function check_file($package,$test,$file,$tab) {
+	}
 
-		 	/* parcours des fichiers*/
-			foreach ($tab as $key => $val) {
-			 	/* si les fichiers ne sont pas sous forme d'un tableau de champs Source et Permission*/
-				if (!is_array($val)) {
-				 	/* champ contenant le fichier de destination*/
-					$dest = $key;
-					/* champ contenant un fichier source*/
-				 	$source = $val;
-					$permission = '755';
-					if($test=='Test'){
-							if(!empty($val)) {
-									$this->newStruct['Packages'][$package][$test][$file][$dest] = array('Source' => $source,'Permissions' => $permission);
-							}
-							else {
-									$this->newStruct['Packages'][$package][$test][$file][$dest] = array('Source' => $dest,'Permissions' => $permission);
-							}
+	protected function check_file($package,$test,$file,$tab) {
+
+		/* parcours des fichiers*/
+		foreach ($tab as $key => $val) {
+			/* si les fichiers ne sont pas sous forme d'un tableau de champs Source et Permission*/
+			if (!is_array($val)) {
+				/* champ contenant le fichier de destination*/
+				$dest = $key;
+				/* champ contenant un fichier source*/
+				$source = $val;
+				$permission = '755';
+				if($test=='Test'){
+					if(!empty($val)) {
+						$this->newStruct['Packages'][$package][$test][$file][$dest] = array('Source' => $source,'Permissions' => $permission);
 					}
 					else {
-							if(!empty($val)) {
-									$this->newStruct['Packages'][$package][$file][$dest] = array('Source' => $source,'Permissions' => $permission);
-							}
-							else {
-									$this->newStruct['Packages'][$package][$file][$dest] = array('Source' => $dest,'Permissions' => $permission);
-							}
+						$this->newStruct['Packages'][$package][$test][$file][$dest] = array('Source' => $dest,'Permissions' => $permission);
 					}
-				
-				
-			 	} else {
-					/* la structure est un tableau donc sous forme "Source , Permission", Rien ne change*/
-					if($test=='Test'){
-						$this->newStruct['Packages'][$package][$test][$file][$dest] =$val;
+				}
+				else {
+					if(!empty($val)) {
+						$this->newStruct['Packages'][$package][$file][$dest] = array('Source' => $source,'Permissions' => $permission);
 					}
 					else {
-						$this->newStruct['Packages'][$package][$file][$key] = $val;
+						$this->newStruct['Packages'][$package][$file][$dest] = array('Source' => $dest,'Permissions' => $permission);
 					}
-			 	}
-			
+				}
+
+
+			} else {
+				/* la structure est un tableau donc sous forme "Source , Permission", Rien ne change*/
+				if($test=='Test'){
+					$this->newStruct['Packages'][$package][$test][$file][$dest] =$val;
+				}
+				else {
+					$this->newStruct['Packages'][$package][$file][$key] = $val;
+				}
 			}
+
 		}
+	}
 
-		protected function check_dependencies($struct,$package,$field,$depend,$tab) {
+	protected function check_dependencies($struct,$package,$field,$depend,$tab) {
 
-			/*je parcours la liste des dependances*/
-			foreach ($tab as $key => $val) {
-				/*champ contenant le nom de la dépendance*/
-				$d = $key;
-				/* la dependance est la méme pour toutes les ditributions*/
-				if ($val == '*') {
-					/*il faut normaliser */
-					$this->newStruct['Packages'][$package][$field][$depend][$d] = array('Debian' => array('All' => $d),'Archlinux' => array('All' => $d),'Centos' => array('All' => $d));
-				} else {
-					/* tableau contenant les dépendances pour les différentes distributions*/
-					$dist = $val;
-					/* regarder quelle distribution manque*/
-					foreach ($this->distribution as $val) {
-						if (!array_key_exists($val, $dist)) {
-							$this->newStruct['Packages'][$package][$field][$depend][$d][$val] = array('All' => $d);
-						} else { /* la distribution existe*/
-							/* regarder si la valeur du champ de la distribution n'est pas égale à none */
-							if ($struct['Packages'][$package][$field][$depend][$d][$val] != "<none>") {
-								/* If the value to the distribution is an array (so the user has used
-								 * "All" or has given a dependency according to the version)  */
-								if (is_array($struct['Packages'][$package][$field][$depend][$d][$val])) {
-										/* If the array is non-associative (so the user has specified several
-										 * common dependencies for all versions of the distribution) */
-										if (array_key_exists(0, $struct['Packages'][$package][$field][$depend][$d][$val])) {
-											/* Shortcut "All" : the user has given several dependency names which will be 
-											* common to all versions of the distribution (like "All") */
-											$this->newStruct['Packages'][$package][$field][$depend][$d][$val]['All'] = $dist[$val];
-										} else {
-											$this->newStruct['Packages'][$package][$field][$depend][$d][$val] = $dist[$val];
-										}
-								} else { /* Shortcut "All" : the user has given a dependency name which will be
-									common to all versions of the distribution (like "All") */
+		/*je parcours la liste des dependances*/
+		foreach ($tab as $key => $val) {
+			/*champ contenant le nom de la dépendance*/
+			$d = $key;
+			/* la dependance est la méme pour toutes les ditributions*/
+			if ($val == '*') {
+				/*il faut normaliser */
+				$this->newStruct['Packages'][$package][$field][$depend][$d] = array(
+					'Debian' => array('All' => $d),
+					'Archlinux' => array('All' => $d),
+					'Centos' => array('All' => $d));
+			} else {
+				/* tableau contenant les dépendances pour les différentes distributions*/
+				$dist = $val;
+				/* regarder quelle distribution manque*/
+				foreach ($this->distribution as $val) {
+					if (!array_key_exists($val, $dist)) {
+						$this->newStruct['Packages'][$package][$field][$depend][$d][$val] = array('All' => $d);
+					} else { /* la distribution existe*/
+						/* regarder si la valeur du champ de la distribution n'est pas égale à none */
+						if ($struct['Packages'][$package][$field][$depend][$d][$val] != "<none>") {
+							/* If the value to the distribution is an array (so the user has used
+							 * "All" or has given a dependency according to the version)  */
+							if (is_array($struct['Packages'][$package][$field][$depend][$d][$val])) {
+								/* If the array is non-associative (so the user has specified several
+								 * common dependencies for all versions of the distribution) */
+								if (array_key_exists(0, $struct['Packages'][$package][$field][$depend][$d][$val])) {
+									/* Shortcut "All" : the user has given several dependency names which will be 
+									 * common to all versions of the distribution (like "All") */
 									$this->newStruct['Packages'][$package][$field][$depend][$d][$val]['All'] = $dist[$val];
+								} else {
+									$this->newStruct['Packages'][$package][$field][$depend][$d][$val] = $dist[$val];
+								}
+							} else { /* Shortcut "All" : the user has given a dependency name which will be
+								common to all versions of the distribution (like "All") */
+								$this->newStruct['Packages'][$package][$field][$depend][$d][$val]['All'] = $dist[$val];
+							}
+						}
+					}
+				}
+			}
+
+		}
+	}
+
+	protected function execute(InputInterface $input, OutputInterface $output)
+	{
+		/* Get path and name of the input file */
+		$input_file = $input->getArgument('input');
+		/* Get presence of the "--local" option */
+		$local = $input->getOption('local');
+		/* Get references of the command check() */
+		$command = $this->getApplication()->find('check');
+		/* Declare the arguments in a array (arguments has to gave like this) */
+		$arguments = array(
+			'command' => 'check',
+			'input' => $input_file,
+			'--local' => $local,
+		);
+		$array_input = new ArrayInput($arguments);
+		/* Run command */
+		$command->run($array_input, $output);
+
+		/* Get structure of YaML file (which was parsed and checked) */
+		$struct = $this->getApplication()->data;
+
+		/* Note: The variable $newStruct will owns the new structure (which becomes of the normalization) */
+		foreach ($struct as $key => $val) {
+
+			/* Les autres champs (de 1er niveau) ne seront pas modifiés */
+			if ($key == 'Packages') {
+				/* La variable $glob contient un tableau mentionnant les paquets qu'on souhaite créer */
+				$glob = $val;
+				/* Pour chaque paquet */
+				foreach ($glob as $key => $val) {
+					/* La variable $package contient le nom du paquet */
+					$package = $key;
+					/* Contient les champs fils relatifs au paquet courant */
+					$tab = $val;
+					/* Pour chacun des champs du paquet courant */
+					foreach ($tab as $key => $val) {
+						/* La clé désigne un champ  */
+						if ($key == 'Type' || $key == 'Install') {
+							/* Ces clés n'ont pas besoin d'être normalisées */
+							$this->newStruct['Packages'][$package][$key] = $val;
+							/* Les autres clés */
+						}
+						elseif($key=='Test') {
+							/*stoque le nom du champ Test*/
+							$test=$key;
+							/*stoque le contenu du champ Test*/
+							$tab=$val;
+							foreach($tab as $key=>$val){
+
+								if($key=='Files') {
+									/*appeler la fonction check_file */
+									$this->check_file($package,$test,$key,$val);
+								}
+								elseif($key=='Commands') { 
+									/* c'est le champ Commands il reste pareil */
+									$this->newStruct['Packages'][$package][$test][$key]=$val;
+								}
+								else { /* champ dependencies*/
+									$this->check_dependencies($struct,$package,$test,$key,$val);
+								}
+							}
+						}
+
+						elseif ($key == 'Files') {
+							/*appeler la fonction check_file */
+							$test='Files';
+							$this->check_file($package,$test,$key,$val);
+
+						} else {
+							/* variable contenant le champ Build ou le champ Runtime */
+							$build = $key;
+							/*variable contenant le contenu du champ Build ou du champ Runtime*/
+							$contenu = $val;
+
+							foreach ($contenu as $cle => $val) {
+
+								if ($cle == 'Dependencies') {
+									/*variable contenant les  champ cle et val*/
+									$depend = $cle;
+									$tab = $val;
+									$this->check_dependencies($struct,$package,$build,$depend,$tab);
+
+								} elseif ($cle == 'Commands') {
+									/* pas de normalisation la structure reste la méme */
+
+									$this->newStruct['Packages'][$package][$build][$cle] = $val;
 								}
 							}
 						}
 					}
 				}
+			}
 
+			else {
+				/* tout les autres champs restent pareil */
+				$this->newStruct[$key] = $val;
 			}
 		}
 
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        /* Get path and name of the input file */
-    $input_file = $input->getArgument('input');
-    /* Get references of the command parse() */
-    $command = $this->getApplication()->find('check');
-    /* Declare the arguments in a array (arguments has to gave like this) */
-    $arguments = array(
-        'command' => 'check',
-        'input' => $input_file,
-    );
-        $array_input = new ArrayInput($arguments);
-    /* Run command */
-    $command->run($array_input, $output);
+		$this->getApplication()->data = $this->newStruct;
 
-    /* Get structure of YaML file (which was parsed and checked) */
-    $struct = $this->getApplication()->data;
+		/* If the "--local" option is not set */
+		if (! $local) {
+			/* Get the structure of the YaML file (which was parsed) */
+			$struct = $this->getApplication()->conf;
+			/* Empties the temporary structure (used before to keep the normalized YAML) */
+			$this->newStruct = array();
 
-        /* Note: The variable $newStruct will owns the new structure (which becomes of the normalization) */
-    foreach ($struct as $key => $val) {
-
-                /* Les autres champs (de 1er niveau) ne seront pas modifiés */
-        if ($key == 'Packages') {
-            /* La variable $glob contient un tableau mentionnant les paquets qu'on souhaite créer */
-                $glob = $val;
-                /* Pour chaque paquet */
-                foreach ($glob as $key => $val) {
-                    /* La variable $package contient le nom du paquet */
-                    $package = $key;
-                    /* Contient les champs fils relatifs au paquet courant */
-                    $tab = $val;
-                    /* Pour chacun des champs du paquet courant */
-            foreach ($tab as $key => $val) {
-                /* La clé désigne un champ  */
-                        if ($key == 'Type' || $key == 'Install') {
-                            /* Ces clés n'ont pas besoin d'être normalisées */
-                            $this->newStruct['Packages'][$package][$key] = $val;
-                            /* Les autres clés */
-			}
-			elseif($key=='Test') {
-				/*stoque le nom du champ Test*/
-				$test=$key;
-				/*stoque le contenu du champ Test*/
-				$tab=$val;
-				foreach($tab as $key=>$val){
-
-					if($key=='Files') {
-						/*appeler la fonction check_file */
-						$this->check_file($package,$test,$key,$val);
-					}
-					elseif($key=='Commands') { 
-					/* c'est le champ Commands il reste pareil */
-							$this->newStruct['Packages'][$package][$test][$key]=$val;
-					}
-					else { /* champ dependencies*/
-							$this->check_dependencies($struct,$package,$test,$key,$val);
-					}
+			/* For each field of the root */
+			foreach($struct as $key => $value) {
+				/* If the creation of packages concerns all versions of the distribution */
+				if (! is_array($value)) {
+					$this->newStruct[$key]['All'] = '*';
+				} else { /* Keep the same structure */
+					$this->newStruct[$key] = $value ;
 				}
 			}
-
-			elseif ($key == 'Files') {
-				/*appeler la fonction check_file */
-				$test='Files';
-				$this->check_file($package,$test,$key,$val);
-
-                        } else {
-                            /* variable contenant le champ Build ou le champ Runtime */
-                $build = $key;
-                /*variable contenant le contenu du champ Build ou du champ Runtime*/
-				$contenu = $val;
-
-                foreach ($contenu as $cle => $val) {
-						
-						if ($cle == 'Dependencies') {
-                        /*variable contenant les  champ cle et val*/
-                         $depend = $cle;
-						 $tab = $val;
-						 $this->check_dependencies($struct,$package,$build,$depend,$tab);
-						
-						} elseif ($cle == 'Commands') {
-								/* pas de normalisation la structure reste la méme */
-								
-								$this->newStruct['Packages'][$package][$build][$cle] = $val;
-								}
-				}
-						}
-			}
-				}
+			$this->getApplication()->conf = $this->newStruct;
 		}
-	
-		else {
-            /* tout les autres champs restent pareil */
-            $this->newStruct[$key] = $val;
-        }
+
+		/* Optionnal argument (output file, which will be parsed) */
+		$output_file = $input->getArgument('output');
+		/* If the optionnal argument is present */
+		if ($output_file) {
+			/* Get references of the command write() */
+			$command = $this->getApplication()->find('write');
+			/* Declare the arguments in a array (arguments has to gave like this) */
+			$arguments = array('command' => 'write', 'output' => $output_file);
+			$array_input = new ArrayInput($arguments);
+			/* Run command */
+			$command->run($array_input, $output);
+		}
 	}
-
-
-        $this->getApplication()->data = $this->newStruct;
-
-	if (!empty($this->getApplication()->conf)) {
-		echo "ok\n";
-	}
-    /* Optionnal argument (output file, which will be parsed) */
-    $output_file = $input->getArgument('output');
-    /* If the optionnal argument is present */
-    if ($output_file) {
-        /* Get references of the command write() */
-        $command = $this->getApplication()->find('write');
-        /* Declare the arguments in a array (arguments has to gave like this) */
-        $arguments = array('command' => 'write', 'output' => $output_file);
-        $array_input = new ArrayInput($arguments);
-        /* Run command */
-        $command->run($array_input, $output);
-    }
-    }
 }

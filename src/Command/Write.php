@@ -6,7 +6,6 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Translation\Translator;
@@ -28,12 +27,6 @@ class Write extends Command
                 'input',
                 InputArgument::OPTIONAL,
                 'Name of the directory which contains the sources and the paquito.yaml file'
-            )
-            ->addOption(
-                'local',
-				null,
-                InputOption::VALUE_NONE,
-                'Creates a package only for the current distribution, version and architecture'
             )
             ;
     }
