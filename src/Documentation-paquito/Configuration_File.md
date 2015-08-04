@@ -15,7 +15,6 @@ Organization of the configuration file:
 **Name** : the name of your program ,you must provide a name ,if the field is empty, it will be an error .
 
 **Version** : the version of you program , you have to provide a version , if the field is empty , it will be an error .
-
 **Homepage** : it's the home page of you're project  , if you leave this field empty , you will have an error .
 
 **Summary** : it's a short description of what your program do , if you leave this field empty , you will have an error .
@@ -24,7 +23,7 @@ Organization of the configuration file:
 
 **Copyright**: it's 'the license of your program , for example : gpl, gpl2, gpl3 ... ect,if you leave this field empty , you will have an error .
 
-**Maintainer**: it's the name of the person who is responsible of maintaining the package ; It must follow the following pattern:  **name <email>** ,if not it will be an error , and if you leave this field empty it's will be another error .
+**Maintainer**: it's the name of the person who is responsible of maintaining the package ; It must follow the following pattern:  **name<email>** ,if not it will be an error , and if you leave this field empty it's will be another error .
 
 **Authors** : this is a list of developers  name ,that participated on your project ; It must follow the following pattern : **name <email>** if not it will be an error , and if you leave this field empty it's will be another error.
 
