@@ -158,7 +158,7 @@ Dependencies:
 * if the name of dependence is different ,the **dependence field** contain an array , each element of this array is the name of distribution : the name of distribution have to be one of this following names **"Debian or Archlinux or Centos"** , if not it will have an error , and each **distribution field** can be represent in different ways :
 
    * If **dependence field** (name of the dependence) is the same in one of each distribution ,we don't have to write it (don't write the dependence name for this distribution) .
-   * If one of this distribution don't contain the dependence we replace by ** \"<none>"** .
+   * If one of this distribution don't contain the dependence we replace by **" \<none>"** .
 
 **for example :**
 we have php5 dependence for construction , and Centos don't need any php dependence , and name of php dependence in Debian is the same "php5".
