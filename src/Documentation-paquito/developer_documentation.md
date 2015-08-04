@@ -1,6 +1,6 @@
 #Developer documentation:
 
-In paquito project 2015 we took care of creating packages for Debian , Redhat and Archlinux  distributions (versions and architectures)from one (and the same) configuration file (**paquito.yaml** file) , for this  we divided the work in several steps :
+In paquito project 2015 we took care of creating packages for Debian , Redhat and Archlinux  distributions (versions and architectures) from one (and the same) configuration file (**paquito.yaml** file) , for this  we divided the work in several steps :
 
 
 * Verification
@@ -20,7 +20,7 @@ This step is represented by the function **Check.php**
 
 **example:**
 
-'''yaml
+```yaml
 Name:
 Version: 1.3
 Homepage: paquito.fr
