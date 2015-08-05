@@ -35,6 +35,9 @@ Packages:
                                 rpm-build:
                                         Debian: dh-make
                                         Archlinux: "<none>"
+                                rpmdevtools:
+                                        Debian: "<none>"
+                                        Archlinux: "<none>"
                                 base-devel:
                                         Debian: build-essential
                                         Centos: "<none>"
