@@ -155,7 +155,7 @@ Runtime:
       base-devel
       
 ```
-###Observation:
+####Observation:
 The field **Dependencies** doen't exists in all Centos versions after pruning , because there is no dependence in the field **Runtime** of the configuration file for Centos (**"\<none>"**) . 
 
 ###Generation_of_packages:
