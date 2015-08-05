@@ -12,6 +12,7 @@ In paquito project 2015 we took care of creating packages for Debian , Redhat an
 Each step is represented by a php function , and each php function is represented by command , for this we used **symfony console** that can create usable console commands ,to facilitate project management .
 
 ###Verification : 
+
 After having loaded the configuration file (parse the configuration file paquito.yaml and convert it on php array) ,verification step is initiated to:
 * Ensure that the configuration file contains all the required fields.
 * He respects the format described in the documentation of the configuration file , in case of error it will be transmitted as an error message describing the error occurred
@@ -35,6 +36,7 @@ the error will be:
 ``` the field Name is empty ```
 
 ###Normalisation:
+
 To facilitate the filling of  the configuration file by user , there are shortcuts in this file , normalisation is to remove these shortcuts for developer ,to technically facilitate the access to some fields of the file .
 
 This step is represented by the function **Normalize.php** and the console command **normalize** .
@@ -114,3 +116,44 @@ Runtime
             All: tcc-2.2
 
 ```
+
+###Pruning:
+
+Is to remove all the specific information in the configuration file ,to keep only the information concerning the version of the package distribution that wants to build .
+
+This step is represented by the function **Prune.php** and the console command **prune** .
+
+**example** :
+
+We have a dependence which is **base-devel** and this dependence doen't exist in Centos distribution , in Debian distribution she exists but she have another name **build-essential** .
+
+It will represented like this (in the configuraton file) :
+
+```yaml
+Runtime:
+   Dependencies:
+      base-devel:
+         Debian: build-essential
+         Centos: "<none>"
+        
+```
+After pruning it will be like this :
+
+####for debian stable:
+
+```yaml
+Runtime:
+   Dependencies:
+      build-essential
+     
+```
+####for Archlinux :
+
+```yaml
+Runtime:
+   Dependencies:
+      base-devel
+      
+```
+###Observation:
+The field **Dependencies** doen't exists in all Centos versions after pruning , because there is no dependence in the field **Runtime** of the configuration file for Centos (**"\<none>"**) . 
