@@ -14,6 +14,7 @@ In this documentation we will present you  **paquito project** , we divided the 
 ####Description:
 
 Paquito is a build firm that try to answer to the following problem :
+
 **How from source code available on a software repository , get to build packages and put them in repositories dedicated to them ?**
 
 The objective being to facilitate the creation of packages for Debian , Centos and Archlinux distributions (according to different versions: Testing ,Stable ..etc  and architectures: 32bits ,64 bits ...etc ) , and that using one and same configuration file which later will be translated into the various versions .
