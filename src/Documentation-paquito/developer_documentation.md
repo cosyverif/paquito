@@ -11,6 +11,9 @@ In paquito project 2015 we took care of creating packages for Debian , Redhat an
 
 Each step is represented by a php function , and each php function is represented by command , for this we used **symfony console** that can create usable console commands ,to facilitate project management .
 
+####Observation :
+Refer to the documentation of the configuration file to understand the structures shown below .
+
 ###Verification : 
 
 After having loaded the configuration file (parse the configuration file paquito.yaml and convert it on php array) ,verification step is initiated to:
@@ -158,9 +161,36 @@ Runtime:
 ####Observation:
 The field **Dependencies** doen't exists in all Centos versions after pruning , because there is no dependence in the field **Runtime** of the configuration file for Centos (**"\<none>"**) . 
 
+
 ###Generation_of_packages:
 
 This step is reponsible of the creation of packages for Debian , Archlinux and Centos distributions (versions and architectures ) .
 According to distribution of the machine where the generation is launched , at the end we will have a package suitable for this distribution (version and architecture) .
 
 This step is represented by the function **Generate.php** and the console command **generate** .
+
+
+###Test_packages:
+
+In this step we will test the package created in the previous step , to ensure that it is consistent and functional , so it can be put into the repository dedicated to him .
+
+This step is represented by the function **Generate_test.php** and the console command **generate-test** .
+When we execute the command **generate-test** we will create two packages :
+
+* the first package will be the package created in the previous step (at the begining the command **generate-test** calls the command **generate** ) . 
+* the second package will be the test package ,with which test the previous package .
+
+There are two types of tests :
+
+* default test which is always executed at the installation of test package , it is the file **installation.bats** which will be created at the lauch of the command **generate-test** ( this file will be contained in the test package) , this file tests that the files of packages in the field **Files** of the configuration file exist , and these files have the right for execution .
+* tests provided by user , who will want to test different things in his program .
+
+We have to use scripting language to write these tests .
+These tests will be always executed at the installation of the test package .
+
+To write the default test we used  **Bats** , for this we have added in the file **Generation_test.php** installation of Bats ,so it will be installed at the execution of command **generate-test** ( if you want to write tests in Bats, you will not need to install it because it will be installed through the command **generate-test**).
+
+#####Bats:
+Is a TAP-compliant testing framework for Bash , a Bats test file is a Bash script with special syntax for defining
+test cases .
+
