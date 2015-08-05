@@ -11,7 +11,6 @@ use Symfony\Component\Console\Input\ArrayInput;
 class Normalize extends Command
 {
 	public $newStruct = array();
-	public $distribution = array('Debian','Archlinux','Centos');
 
 	protected function configure()
 	{
@@ -91,7 +90,7 @@ class Normalize extends Command
 				/* tableau contenant les dépendances pour les différentes distributions*/
 				$dist = $val;
 				/* regarder quelle distribution manque*/
-				foreach ($this->distribution as $val) {
+				foreach (array_keys($this->getApplication()->distributions) as $val) {
 					if (!array_key_exists($val, $dist)) {
 						$this->newStruct['Packages'][$package][$field][$depend][$d][$val] = array('All' => $d);
 					} else { /* la distribution existe*/
@@ -229,16 +228,54 @@ class Normalize extends Command
 			/* Empties the temporary structure (used before to keep the normalized YAML) */
 			$this->newStruct = array();
 
-			/* For each field of the root */
+			/* For each field of the root (in others words for each distribution) */
 			foreach($struct as $key => $value) {
+				/* It has to delete aliases versions (like "Stable", "Testing"...) to avoid to add them
+				 * IMPORTANT: The array_values() function is to give good integer values in the array (else we can have jumps in values)*/
+				$versions = array_values(array_diff($this->getApplication()->distributions[$key], $this->getApplication()->alias_distributions[$key]));
+
 				/* If the creation of packages concerns all versions of the distribution */
 				if (! is_array($value)) {
-					$this->newStruct[$key]['All'] = '*';
-				} else { /* Keep the same structure */
-					$this->newStruct[$key] = $value ;
+					/* For each version of the distribution */
+					foreach($versions as $v) {
+						/* 'All' is ignored */
+						if ($v == 'All') {
+							continue;
+						}
+						/* Add the version with all architectures */
+						$this->newStruct[$key][$v] = $this->getApplication()->architectures;
+					}
+				} else { /* Only some versions are concerned */
+					/* If the 'All' field is set */
+					if (isset($value['All'])) {
+						/* Saves her value */
+						$content_all = $value['All'];
+						/* For each version which is not explicity specified in the configuration file */
+						foreach(array_diff($versions, array_keys($value)) as $v) {
+							$this->newStruct[$key][$v] = $content_all;
+						}	
+						/* Remove this field (to avoid that the next foreach get 'All') */
+						unset($value['All']);
+					}		
+					/* For each version of the distribution */
+					foreach($value as $nv => $v) {
+						/* If the version field contain an array (of architectures) */
+						if (is_array($v)) {
+							$this->newStruct[$key][$nv] = $v;
+						} else { /* If there is only one architecture */
+							/* The value is "*" (so all architectures) */
+							if ($v == "*") {
+								$this->newStruct[$key][$nv] = $this->getApplication()->architectures;
+							} else {
+								/* Transforms the architecture on a array */
+								$this->newStruct[$key][$nv] = array($v);
+							}
+						}
+					}
 				}
 			}
 			$this->getApplication()->conf = $this->newStruct;
+			print_r($this->getApplication()->conf);
 		}
 
 		/* Optionnal argument (output file, which will be parsed) */

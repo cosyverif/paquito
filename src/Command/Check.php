@@ -20,12 +20,9 @@ class Check extends Command
 	/* Package types */
 	public $keys_type = array('binary', 'library', 'source', 'arch_independant');
 	/* Known distributions */
-	public $key_dist = array('Debian', 'Archlinux', 'Centos');
+	#public $key_dist = array('Debian', 'Archlinux', 'Centos');
 	/* Known versions (Debian) */
-	public $versions = array(
-		'Debian' => array('All', 'Stable', 'Testing', 'Wheezy', 'Jessie'), /* Debian */
-		'Archlinux' => array('All'), /* Debian */
-		'Centos' => array('All', '6.6', '7.0'), ); /* CentOS */
+	#public $architectures = array('32', '64');
 
 	protected function configure()
 	{
@@ -175,7 +172,7 @@ class Check extends Command
 						/* If the dependency is different depending on the distributions */
 						if (is_array($d_value)) {
 							/* Analysis of the "dependency" structure (where it has to have names of the distributions) */
-							$this->check_field(array('Root','Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key), $d_value, $this->key_dist, array());
+							$this->check_field(array('Root','Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key), $d_value, array_keys($this->getApplication()->distributions), array());
 							/* For each name of ditribution */
 							foreach ($d_value as $v_key => $v_value) {
 								/* Analysis of the "specific distribution dependency" structure (where it has to
@@ -195,7 +192,7 @@ class Check extends Command
 											}
 										}
 									} else { /* The distribution structure contains the standard structure (like for example "All", "Wheezy", "Jessie"...) */
-										$this->check_field(array('Root','Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key, $v_key), $v_value, $this->versions[$v_key], array('All'));
+										$this->check_field(array('Root','Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key, $v_key), $v_value, $this->getApplication()->distributionsversions[$v_key], array('All'));
 										/* For each field (like "All", "Wheezy", "Jessie"...) */
 										foreach($v_value as $v_subkey => $v_subvalue) {
 											/* If the array is non-associative (so the user has specified
@@ -246,21 +243,37 @@ class Check extends Command
 			$struct = $this->getApplication()->conf;
 
 			/* Analysis of the root structure (which contains distribution names) */
-			$this->check_field(array('Root'), $struct, $this->key_dist, $this->key_dist);
+			$this->check_field(array('Root'), $struct, array_keys($this->getApplication()->distributions), array_keys($this->getApplication()->distributions));
 
 			/* For each field of the root */
 			foreach($struct as $key => $value) {
 				/* If there is a sub-structure */
 				if (is_array($value)) {
 					/* Checks versions of the current distribution */
-					$this->check_field(array('Root', $key), $struct[$key], $this->versions[$key], array());
+					$this->check_field(array('Root', $key), $struct[$key], array_diff($this->getApplication()->distributions[$key], $this->getApplication()->alias_distributions[$key]), array());
 					/* For each version */
 					foreach($struct[$key] as $v_key => $v_value) {
-						if ($v_value != '32' && $v_value != '64' && $v_value != '*') {
-							$field = implode(' -> ', array('Root', $key, $v_key));
-							$this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%field%' => $v_key, '%value%' => $v_value, '%path%' => $field)));
+						/* If there are several architectures */
+						if (is_array($v_value)) {
+							/* For each architecture */
+							foreach ($v_value as $archi) {
+								/* If the value is an array or is not a known architecture */
+								if (is_array($archi) || !in_array($archi, $this->getApplication()->architectures)) {
+									$field = implode(' -> ', array('Root', $key, $v_key));
+									$this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%field%' => $v_key, '%value%' => $v_key, '%path%' => $field)));
 
-							exit(-1);
+									exit(-1);
+
+								}
+							}
+						} else { /* One architecture (or "*") is specified */
+							/* If the architecture is unknown */
+							if (!in_array($v_value, $this->getApplication()->architectures) && $v_value != '*') {
+								$field = implode(' -> ', array('Root', $key, $v_key));
+								$this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%field%' => $v_key, '%value%' => $v_value, '%path%' => $field)));
+
+								exit(-1);
+							}
 						}
 					}
 				} else {

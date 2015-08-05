@@ -26,6 +26,15 @@ $application->data = null;
 $application->dist_name = null;
 $application->dist_version = null;
 $application->dist_arch = null;
+$application->architectures = array('32', '64');
+$application->distributions = array(
+	'Debian' => array('All', 'Stable', 'Testing', 'Wheezy', 'Jessie'), /* Debian */
+	'Archlinux' => array('All'), /* Debian */
+	'Centos' => array('All', '6.6', '7.0'), ); /* CentOS */
+$application->alias_distributions = array(
+	'Debian' => array('Stable', 'Testing'),
+	'Centos' => array(),
+	'Archlinux' => array(),);
 /* Globals options */
 $application->getDefinition()->addOptions([new InputOption('local', 'l', InputOption::VALUE_NONE, 'Creates a package only for the current distribution, version and architecture')]);
 /* Register commands */
