@@ -61,7 +61,7 @@ Files:
 **example_2:**
 
 We find another shortcut at the field **Dependencies** of the configuration file .
-For example if we have one dependence  **gcc** , and this dependence is the same for all distributions (versions and architectures ) , we will use the shortcut **"*""** .
+For example if we have one dependence  **gcc** , and this dependence is the same for all distributions (versions and architectures ) , we will use the shortcut **"*"** .
 
 It will represented like this :
 
