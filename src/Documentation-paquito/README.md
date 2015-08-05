@@ -169,7 +169,8 @@ paquito generate source_repository
 In the field **Files** of configuration file paquito.yaml , in which we indicate the path to access to files sources that package need , the path to the files is done from **the directory we give as parameter to the paquito command **.
 
 **for example**:
-The repository name is "src" , you will place **paquito.yaml** in this repository , and this repository contains to files : **hello.c** ,**program.c** , the field **Files** will be fill like this :
+
+The repository name is **src** , you will place **paquito.yaml** in this repository , and this repository contains to files : **hello.c** ,**program.c** , the field **Files** will be fill like this :
 ```yaml
 Files:
    /usr/bin/ : hello.c
