@@ -72,8 +72,10 @@ Dependencies for execution are :
 
 #How to create package paquito :
 
+First install **php** in you're machine (paquito was programmed in php).
+
 To use the command **paquito** ,you have to create and install **the package paquito** . 
-There are to ways to create the command **paquito** , which allow us to create packages from source program (you will use this command to create all packages you want to build) :
+There are to ways to create the command **paquito** , which allow us to create packages from source programs (you will use this command to create all packages you want to build) :
 
 * Create the paquito package locally (on machines : using **--local** option) .
 * Create the paquito package using docker (virtualisation technologie : without the option ) .
@@ -90,3 +92,22 @@ git clone https://github.com/CosyVerif/paquito
 cd paquito
 
 ```
+* Give rights to the file **install.sh** and execute it , it will install in your machine  , all necessary php tools (php modules , composer ....) :
+```bash
+chmod 755 install.sh
+./install.sh
+```
+* Exectute the function **Main.php** to create the package paquito (you will use the **--local** option because in this case we choose to create paquito package locally) :
+**To create Debian package:**
+```bash
+php src/Main.php --local generate paquito.yaml
+
+```
+**To create Archlinux and Centos package:**
+```bash
+php -c php.ini src/Main.php generate paquito.yaml
+
+```
+####Observation:
+We use **php.ini** for Archlinux and Centos , because there are some php modules that are missing in the php configuration file to these distributions .
+``` bash
