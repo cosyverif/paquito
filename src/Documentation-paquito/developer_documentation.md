@@ -58,3 +58,59 @@ Files:
       Permissions: 755
       
 ```
+**example_2:**
+
+We find another shortcut at the field **Dependencies** of the configuration file .
+For example if we have one dependence  **gcc** , and this dependence is the same for all distributions (versions and architectures ) , we will use the shortcut **"*""** .
+
+It will represented like this :
+
+```yaml
+Build:
+   Dependencies:
+      gcc: "*"
+
+```
+After normalisation we delete this shortcut , and it will be like this :
+
+```yaml
+Build:
+   Dependencies:
+      gcc:
+         Debian:
+            All: gcc
+         Archlinux:
+            All: gcc
+         Centos:
+            All: gcc
+            
+```
+
+**example_3**:
+
+There is another shortcut in the field **Dependecies** of the configuration file  , for example we have a dependence which is **tcc** and this dependence is different for some distributions , but for the same distribution ,there is no specialization for versions (the same dependence name for all versions of the distribution) .
+
+It will represented like this :
+
+```yaml
+Runtime:
+   Dependencies:
+      tcc:
+         Archlinux: tcc-1.2
+         Centos: tcc-2.2
+         
+```
+After normalisation it will be like this :
+
+```yaml
+Runtime
+   Dependencies:
+      tcc:
+         Debian:
+            All: tcc
+         Archlinux:
+            All: tcc-1.2
+         Centos:
+            All: tcc-2.2
+
+```
