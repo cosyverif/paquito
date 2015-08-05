@@ -147,3 +147,35 @@ rpm  -i name_of_centos_package
 pacman -U name_of_archlinux_package
 
 ```
+
+##Creation packages through the command paquito :
+
+After having to create and install the paquito package , you can use **paquito** command to create packages from source programs ,to do this follows these steps :
+* Fill the configuration file **paquito.yaml** , for it to be adapted to the needs of you're program .
+* Place the configuration file in the repository contains the sources of your program .
+* Run the command :
+
+**Locally: (--local option)**
+```bash
+paquito --local generate source-repository
+
+```
+**Docker:**
+```bash
+paquito generate source_repository
+
+```
+####Observation:
+In the field **Files** of configuration file paquito.yaml , in which we indicate the path to access to files sources that package need , the path to the files is done from **the directory we give as parameter to the paquito command ** .
+**for example**:
+The repository name is "src" , you will place **paquito.yaml** in this repository , and this repository contains to files : **hello.c** ,**program.c** , the field **Files** will be fill like this :
+```yaml
+Files:
+   /usr/bin/ : hello.c
+   /usr/share : program.c
+   
+```
+**The path is done from the directory** .
+
+
+///tests and compilation
