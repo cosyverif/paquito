@@ -170,7 +170,7 @@ In the field **Files** of configuration file paquito.yaml , in which we indicate
 
 **for example**:
 
-The repository name is **src** , you will place **paquito.yaml** in this repository , and this repository contains to files : **hello.c** ,**program.c** , the field **Files** will be fill like this :
+The repository name is **src** , you will place **paquito.yaml** in this repository , and this repository contains two files : **hello.c** ,**program.c** , the field **Files** will be fill like this :
 ```yaml
 Files:
    /usr/bin/ : hello.c
