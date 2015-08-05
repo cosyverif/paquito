@@ -11,7 +11,7 @@ In this documentation we will present you  **paquito project** , we divided the 
 
 ###Presentation of paquito 2015:
 
-####Description:
+#####Description:
 
 Paquito is a build firm that try to answer to the following problem :
 
@@ -29,7 +29,7 @@ The infrastructure used in this project consists of the following steps:
 * Generation of test packages , for testing whether packages created in the previous steps are functional .
 * Put the packages in the repositories dedicated to them .
 
-####Format of the configuration file :
+#####Format of the configuration file :
 
 The name of the configuration file , will be always **paquito.yaml** , for all projects that will use paquito .
 The format of the configuration file paquito is the **yaml** format , because :
@@ -37,7 +37,7 @@ The format of the configuration file paquito is the **yaml** format , because :
 * it's a very human readable format .
 * it's easy to write .
 
-####Paquito programming language:
+#####Paquito programming language:
 
 The choice of language has focused on the **php** language , because of the advantages it offers for our project :
 
@@ -45,7 +45,7 @@ The choice of language has focused on the **php** language , because of the adva
 * Scripting language, object language .
 * Has a number of tools and frameworks , such as **symfony** , that allow  the management of some tasks , and facilitate the work of developer .
 
-###PHP modules used:
+#####PHP modules used:
 
 We used some modules of symfony ,to facilitate and accelerate the developement :
 
