@@ -11,7 +11,7 @@ In this documentation we will present you  **paquito project** , we divided the 
 
 ##Presentation of paquito 2015:
 
-#####Description:
+####Description:
 
 Paquito is a build firm that try to answer to the following problem :
 
@@ -29,7 +29,7 @@ The infrastructure used in this project consists of the following steps:
 * Generation of test packages , for testing whether packages created in the previous steps are functional .
 * Put the packages in the repositories dedicated to them .
 
-#####Format of the configuration file :
+####Format of the configuration file :
 
 The name of the configuration file , will be always **paquito.yaml** , for all projects that will use paquito .
 The format of the configuration file paquito is the **yaml** format , because :
@@ -37,7 +37,7 @@ The format of the configuration file paquito is the **yaml** format , because :
 * it's a very human readable format .
 * it's easy to write .
 
-#####Paquito programming language:
+####Paquito programming language:
 
 The choice of language has focused on the **php** language , because of the advantages it offers for our project :
 
@@ -45,7 +45,7 @@ The choice of language has focused on the **php** language , because of the adva
 * Scripting language, object language .
 * Has a number of tools and frameworks , such as **symfony** , that allow  the management of some tasks , and facilitate the work of developer .
 
-#####PHP modules used:
+####PHP modules used:
 
 We used some modules of symfony ,to facilitate and accelerate the developement :
 
@@ -71,3 +71,22 @@ Dependencies for execution are :
 * Centos : we have the same dependencies for building Centos packages , as construction dependencies, and the same dependencies necessary to satisfy some php modules , there is a dependence more which is **php-cli** , which is the php dependence for Centos
 
 #How to create package paquito :
+
+To use the command **paquito** ,you have to create and install **the package paquito** . 
+There are to ways to create the command **paquito** , which allow us to create packages from source program (you will use this command to create all packages you want to build) :
+
+* Create the paquito package locally (on machines : using **--local** option) .
+* Create the paquito package using docker (virtualisation technologie : without the option ) .
+
+Package paquito in paquito (create paquito package) locally , meaning start creating package on machines for this we will follow the following steps :
+
+* Clone the github repository of paquito :
+```bash
+git clone https://github.com/CosyVerif/paquito
+
+```
+* Go to the directory paquito 
+```bash
+cd paquito
+
+```
