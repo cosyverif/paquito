@@ -157,3 +157,10 @@ Runtime:
 ```
 ###Observation:
 The field **Dependencies** doen't exists in all Centos versions after pruning , because there is no dependence in the field **Runtime** of the configuration file for Centos (**"\<none>"**) . 
+
+###Generation_of_packages:
+
+This step is reponsible of the creation of packages for Debian , Archlinux and Centos distributions (versions and architectures ) .
+According to distribution of the machine where the generation is launched , at the end we will have a package suitable for this distribution (version and architecture) .
+
+This step is represented by the function **Generate.php** and the console command **generate** .
