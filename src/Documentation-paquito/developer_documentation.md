@@ -16,7 +16,7 @@ After having loaded the configuration file (parse the configuration file paquito
 * Ensure that the configuration file contains all the required fields.
 * He respects the format described in the documentation of the configuration file , in case of error it will be transmitted as an error message describing the error occurred
 
-This step is represented by the function **Check.php**
+This step is represented by the function **Check.php** and the console command **check**.
 
 **example:**
 
@@ -33,3 +33,28 @@ Authors:
 the error will be:
 
 ``` the field Name is empty ```
+
+###Normalisation:
+To facilitate the filling of  the configuration file by user , there are shortcuts in this file , normalisation is to remove these shortcuts for developer ,to technically facilitate the access to some fields of the file .
+
+This step is represented by the function **Normalize.php** and the console command **normalize** .
+
+**example_1:**
+
+We find one of the shortcuts at the field **Files** of the configuration file .
+
+```yaml
+Files:
+   /usr/bin/paquito: src/paquito.sh
+   
+```
+In this example the file has no rights, for this we will give him default rights (**755**) .
+After normalisation it will represented like this :
+
+```yaml
+Files:
+   /usr/bin/paquito:
+      Source: src/paquito.sh
+      Permissions: 755
+      
+```
