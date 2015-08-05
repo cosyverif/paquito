@@ -9,7 +9,7 @@ In this documentation we will present you  **paquito project** , we divided the 
 *
 
 
-###Presentation of paquito 2015:
+##Presentation of paquito 2015:
 
 #####Description:
 
@@ -54,7 +54,7 @@ We used some modules of symfony ,to facilitate and accelerate the developement :
 * **Logger** : display of error messages .
 * **Translator** : to translate (paquito exists in french and english) .
 
-###Dependencies:
+##Dependencies:
 
 Paquito has some Dependencies on the construction and the execution :
 
@@ -69,3 +69,5 @@ Dependencies for execution are :
 * Debian : we have the same dependencies for building Debian packages , as construction dependencies , there is a dependence more which is **php5-cli** , necessary because paquito project programmed in php .
 * Archlinux : we have the same dependencies for building Archlinux packages , as construction dependencies , there is a dependence more which is **php-cgi** , which is the php dependence for Archlinux .
 * Centos : we have the same dependencies for building Centos packages , as construction dependencies, and the same dependencies necessary to satisfy some php modules , there is a dependence more which is **php-cli** , which is the php dependence for Centos
+
+#How to create package paquito :
