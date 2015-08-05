@@ -98,6 +98,7 @@ chmod 755 install.sh
 ./install.sh
 ```
 * Exectute the function **Main.php** to create the package paquito (you will use the **--local** option because in this case we choose to create paquito package locally) :
+
 **To create Debian package:**
 ```bash
 php src/Main.php --local generate paquito.yaml
