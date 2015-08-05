@@ -70,7 +70,7 @@ Dependencies for execution are :
 * Archlinux : we have the same dependencies for building Archlinux packages , as construction dependencies , there is a dependence more which is **php-cgi** , which is the php dependence for Archlinux .
 * Centos : we have the same dependencies for building Centos packages , as construction dependencies, and the same dependencies necessary to satisfy some php modules , there is a dependence more which is **php-cli** , which is the php dependence for Centos
 
-#How to create package paquito :
+##How to create package paquito :
 
 First install **php** in you're machine (paquito was programmed in php).
 
@@ -125,5 +125,24 @@ php src/Main.php generate paquito.yaml
 **To create Centos or Archlinux package :**
 ```bash
 php -c php.ini src/Main.php generate paquito.yaml
+
+```
+##How to install paquito package:
+
+Installation is different according to the distribution :
+
+* **Debian:**
+```bash
+dpkg -i name_of_debian_package
+
+```
+* **Centos:**
+```bash
+rpm  -i name_of_centos_package
+
+```
+* **Archlinux:**
+```bash
+pacman -U name_of_archlinux_package
 
 ```
