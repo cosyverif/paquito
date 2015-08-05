@@ -80,7 +80,7 @@ There are to ways to create the command **paquito** , which allow us to create p
 * Create the paquito package locally (on machines : using **--local** option) .
 * Create the paquito package using docker (virtualisation technologie : without the option ) .
 
-Package paquito in paquito (create paquito package) locally , meaning start creating package on machines for this we will follow the following steps :
+Package paquito in paquito (create paquito package) locally , meaning start creating package on machines for this you will follow the following steps :
 
 * Clone the github repository of paquito :
 ```bash
@@ -103,11 +103,26 @@ chmod 755 install.sh
 php src/Main.php --local generate paquito.yaml
 
 ```
-**To create Archlinux and Centos package:**
+**To create Archlinux or Centos package:**
+```bash
+php -c php.ini src/Main.php --local generate paquito.yaml
+
+```
+At the end you will have paquito package according to the distribution on which you start creating.
+
+####Observation:
+We use **php.ini** for Archlinux and Centos , because there are some php modules that are missing in the php configuration file of these distributions .
+
+
+Create package paquito in docker , for this you follow the same steps as above , the only thing that changes is :
+we will not used the **--local** option .
+**To create Debian package :**
+```bash
+php src/Main.php generate paquito.yaml
+
+```
+**To create Centos or Archlinux package :**
 ```bash
 php -c php.ini src/Main.php generate paquito.yaml
 
 ```
-####Observation:
-We use **php.ini** for Archlinux and Centos , because there are some php modules that are missing in the php configuration file to these distributions .
-``` bash
