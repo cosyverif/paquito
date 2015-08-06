@@ -32,7 +32,7 @@ $application->distributions = array(
 	'Archlinux' => array('All'), /* Debian */
 	'Centos' => array('All', '6.6', '7.0'), ); /* CentOS */
 $application->alias_distributions = array(
-	'Debian' => array('Stable', 'Testing'),
+	'Debian' => array('Stable' => 'Wheezy', 'Testing' => 'Jessie'),
 	'Centos' => array(),
 	'Archlinux' => array(),);
 /* Globals options */

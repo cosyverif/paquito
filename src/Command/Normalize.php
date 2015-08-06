@@ -232,28 +232,43 @@ class Normalize extends Command
 			foreach($struct as $key => $value) {
 				/* It has to delete aliases versions (like "Stable", "Testing"...) to avoid to add them
 				 * IMPORTANT: The array_values() function is to give good integer values in the array (else we can have jumps in values)*/
-				$versions = array_values(array_diff($this->getApplication()->distributions[$key], $this->getApplication()->alias_distributions[$key]));
+				$versions = array_values(array_diff($this->getApplication()->distributions[$key], array_keys($this->getApplication()->alias_distributions[$key])));
 
 				/* If the creation of packages concerns all versions of the distribution */
 				if (! is_array($value)) {
-					/* For each version of the distribution */
-					foreach($versions as $v) {
-						/* 'All' is ignored */
-						if ($v == 'All') {
-							continue;
+					/* Particular case : Archlinux has not version, so we add an "artificial" version  */
+					if ($key != 'Archlinux') {
+						/* For each version of the distribution */
+						foreach($versions as $v) {
+							/* 'All' is ignored */
+							if ($v == 'All') {
+								continue;
+							}
+							/* Add the version with all architectures */
+							$this->newStruct[$key][$v] = $this->getApplication()->architectures;
 						}
-						/* Add the version with all architectures */
-						$this->newStruct[$key][$v] = $this->getApplication()->architectures;
+					} else {
+						$this->newStruct[$key]['Rolling'] = $this->getApplication()->architectures;
 					}
 				} else { /* Only some versions are concerned */
 					/* If the 'All' field is set */
 					if (isset($value['All'])) {
 						/* Saves her value */
 						$content_all = $value['All'];
-						/* For each version which is not explicity specified in the configuration file */
-						foreach(array_diff($versions, array_keys($value)) as $v) {
-							$this->newStruct[$key][$v] = $content_all;
-						}	
+						/* If the variable is not an array, transforms it */
+						if (! is_array($content_all)) {
+							$content_all = array($content_all);
+						}
+
+						/* Particular case : Archlinux has not version, so we add an "artificial" version  */
+						if ($key != 'Archlinux') {
+							/* For each version which is not explicity specified in the configuration file */
+							foreach(array_diff($versions, array_keys($value)) as $v) {
+								$this->newStruct[$key][$v] = $content_all;
+							}
+						} else {
+							$this->newStruct[$key]['Rolling'] = $content_all;
+						}
 						/* Remove this field (to avoid that the next foreach get 'All') */
 						unset($value['All']);
 					}		
@@ -275,7 +290,6 @@ class Normalize extends Command
 				}
 			}
 			$this->getApplication()->conf = $this->newStruct;
-			print_r($this->getApplication()->conf);
 		}
 
 		/* Optionnal argument (output file, which will be parsed) */

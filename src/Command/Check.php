@@ -19,10 +19,6 @@ class Check extends Command
 	public $keys_package_min = array('Type', 'Files');
 	/* Package types */
 	public $keys_type = array('binary', 'library', 'source', 'arch_independant');
-	/* Known distributions */
-	#public $key_dist = array('Debian', 'Archlinux', 'Centos');
-	/* Known versions (Debian) */
-	#public $architectures = array('32', '64');
 
 	protected function configure()
 	{
@@ -192,7 +188,7 @@ class Check extends Command
 											}
 										}
 									} else { /* The distribution structure contains the standard structure (like for example "All", "Wheezy", "Jessie"...) */
-										$this->check_field(array('Root','Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key, $v_key), $v_value, $this->getApplication()->distributionsversions[$v_key], array('All'));
+										$this->check_field(array('Root','Packages', $key, $key_dependencies[$i], 'Dependencies', $d_key, $v_key), $v_value,$this->getApplication()->distributions[$v_key], array('All'));
 										/* For each field (like "All", "Wheezy", "Jessie"...) */
 										foreach($v_value as $v_subkey => $v_subvalue) {
 											/* If the array is non-associative (so the user has specified
@@ -250,7 +246,7 @@ class Check extends Command
 				/* If there is a sub-structure */
 				if (is_array($value)) {
 					/* Checks versions of the current distribution */
-					$this->check_field(array('Root', $key), $struct[$key], array_diff($this->getApplication()->distributions[$key], $this->getApplication()->alias_distributions[$key]), array());
+					$this->check_field(array('Root', $key), $struct[$key], array_diff($this->getApplication()->distributions[$key], array_keys($this->getApplication()->alias_distributions[$key])), array());
 					/* For each version */
 					foreach($struct[$key] as $v_key => $v_value) {
 						/* If there are several architectures */

@@ -12,8 +12,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 
 class Prune extends Command
 {
-	/* Traduction versions Debian */
-	public $dv_dist = array('Debian' => array('Stable' => 'Wheezy', 'Testing' => 'Jessie'), 'Centos' => array('6.6', '7.0'));
+	public $logger = null;
 
 	protected function configure()
 	{
@@ -33,31 +32,8 @@ class Prune extends Command
 			;
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output)
-	{
-		/* Get path and name of the input file */
-		$input_file = $input->getArgument('input');
-		/* Get presence of the "--local" option */
-		$local = $input->getOption('local');
-		/* Get references of the command parse() */
-		$command = $this->getApplication()->find('normalize');
-		/* Declare the arguments in a array (arguments has to gave like this) */
-		$arguments = array(
-			'command' => 'normalize',
-			'input' => $input_file,
-			'--local' => $local,
-		);
-		$array_input = new ArrayInput($arguments);
-		/* Run command */
-		$command->run($array_input, $output);
-
-		/* Get structure of YaML file (which was parsed and checked) */
-		$struct = $this->getApplication()->data;
-		/* Launch Logger module */
-		$logger = new ConsoleLogger($output);
-
-		/* This array will contain the new structure */
-		$new_struct = array();
+	/* Defines the applications variables $dist_name, $dist_version and $dist_arch to inquire Paquito of the distribution where it runs (locally !!!) */
+	protected function getDist() {
 		/* The file /etc/os-release contains the informations about the distribution (where is executed this program)*/
 		/* TODO Sous Archlinux, la fonction parse_ini_files() ne marchera pas si la variable "open_basedir" du fichier /etc/php/php.ini
 		 * n'inclue pas le chemin /usr/lib/ (qui est la vraie localisation du fichier "os-release" */
@@ -97,13 +73,14 @@ class Prune extends Command
 				}
 				preg_match('/[0-9](\.[0-9])?/', $version, $match);
 				$this->getApplication()->dist_version = $match[0];
-
 			} 
 		}
 		/* Get the architecture of the current machine */
 		$this->getApplication()->dist_arch = posix_uname();
 		$this->getApplication()->dist_arch = $this->getApplication()->dist_arch['machine'];
+	}
 
+	protected function prune_structure($struct) {
 		/* Copy the initial structure of the configuration file. The new structure will be modified */
 		$new_struct = $struct;
 		foreach ($struct['Packages'] as $key => $value) {
@@ -125,8 +102,8 @@ class Prune extends Command
 								if (array_key_exists($this->getApplication()->dist_version, $depend_struct[$d_key][$this->getApplication()->dist_name])) {
 									$src_field = $this->getApplication()->dist_version;
 									/* La version est référencée (par le nom de branche, comme par exemple "testing") */
-								} elseif (array_key_exists(array_search($this->getApplication()->dist_version, $this->dv_dist[$this->getApplication()->dist_name]), $depend_struct[$d_key][$this->getApplication()->dist_name])) {
-									$src_field = array_search($this->getApplication()->dist_version, $this->dv_dist[$this->getApplication()->dist_name]);
+								} elseif (array_key_exists(array_search($this->getApplication()->dist_version, $this->getApplication()->alias_distributions[$this->getApplication()->dist_name]), $depend_struct[$d_key][$this->getApplication()->dist_name])) {
+									$src_field = array_search($this->getApplication()->dist_version, $this->getApplication()->alias_distributions[$this->getApplication()->dist_name]);
 								} else { /* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
 									$src_field = 'All';
 								}
@@ -153,7 +130,55 @@ class Prune extends Command
 				}
 			}
 		}
-		$this->getApplication()->data = $new_struct;
+		return $new_struct;
+	}
+
+	protected function execute(InputInterface $input, OutputInterface $output)
+	{
+		/* Get path and name of the input file */
+		$input_file = $input->getArgument('input');
+		/* Get presence of the "--local" option */
+		$local = $input->getOption('local');
+		/* Get references of the command parse() */
+		$command = $this->getApplication()->find('normalize');
+		/* Declare the arguments in a array (arguments has to gave like this) */
+		$arguments = array(
+			'command' => 'normalize',
+			'input' => $input_file,
+			'--local' => $local,
+		);
+		$array_input = new ArrayInput($arguments);
+		/* Run command */
+		$command->run($array_input, $output);
+
+		/* Get structure of YaML file (which was parsed and checked) */
+		$struct = $this->getApplication()->data;
+		/* Launch Logger module */
+		$logger = new ConsoleLogger($output);
+
+		/* If the "--local" option is not set, so there are several pruned YAML structure */
+		if (! $local) {
+			/* Get the structure of the YaML file (which was parsed) */
+			$conf = $this->getApplication()->conf;
+			/* For each distribution */
+			foreach($conf as $dist => $tab_ver) {
+				foreach($tab_ver as $ver => $tab_archi) {
+					foreach($tab_archi as $archi) {
+						$this->getApplication()->dist_name = $dist;
+						$this->getApplication()->dist_version = $ver;
+						$this->getApplication()->dist_arch = $archi;
+						$this->getApplication()->data[$dist][$ver][$archi] = $this->prune_structure($struct);
+					}
+				}
+			}
+		} else { /* The prune will be only for the current distribution (where is launched Paquito) */
+			/* Gets the local distribution, version and architecture */
+			$this->getDist();
+			$this->getApplication()->data = $this->prune_structure($struct);
+		}
+
+		print_r($this->getApplication()->data);
+
 		/* Optionnal argument (output file, which will be parsed) */
 		$output_file = $input->getArgument('output');
 		/* If the optionnal argument is present */
