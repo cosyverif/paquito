@@ -190,7 +190,7 @@ paquito --local generate src
 
 ```
 
-** Docker (paquito package has been created in docker ) **:
+**Docker (paquito package has been created in docker ) **:
 ```bash
 paquito generate src
 
@@ -202,6 +202,7 @@ paquito generate src
 If your program needs to be compiled (you need to generate an executable),the compilation of your program sources (program that you want to package) , will be in the function **Generate.php** (see the developer_documentation) ,for this you will give the compilation commands (the commands will be executed in **Generate.php**) in the field **Commands** of the configuration file (see the documentation of configuration file ) .
 
 **For example: **
+
 I take the example of **hello -world** program , this program contain two files : **main.cc** and  **program.c** (see README of the program hello-world) .
 We need to compile the file **main.cc** to generate the executable **hello-world** , the command of compilation will be written in **Commands** field of the configuration file , it will like this :
 
@@ -213,6 +214,7 @@ Build:
 ```
 
 **Observation**:
+
 The path considered at the **CommandS** field (in order to give the path to the file to be compiled) , is the same with the path given in the **Files** field , is the directory containing sources program and the configuration file **paquito.yaml** ( in the above example ; the directory was **src** : the path done from this directory ) .
 
 ##Test packages :
