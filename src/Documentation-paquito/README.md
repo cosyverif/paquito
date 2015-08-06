@@ -4,9 +4,11 @@ In this documentation we will present you  **paquito project** , we divided the 
 
 * Presentation of paquito  .
 * Dependencies needed to use paquito .
-*
-*
-*
+* How to create paquito package .
+* How to install paquito package
+* Create packages through paquito command
+* Compilation sources
+* Test packages
 
 
 ##Presentation of paquito 2015:
@@ -78,7 +80,7 @@ To use the command **paquito** ,you have to create and install **the package paq
 There are to ways to create the command **paquito** , which allow us to create packages from source programs (you will use this command to create all packages you want to build) :
 
 * Create the paquito package locally (on machines : using **--local** option) .
-* Create the paquito package using docker (virtualisation technologie : without the option ) .
+* Create the paquito package using docker (virtualisation technology : without the option ) .
 
 Package paquito in paquito (create paquito package) locally , meaning start creating package on machines for this you will follow the following steps :
 
@@ -148,29 +150,30 @@ pacman -U name_of_archlinux_package
 
 ```
 
-##Creation packages through the command paquito :
+##Create packages through the paquito command :
 
 After having to create and install the paquito package , you can use **paquito** command to create packages from source programs ,to do this follows these steps :
-* Fill the configuration file **paquito.yaml** , for it to be adapted to the needs of you're program .
+
+* Fill the configuration file **paquito.yaml** , for it to be adapted to the needs of you're program(see the documentation of configuration file) .
 * Place the configuration file in the repository contains the sources of your program .
 * Run the command :
 
-**Locally: (--local option)**
+**Locally (--local option)** : you will have generate paquito package locally (see above) .
 ```bash
 paquito --local generate source-repository
 
 ```
-**Docker:**
+**Docker**: you will have generate paquito package in docker (see above).
 ```bash
 paquito generate source_repository
 
 ```
 ####Observation:
-In the field **Files** of configuration file paquito.yaml , in which we indicate the path to access to files sources that package need , the path to the files is done from **the directory we give as parameter to the paquito command**.
+In the field **Files** of configuration file paquito.yaml , in which we indicate the path to access to sources files that package need , the path to the files is done from **the directory we give as parameter to the paquito command**.
 
 **for example**:
 
-The repository name is **src** , you will place **paquito.yaml** in this repository , and this repository contains two files : **hello.c** ,**program.c** , the field **Files** will be fill like this :
+The directory containing the sources of your program (the program you want to package ) is **src** , you will place **paquito.yaml** in this directory , and this directory contains two files : **hello.c** ,**program.c** (program sources) , the field **Files** will be fill like this :
 ```yaml
 Files:
    /usr/bin/ : hello.c
@@ -179,5 +182,36 @@ Files:
 ```
 **The path is done from the directory** .
 
+The command to create a package from the program sources ( directory **src**) will be :
+**Locally (paquito package has been created locally)** :
+```bash
+paquito --local generate src
 
-///tests and compilation
+```
+** Docker (paquito package has been created in docker )**:
+```bash
+paquito generate src
+
+```
+###Compilation sources :
+
+#####Locally:
+
+If your program needs to be compiled (you need to generate an executable),the compilation of your program sources (program that you want to package) , will be in the function **Generate.php** (see the developer_documentation) ,for this you will give the compilation commands (the commands will be executed in **Generate.php**) in the field **Commands** of the configuration file (see the documentation of configuration file ) .
+
+**For example: **
+I take the example of **hello -world** program , this program contain two files : **main.cc** and  **program.c** (see README of the program hello-world) .
+We need to compile the file **main.cc** to generate the executable **hello-world** , the command of compilation will be written in **Commands** field of the configuration file , it will like this :
+
+```yaml
+Build:
+   Commands:
+      - g++ main.cc -o hello-world
+
+```
+
+**Observation**:
+The path considered at the **CommandS** field (in order to give the path to the file to be compiled) , is the same with the path given in the **Files** field , is the directory containing sources program and the configuration file **paquito.yaml** ( in the above example ; the directory was **src** : the path done from this directory ) .
+
+##Test packages :
+
