@@ -215,7 +215,25 @@ Build:
 
 **Observation**:
 
-The path considered at the **CommandS** field (in order to give the path to the file to be compiled) , is the same with the path given in the **Files** field , is the directory containing sources program and the configuration file **paquito.yaml** ( in the above example ; the directory was **src** : the path done from this directory ) .
+The path considered at the **Commands** field (in order to give the path to the file to be compiled) , is the same with the path given in the **Files** field , is the directory containing sources program and the configuration file **paquito.yaml** ( in the above example ; the directory was **src** : the path done from this directory ) .
 
 ##Test packages :
+
+To test the created package , we use test package , to ensure that the package is functionnal , for it to be put in the repository dedicated to it .
+Create of the test package is in **Generate_test.php** function  , using the command **generate-test** (see the developer_documentation which explain what this command does) . 
+
+The command you'll use to create the test package is :
+
+**Locally :**
+```bash
+paquito --local generate-test name_of_your_source_repository
+
+```
+**Docker:**
+```bash
+paquito generate-test name_of_your_source_repository
+
+```
+
+**name_of_your_source_repository** : is the repository which will contain program sources , and the  configuration file paquito.yaml .
 
