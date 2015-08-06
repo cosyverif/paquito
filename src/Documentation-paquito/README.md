@@ -183,12 +183,14 @@ Files:
 **The path is done from the directory** .
 
 The command to create a package from the program sources ( directory **src**) will be :
+
 **Locally (paquito package has been created locally)** :
 ```bash
 paquito --local generate src
 
 ```
-** Docker (paquito package has been created in docker )**:
+
+** Docker (paquito package has been created in docker ) **:
 ```bash
 paquito generate src
 
