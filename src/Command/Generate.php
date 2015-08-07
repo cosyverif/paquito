@@ -39,6 +39,27 @@ class Generate extends Command
             ;
     }
 
+	/* Launches for each package her generation */
+	protected function launcher($struct) {
+		/* For each package */
+		foreach ($struct['Packages'] as $key => $value) {
+			$struct_package = $value;
+			switch ($this->getApplication()->dist_name) {
+			case 'Debian':
+				$this->make_debian($key, $value);
+				break;
+			case 'Archlinux':
+				$this->make_archlinux($key, $value);
+				break;
+			case 'Centos':
+				$this->make_centos($key, $value);
+				break;
+			}
+		}
+
+	}
+
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         /* Get the path and the name of the input file */
@@ -59,21 +80,22 @@ class Generate extends Command
         /* Launch Logger module */
         $this->logger = new ConsoleLogger($output);
 
-        /* For each package */
-        foreach ($this->struct['Packages'] as $key => $value) {
-            $struct_package = $value;
-            switch ($this->getApplication()->dist_name) {
-            case 'Debian':
-                $this->make_debian($key, $value);
-                break;
-            case 'Archlinux':
-                $this->make_archlinux($key, $value);
-                break;
-            case 'Centos':
-                $this->make_centos($key, $value);
-                break;
-            }
-        }
+		/* If the "--local" option is not set, so there are several YAML structure to use */
+		if (! $local) {
+			/* For each distribution */
+			foreach($struct as $dist => $tab_ver) {
+				/* For each version */
+				foreach($tab_ver as $ver => $tab_archi) {
+					/* For each architecture */
+					foreach($tab_archi as $archi) {
+						$this->getApplication()->dist_name = $dist;
+						$this->getApplication()->dist_version = $ver;
+						$this->getApplication()->dist_arch = $archi;
+					}
+				}
+			}
+		}
+
         /* Optionnal argument (output file, which will be parsed) */
         $output_file = $input->getArgument('output');
         /* If the optionnal argument is present */

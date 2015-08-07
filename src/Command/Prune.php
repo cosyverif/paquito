@@ -101,11 +101,16 @@ class Prune extends Command
 								/* The version is referenced (by her name, like for example "wheezy" for Debian ; the version number for CentOS) */
 								if (array_key_exists($this->getApplication()->dist_version, $depend_struct[$d_key][$this->getApplication()->dist_name])) {
 									$src_field = $this->getApplication()->dist_version;
-									/* La version est référencée (par le nom de branche, comme par exemple "testing") */
-								} elseif (array_key_exists(array_search($this->getApplication()->dist_version, $this->getApplication()->alias_distributions[$this->getApplication()->dist_name]), $depend_struct[$d_key][$this->getApplication()->dist_name])) {
-									$src_field = array_search($this->getApplication()->dist_version, $this->getApplication()->alias_distributions[$this->getApplication()->dist_name]);
-								} else { /* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
-									$src_field = 'All';
+								} else {
+									/* To prepare the next condition and avoid that the function array_key_exists() works
+									 *  with an empty value ($result may be empty, when there is only the field 'All') */
+									$result = array_search($this->getApplication()->dist_version, $this->getApplication()->alias_distributions[$this->getApplication()->dist_name]);
+									/* The version is referenced (by the branch name, like for example "testing") */
+									if (!empty($result) && array_key_exists($result, $depend_struct[$d_key][$this->getApplication()->dist_name])) { 
+										$src_field = $result;
+									} else { /* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
+										$src_field = 'All';
+									}
 								}
 							} else { /* The distribution is Archlinux */
 								/* Archlinux doesn't have versions (rolling release), the content of the field "All" always applies */
@@ -162,7 +167,9 @@ class Prune extends Command
 			$conf = $this->getApplication()->conf;
 			/* For each distribution */
 			foreach($conf as $dist => $tab_ver) {
+				/* For each version */
 				foreach($tab_ver as $ver => $tab_archi) {
+					/* For each architecture */
 					foreach($tab_archi as $archi) {
 						$this->getApplication()->dist_name = $dist;
 						$this->getApplication()->dist_version = $ver;
@@ -177,7 +184,7 @@ class Prune extends Command
 			$this->getApplication()->data = $this->prune_structure($struct);
 		}
 
-		print_r($this->getApplication()->data);
+		#print_r($this->getApplication()->data);
 
 		/* Optionnal argument (output file, which will be parsed) */
 		$output_file = $input->getArgument('output');
