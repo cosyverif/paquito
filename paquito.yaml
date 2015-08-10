@@ -44,6 +44,9 @@ Packages:
                                 base-devel:
                                         Debian: build-essential
                                         Centos: "<none>"
+                                php-cli:
+                                        Debian: php5-cli
+                                        Archlinux: php-cgi
                                 php-xml:
                                         Debian: "<none>"
                                         Archlinux: "<none>"
