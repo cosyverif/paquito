@@ -11,7 +11,8 @@ In this documentation we will set out the various problems that remain to be sol
 
 When we generate a package using archlinux distribution , we faced with a problem :
 
-the system refuses to create the archlinux package , because it requires to installing **Runtime dependencies** before the construction of the package (see paquito github :issue 16 ) .
+The system refuses to create the archlinux package , because it requires to installing  **Runtime dependencies** before the construction of the package (see paquito github :**issue16** ) .
+
 To resolve this problem we reflect on two solutions :
 
 * Use makepkg options : 
