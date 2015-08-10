@@ -28,7 +28,7 @@ But in the generation usign dockers , this solution is possible for the moment ,
 
 * Use the functions **Generate.php** and **Generate_test.php** , in which we launch commands for the installation of the **Runtime dependencies** .
 
-this solution work with **local generation of packages** (use --local option : generate packages with using machines) , because it work with these php functions (Generate.php ..) , but in the generation using **dockers** , this solution doen't exists because , we don't use php to create packages (we use shell commands throught **Dockerfile scripts**) , for this we use the first solution for the generation of packages in dockers .
+this solution work with **local generation of packages** (use --local option : generate packages with using machines) , because it work with these php functions (Generate.php ..) , but in the generation using **dockers** , this solution doen't exists because , we don't use php to create packages (we use shell commands throught **scripts**) , for this we use the first solution for the generation of packages in dockers .
  
 
 ###AUR packages :
