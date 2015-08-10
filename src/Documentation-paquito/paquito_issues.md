@@ -17,14 +17,17 @@ To resolve this problem we reflect on two solutions :
 
 * Use makepkg options : 
 `makepkg -s`, which install missing dependencies usign pacman .
+
 `makepkg -r` which remove dependencies installed by makepkg .
+
 see the documentation (https://www.archlinux.org/pacman/makepkg.8.html) .
 
 This solution doen't work with **local generation of packages** (use --local option : generate packages with using machines) , because since this year we can not use the function **makepkg** (to generate archlinux packages in machines or virtual machines ) **as root** (we use **nobody** user : see the function **Generate.php**) , but to use the options above we have to be root , and this it's impossible .
 
 But in the generation usign dockers , this solution is possible for the moment , because in docker we can always use the command **makepkg** as root to generate archlinux packages .
 
-* Use the functions **Generate.php** and **Generate_test.php** , in which we launch commands for the installation of the **Runtime dependencies** ,
+* Use the functions **Generate.php** and **Generate_test.php** , in which we launch commands for the installation of the **Runtime dependencies** .
+
 this solution work with **local generation of packages** (use --local option : generate packages with using machines) , because it work with these php functions (Generate.php ..) , but in the generation using **dockers** , this solution doen't exists because , we don't use php to create packages (we use shell commands throught **Dockerfile scripts**) , for this we use the first solution for the generation of packages in dockers .
  
 
