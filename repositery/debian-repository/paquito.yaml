@@ -1,0 +1,34 @@
+Name: Paquito-Repositery
+
+Version: 0.1
+
+Homepage: https://www.paquito.fr 
+
+Summary: Création automatique de dépôts de paquets
+
+Description:  Création automatique de dépôts pour faciliter l'installation de paquets
+
+Copyright: La licence
+
+Maintainer: Corentin <coco@gmail.com>
+
+Authors:
+              - sarah <sarah@gmail.com>
+              - corentin <corentin@gmail.com>
+
+Packages:
+        paquito-repositery:
+                Type: arch_independant
+                Files:
+                        /usr/share/paquito-repositery/:
+                            Source: install.sh
+                            Permissions: 755
+                Runtime:
+                        Dependencies:
+                                dpkg-sig: "*"
+                                lighttpd: "*"
+                                rng-tools: "*"
+                                reprepro: "*"
+                Install:
+                        Post:
+                                - bash /usr/share/paquito-repositery/install.sh

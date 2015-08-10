@@ -1,0 +1,34 @@
+Name: Centos-repository
+
+Version: 0.2
+
+Homepage: https://www.paquito.fr 
+
+Summary: Create centos repository 
+
+Description: Create centos repository for paquito
+
+Copyright: La licence
+
+Maintainer: sarah <sarah@gmail.com>
+
+Authors:
+      - sarah <sarah@gmail.com>
+      - corentin <corentin@gmail.com>
+
+Packages:
+        centos-repository:
+                Type: arch_independant
+                Files:
+                        /usr/share/repository-centos/:
+                                Source: install.sh
+                                Permissions: 755
+                Runtime:
+                        Dependencies:
+                                epel-release: "*"
+                                lighttpd: "*"
+                                rng-tools: "*"
+                                createrepo: "*"
+                Install:
+                       Post:
+                               - bash /usr/share/repository-centos/install.sh

@@ -1,0 +1,115 @@
+# Dépendances pour la création du dépôt  archlinux:
+
+installer : gnupg, rng-tools , lighttpd
+
+
+#Manipuler les clés gpg:
+
+- Générer la clé:
+
+$ gpg --full-gen-key
+
+- Exporter la clé:
+
+$ gpg --armor --output public.key --export <user-id>
+public.key: le nom de la clé public (donner un nom quelconque exemple :
+ARCH-GPG-KEY) .
+<user-id> : can be specified with your key ID, fingerprint, a part of your
+name or email address.
+
+- Enregistrer la clé public sur le serveur de clé pour qu'elle puisse étre
+retrouver plus facilement:
+
+gpg  --keyserver pgp.mit.edu --send-keys <key-id>
+<key-id> : on l'obtient avec la commande gpg --list-key
+
+- Si la clé est sur le serveur on l'importe en utilisant cette commande :
+$ pacman-key -r keyid
+
+- Sinon:
+$ pacman-key --add /path/to/key
+
+- Obtenir la signature de la clé (printfinger):
+$pacman-key -f keyid
+
+- Mettre à jour les clés:
+$ pacman-key --refresh-keys
+
+- Lister les clés du trousseau:
+$ pacman-key -l
+
+
+#Signature des paquets archlinux:
+
+On doit signer les paquets archlinux à leur construction (impossible de le
+faire en dehors de la construction) :
+
+On Ajoute le champ validpgpkeys dans PKGBUILD : qui contiendra le printfinger de la clé
+A la création du paquet on lance la commande: makepkg --sign
+
+
+#Serveur (créer le dépôt ):
+
+##Créer le répertoire du dépôt :
+
+- Executer la commande suivante :
+$ mkdir /srv/http/archlinux
+
+##Ajouter des paquets dans le dépôt :
+
+- Placer les paquets dans le dépôt , dans notre cas c'est ( /srv/http/archlinux )
+
+- Executer la commande :
+$ repo-add  /path/to/repo.db.tar.gz /path/to/*.pkg.tar.xz
+
+
+##Supprimer des paquets du dépôt:
+
+- Executer la commande suivante : 
+$ repo-remove /path/to/repo.db.tar.gz  nom-du-paquet
+
+exemple : (pour le paquet paquito)
+$ repo-remove /srv/http/archlinux/repo.db.tar.gz paquito
+
+- Puis un rm sur le paquet ;
+
+##lighttpd:
+
+lancer lighttpd:
+$ systemctl start lighttpd.service
+
+
+#Coté client:
+
+1.Modifier le fichier /etc/pacman.conf pour ajouter le depot:
+
+[nom du repo]
+Level :TrustAll(verifie la signature: n'accepte que les paquets signés) ou Optional (ignore la
+signature:accepte les paquets non signer)
+Server = file:///path/to
+
+exemple:
+
+accepter les paquets sans signature .
+[repo]
+SigLevel = Optional
+Server = http://132.227.76.24:8082/archlinux
+
+2.Si les paquets sont signés , ajouter la clé :
+$ pacman-key --add /path/to/downloaded/keyfile
+
+exemple :
+$ pacman-key --add http://132.227.75.24:8082/archlinux/ARCH-GPG-KEY
+la clé est au niveau du répertoire archlinux.
+
+3.Signer localement la clé importée:
+$ pacman-key --lsign-key keyid
+
+keyid: identifiant de la clé importée on le récupére en tapant la commande :
+$ gpg --list-key
+
+4.Mettre à jour :
+$ pacman -Sy
+
+5.On pourra installer les paquets de ce dépot avec la commande:
+$ pacman -S nom_du_paquet

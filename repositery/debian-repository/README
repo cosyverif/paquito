@@ -1,0 +1,61 @@
+## SERVEUR
+
+# Pour ajouter un paquet au dépôt (/!\ depuis le répertoire du dépôt) :
+Depuis le répertoire du dépôt qui est : /var/www/debian , on tape la commande
+suivante :
+$reprepro -vb . includedeb jessie /chemin:vers/un/paquet/deb
+reprepro se charge de faire signer les paquets (demande la phrase de passe).
+
+# Pour supprimer un paquet du dépôt (/!\ depuis le répertoire du dépôt) :
+$reprepro -vb /var/www/debian/ remove jessie nomDuPaquetSansDeb
+
+# Signature des paquets:
+Sachant que reprepro s'occupe de faire signer les paquets ,cette étape est nécessaire que si on veut signer les paquets,
+sans les ajouter dans un dépôt pour cela :
+On installe d'abord le paquet dpkg-sig:
+$apt-get install dpkg-sig
+Puis on signe les paquets avec la commande suivante :
+ $dpkg-sig --sign builder nomdupaquet.deb   
+Evidemment faudra taper la passpharse pour pouvoir le signer 
+
+
+## CLIENT
+
+# Ajouter le nouveau dépôt :
+$ echo "deb  http://132.227.76.24:8080/ jessie main" >> /etc/apt/sources.list 
+
+# Pour télécharger la clé du dépôt (stockée sur la machine où le dépôt se trouve) :
+$wget -O - http://132.227.76.24:8080/repository_paquito.gpg.key | apt-key add -
+
+# On met à jour le dépôt :
+$apt-get update
+
+# Verifier que le paquet ajouter au dépôt  existe:
+$apt-cache policy nom_du_paquet(sans le .deb)
+
+
+## Signer les paquets automatiquement:
+
+Sachant que reprepro s'occupe de faire signer les paquets automatiquement à
+chaque ajout d'un paquet dans le dépôt , en utilisant la commande suivante:
+$reprepro -vb . includedeb jessie /chemin:vers/un/paquet/deb
+
+Pour pouvoir entrer la passPhrase automatiquement à chaque fois qu'on utilise
+cette commande :
+
+On doit d'abord installer le paquet expect : $yum install expect
+On donne les droit d'execution au fichier debian-sign.exp : $chmod 755 debian-sign.exp
+On execute ce fichier en lui passant en argument le chemin vers le répertoire
+contenant les paquets à ajouter au dépôt:
+$./debian-sign.exp (chemin vers un répertoire précédemment créé, contenant les paquets à ajouter
+et à signer) .
+
+Dans mon exemple le mot de passe donné à la clé est: PAQUITO
+
+Pour finir on crée une crontab pour pouvoir executer ce script toute les heurs
+et on redirige les logs vers le fichier /var/log/sign-debian.log :
+$crontab -e : pour ajouter une crontab
+ajouter la ligne suivante dans le fichier:
+
+00 * * * * /chemin_vers_debian-sign.exp
+/répertoire_contenant_les_paquets_à_signer_et_à_ajouter_au_dépôt >> /var/log/sign-debian.log 2>&1

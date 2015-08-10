@@ -1,0 +1,13 @@
+## SERVEUR
+
+# Pour ajouter un paquet au dépôt (/!\ depuis le répertoire du dépôt) :
+reprepro -vb . includedeb jessie /vers/un/paquet/deb
+
+# Pour supprimer un paquet du dépôt (/!\ depuis le répertoire du dépôt) :
+reprepro -vb /var/www/debian/ remove jessie nomDuPaquetSansDeb
+
+## CLIENT
+
+# Pour télécharger la clé du dépôt (stockée sur la machine où le dépôt se trouve) :
+wget -O - http://13.227.76.24/repository_paquito.gpg.key | apt-key add -
+apt-get update

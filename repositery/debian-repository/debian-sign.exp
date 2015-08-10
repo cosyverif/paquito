@@ -1,0 +1,13 @@
+#!/usr/bin/expect -f
+  
+### debian-sign.exp -- Sign Debian by sending the passphrase.
+  
+spawn reprepro -vb /var/www/debian includedeb jessie $argv
+expect -exact "Enter pass phrase: "
+send -- "PAQUITO\r"
+expect -exact "Enter pass phrase: "
+send -- "PAQUITO\r"
+
+expect eof
+
+### end of debian-sign.exp
