@@ -4,6 +4,7 @@ In this documentation we will set out the various problems that remain to be sol
 
 * Problem of dependencies in archlinux .
 * AUR packages .
+* Sign packages in archlinux
 
 
 ###Problem of dependencies in archlinux :
