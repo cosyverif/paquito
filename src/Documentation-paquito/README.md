@@ -217,6 +217,11 @@ Build:
 
 The path considered at the **Commands** field (in order to give the path to the file to be compiled) , is the same with the path given in the **Files** field , is the directory containing sources program and the configuration file **paquito.yaml** ( in the above example ; the directory was **src** : the path done from this directory ) .
 
+####Docker:
+
+The compilation will not be in the function **Generate.php** , but in the docker .
+The function **Generate.php** will just launch the dockers  , and in these dockers we will do the copiltation and the creation of packages .
+
 ##Test packages :
 
 To test the created package , we use test package , to ensure that the package is functionnal , for it to be put in the repository dedicated to it .
