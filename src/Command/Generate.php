@@ -517,6 +517,12 @@ class Generate extends Command
 		/* This variable will contains the list of dependencies (to run) */
 		$list_rundepend = $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 1);
 		$array_field['depends'] = "($list_rundepend)";
+    	/* Install the packages required by the Runtime  dependencies */
+		foreach(explode(' ', $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0)) as $p_value) {
+				/* The option "--needed" of pacman skip the reinstallation of existing packages (in others words, already installed) */
+				$this->_system("pacman -Sy --noconfirm --needed $p_value");
+
+		}
 	}
 
 

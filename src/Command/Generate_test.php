@@ -117,6 +117,9 @@ class Generate_test extends Command
 		$explode_array=array();
 		$exec=array();
 		foreach($files as $key => $value) {
+
+				if(is_dir($key)) {
+
 				/* Split the path in a array */
 				$explode_array = explode('/', $value['Source']);
 				$f=$key.$explode_array[count($explode_array) - 1];
@@ -125,6 +128,17 @@ class Generate_test extends Command
 						/* je sauvegarde les executables pour tester pouvoir leur qu'ils ont bien le droit d'execution */
 						array_push($exec,$f);
 				}
+				}
+				else {
+						/* la destination est un fichier */
+						$f=$key ;
+						$array_perm[$f]=$value['Permissions'];
+						if(strstr($key, '/usr/bin')) {
+								/*je sauvegarde l'executable */
+								array_push($exec,$f);
+						}
+				}
+
 		}
 		
 
@@ -424,7 +438,9 @@ class Generate_test extends Command
         } else {
             $this->getApplication()->dist_arch = $this->getApplication()->dist_arch;
         }
-        $dirname = $package_name.'-'.$this->struct['Version'].'-'.$this->getApplication()->dist_arch.'-test';
+		$dirname = $package_name.'-'.$this->struct['Version'].'-'.$this->getApplication()->dist_arch.'-test';
+
+        $dirname_package = $package_name.'-'.$this->struct['Version'].'-'.$this->getApplication()->dist_arch;
         /* Create the directory of the package */
         $this->_mkdir($dirname);
         /* Create the directory "src/" (which contains the sources) */
@@ -442,20 +458,31 @@ class Generate_test extends Command
 			'install' => "('$package_name.install')", );
 		
 		/* s'i le champ Dependencies de Test existe on récupére les dependances à l'execution */
-		/*if(isset($struct_package['Test']['Dependencies'])) {
+		if(isset($struct_package['Test']['Dependencies'])) {
 
 		$list_rundepend = str_replace(' ', ' ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0));
-	/* Install the packages required by the  dependencies */
-			//	foreach(explode(' ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0)) as $p_value) {
-						/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
-					/*	shell_exec("pacman -Sy --noconfirm --needed $p_value");
+	    /* Install the packages required by the  dependencies */
+		foreach(explode(' ', $this->generate_list_dependencies($struct_package['Test']['Dependencies'], 0)) as $p_value) {
+				/* The option "--needed" of pacman skip the reinstallation of existing packages (already installed) */
+				shell_exec("pacman -Sy --noconfirm --needed $p_value");
 			}
 
 		$array_field['depends'] = "( $package_name $list_rundepend)";
 		}
 		else {
 				$array_field['depends'] = "($package_name)"	;
-		}*/
+		}
+
+        $version=$this->struct['Version'];
+		$arch= $this->getApplication()->dist_arch ;
+
+		/* comme la distribution archlinux exige d'installer les dépendances à l'éxecution pour pouvoir créer le paquet (regarder la documentation paquito_problems.md sur github ) , il faudra installer le paquet au préalable avant de pouvoir créer le paquet de test correspondant à ce paquet */
+		$pwd=getcwd();
+
+		chdir($dirname_package);
+		shell_exec("pacman -U --noconfirm --needed $package_name'-'$version'-1'-$arch'.pkg.tar.xz' " );
+
+		chdir($pwd);
 
         /* Create and open the file "control" (in write mode) */
         $handle = fopen($dirname.'/PKGBUILD', 'w');
