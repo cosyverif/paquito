@@ -40,7 +40,8 @@ It will think of a solution to install the eventual archlinux package dependenci
 
 ###Sign packages in archlinux:
 
-The signing of archlinux packages is does at their creation , we try to create signed archlinux packages with using the option **--sign** in the command **makepkg** ( see the documentation (https://www.archlinux.org/pacman/makepkg.8.html) ) , but it faildes , the error message displayed was :
+The signing of archlinux packages is does at their creation , we try to create signed archlinux packages with using the option **--sign** in the command **makepkg** ( see the documentation https://www.archlinux.org/pacman/makepkg.8.html) , but it faildes , the error message displayed was :
+
 `the id-key is not available in the keyring`.
 
 We tried to solve this problem without result ( see the documentation of creation archlinux repository in the paquito github : to see how to generate and import the gpgkey) .
