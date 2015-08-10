@@ -46,5 +46,5 @@ The signing of archlinux packages is does at their creation , we try to create s
 
 We tried to solve this problem without result ( see the documentation of creation archlinux repository in the paquito github : to see how to generate and import the gpgkey) .
 
-So , we create archlinux repository , which contains no signed packages , the field **Siglevel** in the file **/etc/pacman.conf** , determines if it signed repository or not (we can create archlinux repository without sign packages : the possibility to sign packages in archlinux is recent ) .
+So , we create archlinux repository , which contains no signed packages , the field **Siglevel** in the file **"/etc/pacman.conf"** , determines if it signed repository or not ( we can create archlinux repository without sign packages : the possibility to sign packages in archlinux is recent ) .
 
