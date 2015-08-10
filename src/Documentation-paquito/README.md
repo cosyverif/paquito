@@ -221,7 +221,7 @@ The path considered at the **Commands** field (in order to give the path to the 
 
 The compilation will not be in the function **Generate.php** , but in the docker .
 
-The function **Generate.php** will just launch the dockers  , and in these dockers we will do the copiltation and the creation of packages .
+The function **Generate.php** will just launch the dockers  , and in these dockers we will do the compiltation and the creation of packages .
 
 ##Test packages :
 
