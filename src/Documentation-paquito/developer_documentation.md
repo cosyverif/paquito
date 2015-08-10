@@ -183,7 +183,7 @@ When we execute the command **generate-test** we will create two packages :
 There are two types of tests :
 
 * default test which is always executed at the installation of test package , it is the file **installation.bats** which will be created at the lauch of the command **generate-test** ( this file will be contained in the test package) , this file tests that the files of packages in the field **Files** of the configuration file exist , and these files have the right for execution .
-* tests provided by user , who will want to test different things in his program .
+* tests provided by user , who will want to test different things in his program (use the field **Test** of the configuration file paquito.yaml) .
 
 We have to use scripting language to write these tests .
 These tests will be always executed at the installation of the test package .
