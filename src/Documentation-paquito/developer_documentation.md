@@ -11,6 +11,11 @@ In paquito project 2015 we took care of creating packages for Debian , Redhat an
 
 Each step is represented by a php function , and each php function is represented by command , for this we used **symfony console** that can create usable console commands ,to facilitate project management .
 
+We have two versions of paquito :
+
+* the first version is one that is available on the **master** branch : this corresponds to the generation of packages using **machines** (Debian , Archlinux , Centos ) , this version works perfectly .
+* the second version is one that is available on the **issue60** branch : this corresponds to the generation of packages using **dockers** (dockers images) .
+
 ####Observation :
 Refer to the documentation of the configuration file to understand the structures shown below .
 
@@ -164,8 +169,11 @@ The field **Dependencies** doen't exists in all Centos versions after pruning , 
 
 ###Generation_of_packages:
 
-This step is reponsible of the creation of packages for Debian , Archlinux and Centos distributions (versions and architectures ) .
-According to distribution of the machine where the generation is launched , at the end we will have a package suitable for this distribution (version and architecture) .
+This step is reponsible of the compilation (if needed) , and the creation of packages for Debian , Archlinux and Centos distributions (versions and architectures ) .
+
+In the first version of paquito ( **master branch** ) , this function  compiles the program ( if the program needs to be compile ) , and create packages according to distribution of the machine where the generation is launched , at the end we will have a package suitable for this distribution (version and architecture) .
+
+In the second version of paquito (**issue60 branch**) , this function is responsible of launching dockers , and the compilation and the creation of packages will be does in these dockers . 
 
 This step is represented by the function **Generate.php** and the console command **generate** .
 
@@ -173,6 +181,8 @@ This step is represented by the function **Generate.php** and the console comman
 ###Test_packages:
 
 In this step we will test the package created in the previous step , to ensure that it is consistent and functional , so it can be put into the repository dedicated to him .
+
+This step is available for the first version of paquito (**master branch**) , we have not yet processed the case where you launch the tests in dockes .
 
 This step is represented by the function **Generate_test.php** and the console command **generate-test** .
 When we execute the command **generate-test** we will create two packages :
