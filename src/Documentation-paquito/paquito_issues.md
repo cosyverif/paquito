@@ -28,7 +28,7 @@ But in the generation usign dockers ( using the second version of paquito : **is
 
 * Use the functions **Generate.php** and **Generate_test.php** , in which we launch commands for the installation of the **Runtime dependencies** .
 
-this solution work with **the first version of paquito** (master branh :generate packages with using machines) , because it work with these php functions (Generate.php ..) , but in the generation using **dockers** (second version of paquito ) , this solution doen't exists because , we don't use php to create packages (we use shell commands throught **scripts**) , for this we use the first solution for the generation of packages in dockers .
+this solution work with **the first version of paquito** (master branch :generate packages with using machines) , because it work with these php functions (Generate.php ..) , but in the generation using **dockers** (second version of paquito ) , this solution doen't exists because , we don't use php to create packages (we use shell commands throught **scripts**) , for this we use the first solution for the generation of packages in dockers .
  
 
 ###AUR packages :
