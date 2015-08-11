@@ -307,7 +307,7 @@ Create of the test package is in **Generate_test.php** function  , using the com
 The command you'll use to create the test package is (unsing the first version of paquito):
 
 ```bash
-paquito --local generate-test name_of_your_source_repository
+paquito generate-test name_of_your_source_repository
 
 ```
 
