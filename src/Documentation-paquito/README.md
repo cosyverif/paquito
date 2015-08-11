@@ -36,6 +36,7 @@ We have two versions of paquito :
 * In the first version (this version is represented by the **master** branch ) , we generate packages according to the distribution of machine in which the generation is launched (according to the version and the architecture of the machine) , the generation will be does in this machine , at the end of this generation we will have package according to the version and the architecture of this machine .
 
 The generation is made  by the function **Generate.php** (see the developer documentation) , in this function we do the compilation (if needed) and the creation of packages  .
+
 This version work perfectly .
 
 * In the second version  (this version is represented by the **issue60** branch ) , we generate packages using dockers , the compilation and the creation of packages is made in these dockers , the function **Generate.php** only serves to lauch these dockers  , and we have two methods in this version :
