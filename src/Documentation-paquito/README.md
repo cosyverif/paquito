@@ -263,10 +263,13 @@ paquito generate src
   ```bash
   paquito generate src
 
+
   ```
+  
+  
 ##Compilation sources :
 
-####Locally:
+#### In the first version of paquito (**master** branch):
 
 If your program needs to be compiled (you need to generate an executable),the compilation of your program sources (program that you want to package) , will be in the function **Generate.php** (see the developer_documentation) ,for this you will give the compilation commands (the commands will be executed in **Generate.php**) in the field **Commands** of the configuration file (see the documentation of configuration file ) .
 
@@ -286,7 +289,7 @@ Build:
 
 The path considered at the **Commands** field (in order to give the path to the file to be compiled) , is the same with the path given in the **Files** field , is the directory containing sources program and the configuration file **paquito.yaml** ( in the above example ; the directory was **src** : the path done from this directory ) .
 
-####Docker:
+####In the second version of paquito (**issue60** branch ):
 
 The compilation will not be in the function **Generate.php** , but in the docker .
 
@@ -297,16 +300,14 @@ The function **Generate.php** will just launch the dockers  , and in these docke
 To test the created package , we use test package , to ensure that the package is functionnal , for it to be put in the repository dedicated to it .
 Create of the test package is in **Generate_test.php** function  , using the command **generate-test** (see the developer_documentation which explain what this command does) . 
 
-The command you'll use to create the test package is :
+**Observation**:
 
-**Locally :**
+**This step is only available in the first version of paquito (**master** branch) , in the second version tests are not implemented** .
+
+The command you'll use to create the test package is (unsing the first version of paquito):
+
 ```bash
 paquito --local generate-test name_of_your_source_repository
-
-```
-**Docker:**
-```bash
-paquito generate-test name_of_your_source_repository
 
 ```
 
