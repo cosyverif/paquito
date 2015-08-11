@@ -210,16 +210,25 @@ After having to create and install the paquito package , you can use **paquito**
 * Place the configuration file in the repository contains the sources of your program .
 * Run the command :
 
+   * For the first version of paquito (master branch ) :
+  ```bash
+  paquito generate source-repository
+  
+  ```
+  
+  * For the second version of paquito ( issue60 branch ) there are two ways :
+
 **Locally (--local option)** : you will have generate paquito package locally (see above) .
 ```bash
 paquito --local generate source-repository
 
 ```
-**Docker**: you will have generate paquito package in docker (see above).
+**Non locally** : without the **--local** option.
 ```bash
 paquito generate source_repository
 
 ```
+
 ####Observation:
 In the field **Files** of configuration file paquito.yaml , in which we indicate the path to access to sources files that package need , the path to the files is done from **the directory we give as parameter to the paquito command**.
 
@@ -236,17 +245,25 @@ Files:
 
 The command to create a package from the program sources ( directory **src**) will be :
 
-**Locally (paquito package has been created locally)** :
-```bash
-paquito --local generate src
-
-```
-
-**Docker (paquito package has been created in docker )**:
+* For the first version of paquito (**master**) :
 ```bash
 paquito generate src
 
 ```
+
+* For the second version of paquito (**issue60**) :
+
+   * **Locally (paquito package has been created locally )** :
+  ```bash
+  paquito --local generate src
+
+  ```
+
+   * **Non locally (paquito package has been created without --local option )**:
+  ```bash
+  paquito generate src
+
+  ```
 ##Compilation sources :
 
 ####Locally:
