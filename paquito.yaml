@@ -59,5 +59,6 @@ Packages:
                                 rpm-build:
                                         Debian: dh-make
                                         Archlinux: "<none>"
+                                git: "*"
                         Commands:
                                 - bin/create-phar.sh

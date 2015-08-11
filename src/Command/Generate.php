@@ -52,6 +52,26 @@ class Generate extends Command
 		}
 	}
 
+	/* Launches Docker and get its result (the package) at the end
+	 * @param $distribution : Name of the distribution, followed by a ':' and its name version
+	 * @param $file : Name of the file which will be got (the package)
+	 * This function is like _system() but if there is an error it will stop and delete
+	 * the container before to return the error and stop Paquito */
+	protected function docker_launcher($distribution, $file) {
+		$command = "docker run --name paquito -v ".getcwd().":/paquito -i $distribution < Docker_paquito.sh";
+		system($command, $out);
+		$this->_system('docker stop paquito');
+		/* If the output code is more than 0 (error) */
+		if($out) {
+			$this->_system('docker rm paquito');
+			$this->logger->error($this->getApplication()->translator->trans('generate.command', array('%command%' => $command, '%code%' => $out)));
+
+			exit(-1);
+		} else { /* The command has succeeded */
+			$this->_system("docker cp paquito:/paquito/$file .");
+			$this->_system('docker rm paquito');
+		}
+	}
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
@@ -127,7 +147,6 @@ class Generate extends Command
 			}
 
 			/* Copy each file in the directory of the current package */
-			/* TODO Faire wildcard */
 			foreach ($struct as $key => $value) {
 
 					/* If the source doesn't exist */
@@ -158,44 +177,26 @@ class Generate extends Command
 							}
 					}
 
-					/* If the destination directory would exist */
-					if(file_exists($dest_directory.$key)) {
-							/* A file has already the name of the directory that we want create (on Linux, a directory is a file !)
-							 * Else, that means the directory is already created */
-							if (!is_dir($dest_directory.$key)) {
-									$this->logger->error($this->getApplication()->translator->trans('generate.dirfile', array('%dir%' => $dest_directory.$key)));
-
-									exit(-1);
-							}
-							$this->logger->warning($this->getApplication()->translator->trans('generate.direxist', array('%dir%' => $dest_directory.$key)));	
-					} else {
-							/* Create recursively the directories (if doesn't exist)
-							 * IMPORTANT : the PHP mkdir() function can recursively create directories, but here we create manually
-							 * directories in order to detect if there is a file which has the same name than a directory (so this
-							 * directory cannot be created). */
-							$r_dir = rtrim($dest_directory, '/');
-							/* For each directory of the recursive chain */
-							foreach (explode('/', $key) as $r_path) {
-									$r_dir .= "/$r_path";
-									/* If one of the chain directories is a file (so the directory cannot be created) */
-									if (is_file($r_dir)) {
-											$this->logger->error($this->getApplication()->translator->trans('generate.rmkdir', array('%dir%' => $r_dir)));
-
-											exit(-1);
-									}
-									/* Create gradually the directories */
-									#$this->_mkdir($r_dir);
-									$this->_fwrite($this->dockerfile, "mkdir $r_dir\n", 'Docker_paquito.sh');
-							}
-					}
+					/* Create recursively the directories (if doesn't exist)
+					 * IMPORTANT : the PHP mkdir() function can recursively create directories, but here we create manually
+					 * directories in order to detect if there is a file which has the same name than a directory (so this
+					 * directory cannot be created). */
+					
+					$this->_fwrite($this->dockerfile, "mkdir -p $dest_directory/$key\n", 'Docker_paquito.sh');
+					#$r_dir = rtrim($dest_directory, '/');
+					/* For each directory of the recursive chain */
+					#foreach (explode('/', $key) as $r_path) {
+					#	$r_dir .= "/$r_path";
+						/* The directories will be created gradually */
+					#	$this->_fwrite($this->dockerfile, "mkdir $r_dir\n", 'Docker_paquito.sh');
+					#}
 
 					if (is_dir($value['Source'])) {
-							/* Copy the file in the directory package */
-							$this->_rcopy($value['Source'], $dest_directory.$key, $array_perm, $value['Permissions']);
+						/* The file will be copied in the directory package (recursively) */
+						$this->_rcopy($value['Source'], $dest_directory.$key, $array_perm, $value['Permissions']);
 					} else { /* If the source is a file */
-						/* Copy the file in the directory package */
-						#$this->_copy($value['Source'], $dest_directory.$key.$filename);
-						$this->_fwrite($this->dockerfile, "RUN cp $value[Source] $dest_directory.$key.$filename\n", 'Docker_paquito.sh');
+						/* The file will be copied in the directory package */
+						$this->_fwrite($this->dockerfile, "cp $value[Source] $dest_directory$key$filename\n", 'Docker_paquito.sh');
 						$array_perm[$key.$filename] = $value['Permissions'];
 					}
 			}
@@ -286,11 +287,8 @@ class Generate extends Command
 					return false;
 			}
 
-			/* If the destination directory does not exist create it */
-			if (!is_dir($dest)) {
-					#$this->_mkdir($dest);
-					$this->_fwrite($this->dockerfile, "RUN mkdir $dest\n", 'Docker_paquito.sh');
-			}
+			/* The destination directory will be created */
+			$this->_fwrite($this->dockerfile, "mkdir $dest\n", 'Docker_paquito.sh');
 
 			/* Open the source directory to read in files
 			 * IMPORTANT The backslash before DirectoryIterator is
@@ -298,8 +296,7 @@ class Generate extends Command
 			$i = new \DirectoryIterator($src);
 			foreach ($i as $file) {
 					if ($file->isFile()) {
-						#$this->_copy("$src/$file", "$dest/$file");
-						$this->_fwrite($this->dockerfile, "RUN cp $src/$file $dest/$file\n", 'Docker_paquito.sh');
+						$this->_fwrite($this->dockerfile, "cp $src/$file $dest/$file\n", 'Docker_paquito.sh');
 
 						/* Remove the package directory of the string */
 						$explode_array = explode('/', ltrim($dest, '/'));
@@ -377,13 +374,6 @@ class Generate extends Command
 		$this->_fwrite($this->dockerfile, "cd /paquito\n", 'Docker_paquito.sh');
 		$this->_fwrite($this->dockerfile, "mkdir -p $dirname/debian/source\n", 'Docker_paquito.sh');
 
-        /* Create the directory of the package */
-        #$this->_mkdir($dirname);
-        /* Create the directory "debian/" (which is required) */
-        #$this->_mkdir($dirname.'/debian');
-        /* Create the directory "debian/source/" (to limit errors) */
-		#$this->_mkdir($dirname.'/debian/source');
-
 		$array_field = array(
             'Source' => $package_name,
             'Section' => 'unknown',
@@ -398,7 +388,6 @@ class Generate extends Command
 				/* Install the packages required by the Buildtime dependencies */
 				foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
 						/* Installs package */
-						#$this->_system("apt-get --yes install $p_value");
 						$this->_fwrite($this->dockerfile, "apt-get --yes install $p_value\n", 'Docker_paquito.sh');
 				}
 		}
@@ -416,22 +405,17 @@ class Generate extends Command
 		}
 
         /* Create and open the file "control" (in write mode) */
-        #$handle = fopen($dirname.'/debian/control', 'w');
 		$this->_fwrite($this->dockerfile, "cat << _EOF_ > $dirname/debian/control\n", 'Docker_paquito.sh');
         /* For each field that will contains the file "control" */
         foreach ($array_field as $key => $value) {
-            #$this->_fwrite($handle, "$key: $value\n", "$dirname/debian/control");
 			$this->_fwrite($this->dockerfile, "$key: $value\n", 'Docker_paquito.sh');
 		}
         /* Add a line at the end (required) */
-        #$this->_fwrite($handle, "\n", "$dirname/debian/control");
 		$this->_fwrite($this->dockerfile, "\n", 'Docker_paquito.sh');
 
 		$this->_fwrite($this->dockerfile, "_EOF_\n", 'Docker_paquito.sh');
-        #fclose($handle);
 
         /* To come back in actual directory if a "cd" command is present in pre-build commands */
-        #$pwd = getcwd();
 		$this->_fwrite($this->dockerfile, "TEMP_PWD=$(pwd)\n", 'Docker_paquito.sh');
         /* If there are pre-build commands */
         if (!empty($struct_package['Build']['Commands'])) {
@@ -441,119 +425,72 @@ class Generate extends Command
                  * shell), so it has to translates in chdir() functions */
                 if (preg_match('/cd (.+)/', $value, $matches)) {
 					$this->_fwrite($this->dockerfile, "cd $matches[1]\n", 'Docker_paquito.sh');
-						#if (!chdir($matches[1])) {
-						#		$this->logger->error($this->getApplication()->translator->trans('generate.chdir', array('%dst%' => $matches[1])));
-
-						#		exit(-1);
-						#}
                 } else {
 					$this->_fwrite($this->dockerfile, "$value\n", 'Docker_paquito.sh');
-                    #$this->_system($value);
                 }
             }
         }
         /* To come back in usual directory if a "cd" command was present in pre-build commands */
-        #chdir($pwd);
-		$this->_fwrite($this->dockerfile, 'cd '.getcwd()."\n", 'Docker_paquito.sh');
+		$this->_fwrite($this->dockerfile, "cd $(pwd)\n", 'Docker_paquito.sh');
+
         /* Move the files specified in the configuration file and store the returned array of permissions (for post-installation) */
         $post_permissions = $this->move_files($dirname, $struct_package['Files']);
 
 		$this->_fwrite($this->dockerfile, "echo '3.0 (native)' > $dirname/debian/source/format\n", 'Docker_paquito.sh');
-	#	if (file_put_contents("$dirname/debian/source/format", '3.0 (native)') === false) {
-     #       $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/source/format")));
-
-      #      exit(-1);
-	#	}
 
 		$this->_fwrite($this->dockerfile, "echo '9' > $dirname/debian/compat\n", 'Docker_paquito.sh');
-	#	if (file_put_contents("$dirname/debian/compat", '9') === false) {
-     #       $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/compat")));
-
-      #      exit(-1);
-	#	}
 
 		$this->_fwrite($this->dockerfile, "echo -e '#!/usr/bin/make -f\\nDPKG_EXPORT_BUILDFLAGS = 1\\ninclude /usr/share/dpkg/default.mk\\n%:\\n\\tdh $@\\noverride_dh_usrlocal:' > $dirname/debian/rules\n", 'Docker_paquito.sh');
-		#if (file_put_contents("$dirname/debian/rules", "#!/usr/bin/make -f\nDPKG_EXPORT_BUILDFLAGS = 1\ninclude /usr/share/dpkg/default.mk\n%:\n\tdh $@\noverride_dh_usrlocal:") === false) {
-         #   $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/rules")));
-
-         #  exit(-1);
-		#}
 		$this->_fwrite($this->dockerfile, "chmod 0755 $dirname/debian/rules\n", 'Docker_paquito.sh');
-		#chmod("$dirname/debian/rules", 0755);
 
 		$this->_fwrite($this->dockerfile, "echo -e \"$package_name (".$this->current_struct['Version'].") unstable; urgency=low\\n\\n  * Initial Release.\\n\\n -- ".$this->current_struct['Maintainer']."  ".date('r')."\" > $dirname/debian/changelog\n", 'Docker_paquito.sh');
-#		if (file_put_contents("$dirname/debian/changelog", "$package_name (".$this->current_struct['Version'].") unstable; urgency=low\n\n  * Initial Release.\n\n -- ".$this->current_struct['Maintainer']."  ".date('r')) === false) {
- #           $this->logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => "$dirname/debian/changelog")));
-
-  #          exit(-1);
-#		}
 
 	
 		/* Create and open the file "*.install" (in write mode). This is the
 		 * file which specifies what is the files of the project to packager */
-        #$handle = fopen("$dirname/debian/$package_name.install", 'w');
 		$this->_fwrite($this->dockerfile, "cat << _EOF_ > $dirname/debian/$package_name.install\n", 'Docker_paquito.sh');
 		foreach($post_permissions as $f_key => $f_value) {
 			$this->_fwrite($this->dockerfile, ltrim($f_key, '/').' '.ltrim(dirname($f_key), '/')."\n", 'Docker_paquito.sh');
-				#$this->_fwrite($handle, ltrim($f_key, '/').' '.ltrim(dirname($f_key), '/')."\n", "$dirname/debian/$package_name.install");
 		}
-        #fclose($handle);
 		$this->_fwrite($this->dockerfile, "_EOF_\n", 'Docker_paquito.sh');
 
         if (isset($struct_package['Install']['Pre'])) {
-            #$handle_pre = fopen("$dirname/debian/preinst", 'w');
 			$this->_fwrite($this->dockerfile, "cat << _EOF_ > $dirname/debian/preinst\n", 'Docker_paquito.sh');
-            #$this->_fwrite($handle_pre, "#!/bin/bash\n\n", "$dirname/debian/preinst");
-			$this->_fwrite($this->dockerfile, "echo -e \"#!/bin/bash\\n\\n\" > $dirname/debian/preinst\n", 'Docker_paquito.sh');
+			$this->_fwrite($this->dockerfile, "#!/bin/bash\n", 'Docker_paquito.sh');
             foreach ($struct_package['Install']['Pre'] as $value) {
                 $this->_fwrite($handle_pre, "$value\n", "$dirname/debian/preinst");
             }
-            #fclose($handle_pre);
 			$this->_fwrite($this->dockerfile, "_EOF_\n", 'Docker_paquito.sh');
             /* The file "preinst" has to have permissions between 755 and 775 */
-            #chmod("$dirname/debian/preinst", 0755);
 			$this->_fwrite($this->dockerfile, "chmod 0755 $dirname/debian/preinst\n", 'Docker_paquito.sh');
         }
 
         if (count($post_permissions) || isset($struct_package['Install']['Post'])) {
 			$this->_fwrite($this->dockerfile, "cat << _EOF_ > $dirname/debian/postinst\n", 'Docker_paquito.sh');
-            #$handle_post = fopen("$dirname/debian/postinst", 'w');
 			if (isset($struct_package['Install']['Post'])) {
 					/* Write each command */
 					foreach ($struct_package['Install']['Post'] as $key => $value) {
 						$this->_fwrite($this->dockerfile, "$value\n", 'Docker_paquito.sh');
-						#$this->_fwrite($handle_post, "$value\n", "$dirname/debian/postinst");
 					}
 			}
             if (count($post_permissions)) {
-                #$this->_fwrite($handle_post, "#!/bin/bash\n\n", "$dirname/debian/postinst");
-				$this->_fwrite($this->dockerfile, "echo -e \"#!/bin/bash\\n\\n\" > $dirname/debian/postinst\n", 'Docker_paquito.sh');
+				$this->_fwrite($this->dockerfile, "#!/bin/bash\n", 'Docker_paquito.sh');
                 foreach ($post_permissions as $key => $value) {
 					$this->_fwrite($this->dockerfile, "chmod $value $key\n", 'Docker_paquito.sh');
-                    #$this->_fwrite($handle_post, "chmod $value $key\n", "$dirname/debian/postinst");
                 }
             }
-            #fclose($handle_post);
 			$this->_fwrite($this->dockerfile, "_EOF_\n", 'Docker_paquito.sh');
             /* The file "postinst" has to have permissions between 755 and 775 */
-            #chmod("$dirname/debian/postinst", 0755);
 			$this->_fwrite($this->dockerfile, "chmod 0755 $dirname/debian/postinst\n", 'Docker_paquito.sh');
 		}
 
 		/* The command dpkg-buildpackage must be executed in the package directory */
-		#chdir($dirname);
 		$this->_fwrite($this->dockerfile, "cd $dirname\n", 'Docker_paquito.sh');
         /* Create the DEB package */
-		#$this->_system("dpkg-buildpackage -us -uc");
-        #chdir($pwd);
+		$this->_fwrite($this->dockerfile, "dpkg-buildpackage -us -uc\n", 'Docker_paquito.sh');
 		$this->_fwrite($this->dockerfile, "cd \$TEMP_PWD\n", 'Docker_paquito.sh');
-		$phar = new \PharData('paquito.tar');
-		// add all files in the project
-		$phar->buildFromDirectory(dirname('./'));
-		$this->_system('docker run --name paquito -v $(pwd):/paquito -i debian:'.lcfirst($this->getApplication()->dist_version)." < Docker_paquito.sh");
-		$this->_system('docker stop paquito');
-		$this->_system("docker cp paquito:/paquito/$dirname.deb .");
-		$this->_system('docker rm paquito');
+		fclose($this->dockerfile);
+		$this->docker_launcher('debian:'.lcfirst($this->getApplication()->dist_version), "$dirname.deb");
 		unlink('Docker_paquito.sh');
     }
 
@@ -568,10 +505,11 @@ class Generate extends Command
 		}
 
         $dirname = $package_name.'-'.$this->current_struct['Version'].'-'.$package_arch;
-        /* Create the directory of the package */
-        $this->_mkdir($dirname);
-        /* Create the directory "src/" (which contains the sources) */
-        $this->_mkdir($dirname.'/src/');
+
+        $this->dockerfile = fopen("Docker_paquito.sh", 'w');
+
+		$this->_fwrite($this->dockerfile, "cd /paquito\n", 'Docker_paquito.sh');
+		$this->_fwrite($this->dockerfile, "mkdir -p $dirname/src\n", 'Docker_paquito.sh');
 
         $array_field = array(
             '# Maintainer' => $this->current_struct['Maintainer'],
@@ -591,7 +529,7 @@ class Generate extends Command
 		/* Install the packages required by the Buildtime dependencies */
 		foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
 				/* The option "--needed" of pacman skip the reinstallation of existing packages (in others words, already installed) */
-				$this->_system("pacman -Sy --noconfirm --needed $p_value");
+				$this->_fwrite($this->dockerfile, "pacman -Sy --noconfirm --needed $p_value\n", 'Docker_paquito.sh');
 		}
 	}
 	if (isset($struct_package['Runtime']['Dependencies'])) {
@@ -602,13 +540,16 @@ class Generate extends Command
 
 
         /* Create and open the file "control" (in write mode) */
-        $handle = fopen($dirname.'/PKGBUILD', 'w');
+        #$handle = fopen($dirname.'/PKGBUILD', 'w');
+		$this->_fwrite($this->dockerfile, "cat << _EOF_ > $dirname/PKGBUILD\n", 'Docker_paquito.sh');
         /* For each field that will contains the file "control" */
         foreach ($array_field as $key => $value) {
-            $this->_fwrite($handle, "$key=$value\n", "$dirname/PKGBUILD");
+			$this->_fwrite($this->dockerfile, "$key=$value\n", 'Docker_paquito.sh');
         }
+		$this->_fwrite($this->dockerfile, "_EOF_\n", 'Docker_paquito.sh');
+
         /* To come back in actual directory if a "cd" command is present in pre-build commands */
-        $pwd = getcwd();
+		$this->_fwrite($this->dockerfile, "TEMP_PWD=$(pwd)\n", 'Docker_paquito.sh');
         /* If there are pre-build commands */
         /* IMPORTANT The build() function is not used because the pre-commands work directly in the src/ directory (of the package), and
          * several unexpected files will be included in the package. It is simpler to use Paquito. */
@@ -617,22 +558,19 @@ class Generate extends Command
             foreach ($struct_package['Build']['Commands'] as $key => $value) {
                 /* "cd" commands don't work (each shell_exec() has its owns shell), so it has to translates in chdir() functions */
                 if (preg_match('/cd (.+)/', $value, $matches)) {
-						if (!chdir($matches[1])) {
-								$this->logger->error($this->getApplication()->translator->trans('generate.chdir', array('%dst%' => $matches[1])));
-
-								exit(-1);
-						}
+					$this->_fwrite($this->dockerfile, "cd $matches[1]\n", 'Docker_paquito.sh');
                 } else {
-                    $this->_system($value);
+					$this->_fwrite($this->dockerfile, "$value\n", 'Docker_paquito.sh');
                 }
             }
         }
         /* To come back in usual directory if a "cd" command was present in pre-build commands */
-        chdir($pwd);
+		$this->_fwrite($this->dockerfile, "cd $(pwd)\n", 'Docker_paquito.sh');
 
         /* Write the "cd" commands in the package() function */
         /* TODO Faire wildcard */
-        $this->_fwrite($handle, "\npackage() {\n", "$dirname/PKGBUILD");
+		$this->_fwrite($this->dockerfile, "cat << _EOF_ > $dirname/PKGBUILD\n", 'Docker_paquito.sh');
+		$this->_fwrite($this->dockerfile, "\npackage() {\n", 'Docker_paquito.sh');
         foreach ($struct_package['Files'] as $key => $value) {
             /* The destination file will be in a sub-directory */
             if (strrpos($key, '/') !== false) {
@@ -643,7 +581,7 @@ class Generate extends Command
                 /* Transform the array in a string */
                 $directory = implode('/', $explode_array);
                 /* Write the "mkdir" command in the package() function */
-                $this->_fwrite($handle, "\tmkdir -p \$pkgdir/$directory/\n", "$dirname/PKGBUILD");
+				$this->_fwrite($this->dockerfile, "\tmkdir -p \$pkgdir/$directory/\n", 'Docker_paquito.sh');
             }
             /* The last character is a slash (in others words, the given path is a directory) */
             /* IMPORTANT We use this function instead of is_dir() because is_dir() works only in directories
@@ -653,59 +591,60 @@ class Generate extends Command
             } else {
                 $dest = $key;
             }
-            $this->_fwrite($handle, "\tcp --preserve ".ltrim($dest, '/')." \$pkgdir/".ltrim($key, '/')."\n", "$dirname/PKGBUILD");
+            $this->_fwrite($this->dockerfile, "\tcp --preserve ".ltrim($dest, '/')." \$pkgdir/".ltrim($key, '/')."\n", 'Docker_paquito.sh');
         }
-        $this->_fwrite($handle, "}\n", "$dirname/PKGBUILD");
+		$this->_fwrite($this->dockerfile, "}\n", 'Docker_paquito.sh');
+		$this->_fwrite($this->dockerfile, "_EOF_\n", 'Docker_paquito.sh');
 
         /* Move the files in the src/ directory of the package directory */
         $post_permissions = $this->move_files($dirname.'/src/', $struct_package['Files']);
 
         /* If there are pre/post-install commands */
         if (isset($struct_package['Install']) || count($post_permissions)) {
-            $handle_script = fopen("$dirname/$package_name.install", 'w');
+			$this->_fwrite($this->dockerfile, "cat << _EOF_ > $dirname/$package_name.install\n", 'Docker_paquito.sh');
             /* If there are pre-install commands */
             if (isset($struct_package['Install']['Pre'])) {
                 /* Write the pre-installation section */
-                $this->_fwrite($handle_script, "pre_install() {\n", "$dirname/$package_name.install");
+				$this->_fwrite($this->dockerfile, "pre_install() {\n", 'Docker_paquito.sh');
                 /* Write each command */
                 foreach ($struct_package['Install']['Pre'] as $value) {
-                    $this->_fwrite($handle_script, "\t$value\n", "$dirname/$package_name.install");
+					$this->_fwrite($this->dockerfile, "\t$value\n", 'Docker_paquito.sh');
                 }
-                $this->_fwrite($handle_script, "}\n\n", "$dirname/$package_name.install");
+				$this->_fwrite($this->dockerfile, "}\n\n", 'Docker_paquito.sh');
             }
 
             /* If there are post-install commands */
             if (isset($struct_package['Install']['Post']) || count($post_permissions)) {
                 /* Write the post-installation section */
-                $this->_fwrite($handle_script, "post_install() {\n", "$dirname/$package_name.install");
+				$this->_fwrite($this->dockerfile, "post_install() {\n", 'Docker_paquito.sh');
                 if (isset($struct_package['Install']['Post'])) {
                     /* Write each command */
                     foreach ($struct_package['Install']['Post'] as $key => $value) {
-                        $this->_fwrite($handle_script, "\t$value\n", "$dirname/$package_name.install");
+						$this->_fwrite($this->dockerfile, "\t$value\n", 'Docker_paquito.sh');
                     }
                 }
                 if (count($post_permissions)) {
                     foreach ($post_permissions as $key => $value) {
-                        $this->_fwrite($handle_script, "\tchmod $value $key\n", "$dirname/$package_name.install");
+						$this->_fwrite($this->dockerfile, "\tchmod $value $key\n", 'Docker_paquito.sh');
                     }
                 }
                 /* Close the post-installation section */
                 $this->_fwrite($handle_script, "}\n", "$dirname/$package_name.install");
             }
-            fclose($handle_script);
+			$this->_fwrite($this->dockerfile, "_EOF_\n", 'Docker_paquito.sh');
         }
 
         /* Change owner of the package directory (to allow the creation of the package) */
-        $this->_system("/bin/chown -R nobody $dirname");
+		$this->_fwrite($handle_script, "/bin/chown -R nobody $dirname", "$dirname/$package_name.install");
         /* Move in the package directory */
-        chdir($dirname);
+		$this->_fwrite($this->dockerfile, "cd $dirname\n", 'Docker_paquito.sh');
         /* Launch the creation of the package */
         /* IMPORTANT The makepkg command is launched with nobody user because since February 2015, root user cannot use this command */
-        $this->_system('sudo -u nobody makepkg');
-        #echo shell_exec('makepkg');
-        fclose($handle);
-        /* To come back in usual directory (to write the output file in the right place */
-        chdir($pwd);
+		$this->_fwrite($this->dockerfile,'sudo -u nobody makepkg', 'Docker_paquito.sh');
+		$this->_fwrite($this->dockerfile, "cd \$TEMP_PWD\n", 'Docker_paquito.sh');
+		fclose($this->dockerfile);
+		$this->docker_launcher('base/archlinux', "$dirname/$dirname.deb");
+		unlink('Docker_paquito.sh');
     }
 
     protected function make_centos($package_name, $struct_package)
