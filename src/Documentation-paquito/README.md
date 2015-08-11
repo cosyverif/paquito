@@ -137,7 +137,7 @@ Package paquito in paquito (create paquito package) locally , for this you will 
 * Clone the github repository of paquito (branch **issue60** ):
 
 ```bash
-git clone -b issue60 https://github.com/CosyVerif/paquito
+git clone -b issue60 https://github.com/CosyVerif/paquito.git
 
 ```
 * Go to the directory paquito 
