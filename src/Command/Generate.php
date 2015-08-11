@@ -58,7 +58,8 @@ class Generate extends Command
 	 * This function is like _system() but if there is an error it will stop and delete
 	 * the container before to return the error and stop Paquito */
 	protected function docker_launcher($distribution, $file) {
-		$command = "docker run --name paquito -v ".getcwd().":/paquito -i $distribution < Docker_paquito.sh";
+		$command = "docker run --name paquito -v ".getcwd().":/paquito -i $distribution bash /paquito/Docker_paquito.sh";
+		echo "$command\n";
 		system($command, $out);
 		$this->_system('docker stop paquito');
 		/* If the output code is more than 0 (error) */
@@ -149,15 +150,8 @@ class Generate extends Command
 			/* Copy each file in the directory of the current package */
 			foreach ($struct as $key => $value) {
 
-					/* If the source doesn't exist */
-					if (! file_exists($value['Source'])) {
-							$this->logger->error($this->getApplication()->translator->trans('generate.missing', array('%path%' => $value['Source'])));
-
-							exit(-1);
-					}
-
 					/* If the source is a directory */
-					if (is_file($value['Source'])) {
+					if (substr($value['Source'], -1) != '/') {
 							/* If the file will be renamed in its destination */	
 							if (substr($key, -1) != '/') {
 									$explode_array = explode('/', ltrim($key, '/'));
@@ -191,7 +185,7 @@ class Generate extends Command
 					#	$this->_fwrite($this->dockerfile, "mkdir $r_dir\n", 'Docker_paquito.sh');
 					#}
 
-					if (is_dir($value['Source'])) {
+					if (substr($value['Source'], -1) == '/') {
 						/* The file will be copied in the directory package (recursively) */
 						$this->_rcopy($value['Source'], $dest_directory.$key, $array_perm, $value['Permissions']);
 					} else { /* If the source is a file */
@@ -507,9 +501,13 @@ class Generate extends Command
         $dirname = $package_name.'-'.$this->current_struct['Version'].'-'.$package_arch;
 
         $this->dockerfile = fopen("Docker_paquito.sh", 'w');
-
+		
 		$this->_fwrite($this->dockerfile, "cd /paquito\n", 'Docker_paquito.sh');
 		$this->_fwrite($this->dockerfile, "mkdir -p $dirname/src\n", 'Docker_paquito.sh');
+		$this->_fwrite($this->dockerfile, "pacman -Sy\n", 'Docker_paquito.sh');
+		$this->_fwrite($this->dockerfile, "dirmngr </dev/null\n", 'Docker_paquito.sh');
+		$this->_fwrite($this->dockerfile, "pacman-key --init && pacman-key --refresh-keys\n", 'Docker_paquito.sh');
+		$this->_fwrite($this->dockerfile, "pacman-db-upgrade\n", 'Docker_paquito.sh');
 
         $array_field = array(
             '# Maintainer' => $this->current_struct['Maintainer'],
@@ -521,7 +519,6 @@ class Generate extends Command
             'license' => "('".$this->current_struct['Copyright']."')",
             'pkgdesc' => "'".$this->current_struct['Summary']."'",
             'install' => "('$package_name.install')", );
-
 	if (isset($struct_package['Build']['Dependencies'])) {
 		/* This variable will contains the list of dependencies (to build) */
 		# DELETE $list_buildepend = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 1);
@@ -529,7 +526,7 @@ class Generate extends Command
 		/* Install the packages required by the Buildtime dependencies */
 		foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
 				/* The option "--needed" of pacman skip the reinstallation of existing packages (in others words, already installed) */
-				$this->_fwrite($this->dockerfile, "pacman -Sy --noconfirm --needed $p_value\n", 'Docker_paquito.sh');
+				$this->_fwrite($this->dockerfile, "pacman -S --noconfirm --needed $p_value\n", 'Docker_paquito.sh');
 		}
 	}
 	if (isset($struct_package['Runtime']['Dependencies'])) {
@@ -569,7 +566,7 @@ class Generate extends Command
 
         /* Write the "cd" commands in the package() function */
         /* TODO Faire wildcard */
-		$this->_fwrite($this->dockerfile, "cat << _EOF_ > $dirname/PKGBUILD\n", 'Docker_paquito.sh');
+		$this->_fwrite($this->dockerfile, "cat << _EOF_ >> $dirname/PKGBUILD\n", 'Docker_paquito.sh');
 		$this->_fwrite($this->dockerfile, "\npackage() {\n", 'Docker_paquito.sh');
         foreach ($struct_package['Files'] as $key => $value) {
             /* The destination file will be in a sub-directory */
@@ -629,21 +626,21 @@ class Generate extends Command
                     }
                 }
                 /* Close the post-installation section */
-                $this->_fwrite($handle_script, "}\n", "$dirname/$package_name.install");
+				$this->_fwrite($this->dockerfile, "}\n", 'Docker_paquito.sh');
             }
 			$this->_fwrite($this->dockerfile, "_EOF_\n", 'Docker_paquito.sh');
         }
 
         /* Change owner of the package directory (to allow the creation of the package) */
-		$this->_fwrite($handle_script, "/bin/chown -R nobody $dirname", "$dirname/$package_name.install");
+		$this->_fwrite($this->dockerfile, "/bin/chown -R nobody $dirname\n", 'Docker_paquito.sh');
         /* Move in the package directory */
 		$this->_fwrite($this->dockerfile, "cd $dirname\n", 'Docker_paquito.sh');
         /* Launch the creation of the package */
         /* IMPORTANT The makepkg command is launched with nobody user because since February 2015, root user cannot use this command */
-		$this->_fwrite($this->dockerfile,'sudo -u nobody makepkg', 'Docker_paquito.sh');
+		$this->_fwrite($this->dockerfile,"sudo -u nobody makepkg\n", 'Docker_paquito.sh');
 		$this->_fwrite($this->dockerfile, "cd \$TEMP_PWD\n", 'Docker_paquito.sh');
 		fclose($this->dockerfile);
-		$this->docker_launcher('base/archlinux', "$dirname/$dirname.deb");
+		$this->docker_launcher('base/archlinux', "$dirname/$dirname.pkg");
 		unlink('Docker_paquito.sh');
     }
 
