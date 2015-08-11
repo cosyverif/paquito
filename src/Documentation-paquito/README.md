@@ -42,7 +42,7 @@ This version work perfectly .
 * In the second version  (this version is represented by the **issue60** branch ) , we generate packages using dockers , the compilation and the creation of packages is made in these dockers , the function **Generate.php** only serves to lauch these dockers  , and we have two methods in this version :
 
    * The local method (use the **--local** option : you will see bellow ) , allow us to generate packages in dockers , but only launches docker for the version and architecture of the distribution of the machine .
-   * The non local method ( without the **--local** option ) , also allow us to generate packages in dockers ,  but this time it launches all dockers  according to the file **/etc/paquito/conf.yaml** , in which you will specify all dockers images of the versions and architectures you want .
+   * The non local method ( without the **--local** option ) , also allow us to generate packages in dockers ,  but this time it launches all dockers  according to the file **/etc/paquito/conf.yaml** , in which you will specify all dockers images of the versions and architectures you want (packages for multiple distributions at same time ) .
    
 
 ####Format of the configuration file :
@@ -90,7 +90,42 @@ Dependencies for execution are :
 
 First install **php** in you're machine (paquito was programmed in php).
 
-To use the command **paquito** ,you have to create and install **the package paquito** . 
+To use the command **paquito** ,you have to create and install **the package paquito** .
+
+Knowing we said previously there has two versions of paquito , the generation of paquito package is different depending on the version :
+
+* For the first version ( create paquito package using machines ) , there is one way to generate paquito package , for this you will follow the following steps :
+
+  * Clone the github repository of paquito :
+  ```bash
+  git clone https://github.com/CosyVerif/paquito
+
+  ```
+  * Go to the directory paquito 
+  ```bash
+  cd paquito
+
+  ```
+  * Give rights to the file **install.sh** and execute it , it will install in your machine  , all necessary php tools (php modules , composer ....) :
+  ```bash
+  chmod 755 install.sh
+  ./install.sh
+
+  ```
+  * Exectute the function **Main.php** to create the package paquito (you will use the **--local** option because in this case we choose to create paquito package locally) :
+
+**To create Debian package:**
+```bash
+php src/Main.php --local generate paquito.yaml
+
+```
+**To create Archlinux or Centos package:**
+```bash
+php -c php.ini src/Main.php --local generate paquito.yaml
+
+```
+At the end you will have paquito package according to the distribution on which you start creating.
+
 There are to ways to create the command **paquito** , which allow us to create packages from source programs (you will use this command to create all packages you want to build) :
 
 * Create the paquito package locally (on machines : using **--local** option) .
