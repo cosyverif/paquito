@@ -182,7 +182,7 @@ This step is represented by the function **Generate.php** and the console comman
 
 In this step we will test the package created in the previous step , to ensure that it is consistent and functional , so it can be put into the repository dedicated to him .
 
-This step is available for the first version of paquito (**master branch**) , we have not yet processed the case where you launch the tests in dockes .
+This step is available for the first version of paquito (**master branch**) , we have not yet processed the case where you launch the tests in dockers .
 
 This step is represented by the function **Generate_test.php** and the console command **generate-test** .
 When we execute the command **generate-test** we will create two packages :
