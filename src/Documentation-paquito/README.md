@@ -39,9 +39,9 @@ The generation is made  by the function **Generate.php** (see the developer docu
 
 This version work perfectly .
 
-* In the second version  (this version is represented by the **issue60** branch ) , we generate packages using dockers , the compilation and the creation of packages is made in these dockers , the function **Generate.php** only serves to lauch these dockers  , and we have two methods in this version :
+* In the second version  (this version is represented by the **issue60** branch ) , we generate packages using dockers , the compilation and the creation of packages is made in these dockers , the function **Generate.php** only serves to launch these dockers  , and we have two methods in this version :
 
-   * The local method (use the **--local** option : you will see bellow ) , allow us to generate packages in dockers , but only launches docker for the version and architecture of the distribution of the machine .
+   * The local method (use the **--local** option : you will see bellow ) , allow us to generate packages in dockers , but only launches docker for the version and architecture of the distribution of the machine (like the first version but we using docker).
    * The non local method ( without the **--local** option ) , also allow us to generate packages in dockers ,  but this time it launches all dockers  according to the file **/etc/paquito/conf.yaml** , in which you will specify all dockers images of the versions and architectures you want (packages for multiple distributions at same time ) .
    
 
