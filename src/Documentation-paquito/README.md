@@ -302,7 +302,7 @@ Create of the test package is in **Generate_test.php** function  , using the com
 
 **Observation**:
 
-**This step is only available in the first version of paquito (**master** branch) , in the second version tests are not implemented** .
+**This step is only available in the first version of paquito (master branch) , in the second version tests are not implemented** .
 
 The command you'll use to create the test package is (unsing the first version of paquito):
 
