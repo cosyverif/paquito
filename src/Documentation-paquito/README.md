@@ -31,6 +31,19 @@ The infrastructure used in this project consists of the following steps:
 * Generation of test packages , for testing whether packages created in the previous steps are functional .
 * Put the packages in the repositories dedicated to them .
 
+We have two versions of paquito :
+
+* In the first version (this version is represented by the **master** branch ) , we generate packages according to the distribution of machine in which the generation is launched (according to the version and the architecture of the machine) , the generation will be does in this machine , at the end of this generation we will have package according to the version and the architecture of this machine .
+
+The generation is made  by the function **Generate.php** (see the developer documentation) , in this function we do the compilation (if needed) and the creation of packages  .
+This version work perfectly .
+
+* In the second version  (this version is represented by the **issue60** branch ) , we generate packages using dockers , the compilation and the creation of packages is made in these dockers , the function **Generate.php** only serves to lauch these dockers  , and we have two methods in this version :
+
+   * The local method (use the **--local** option : you will see bellow ) , allow us to generate packages in dockers , but only launches docker for the version and architecture of the distribution of the machine .
+   * The non local method ( without the **--local** option ) , also allow us to generate packages in dockers ,  but this time it launches all dockers  according to the file **/etc/paquito/conf.yaml** , in which you will specify all dockers images of the versions and architectures you want .
+   
+
 ####Format of the configuration file :
 
 The name of the configuration file , will be always **paquito.yaml** , for all projects that will use paquito .
