@@ -104,7 +104,7 @@ contenant les paquets à ajouter au dépôt:
 
 
 ```bash
-./debian-sign.exp /chemin_vers_un_répertoire_précédemment_créé_contenant_les paquets_à_ajouter_et_à_signer) .
+./debian-sign.exp /chemin_vers_un_répertoire_précédemment_créé_contenant_les paquets_à_ajouter_et_à_signer 
 
 ```
 
@@ -122,7 +122,6 @@ crontab -e
 Ajouter la ligne suivante dans le fichier:
 
 ```bash
-00 * * * * /chemin_vers_debian-sign.exp
-/répertoire_contenant_les_paquets_à_signer_et_à_ajouter_au_dépôt >> /var/log/sign-debian.log 2>&1
+00 * * * * /chemin_vers_debian-sign.exp /répertoire_contenant_les_paquets_à_signer_et_à_ajouter_au_dépôt >> /var/log/sign-debian.log 2>&1
 
 ```
