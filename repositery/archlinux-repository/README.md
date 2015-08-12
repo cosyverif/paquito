@@ -36,7 +36,7 @@ gpg  --keyserver pgp.mit.edu --send-keys <key-id>
 
 ```
 
-**<key-id>** : on l'obtient avec la commande :
+**key-id** : on l'obtient avec la commande :
 
 ```bash
 gpg --list-key
