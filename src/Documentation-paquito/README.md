@@ -319,3 +319,52 @@ paquito generate-test name_of_your_source_repository
 
 **name_of_your_source_repository** : is the repository which will contain program sources , and the  configuration file paquito.yaml .
 
+##Configuration file conf.yaml :
+
+This step is valid for the second version of paquito **issue60 branch** (dockers) , and it concerns only the **non local** method (see methods of this version above) .
+
+This is a global configuration file , it will be located in the directory `/etc/paquito` (if you use the **non local** method , you have to create this directory , and put the file **conf.yaml** in this directory ) .
+
+This file serves to enunciate all dockers images needed (give the version and  the architecture of distributions you want ) , in order to create packages in each of these dockers ( create a package by docker image ) .
+
+The structure of this file is represented as :
+
+For each element of this file :
+
+```yaml
+distribution:
+    version : architecture
+
+```
+
+
+The distributions are : `Debian , Centos and Archlinux` .
+
+The versions are :
+* **Debian** : Stable , Testing, Wheezy, Jessie .
+* **Centos** : 6.6 , 7.0
+* **Archlinux** : there is a version in archlinux (rollingrelease) , for this we always use the flag **All** to specify the version for archlinux .
+
+The architectures are : 32 and 64 .
+
+There is a shortcut in this file , if you want to generate packages for all versions and architectures of a distribution , you will represent like this :
+
+For Debain :
+
+```yaml
+Debian : "*"
+
+```
+
+This is an example of the configuration file `conf.yaml` :
+
+```yaml
+Debian :
+ essie: 64
+  3 Centos:
+  4     "7.0": 64
+  5 Archlinux:                                                                                                                                                
+  6     All: 64
+
+
+```
