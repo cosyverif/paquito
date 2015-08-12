@@ -342,7 +342,7 @@ The distributions are : `Debian , Centos and Archlinux` .
 
 The versions are :
 * **Debian** : Stable , Testing, Wheezy, Jessie .
-* **Centos** : 6.6 , 7.0
+* **Centos** : "6.6" , "7.0"
 * **Archlinux** : there is a version in archlinux (rollingrelease) , for this we always use the flag **All** to specify the version for archlinux .
 
 The architectures are : 32 and 64 .
@@ -360,11 +360,11 @@ This is an example of the configuration file `conf.yaml` :
 
 ```yaml
 Debian :
- essie: 64
-  3 Centos:
-  4     "7.0": 64
-  5 Archlinux:                                                                                                                                                
-  6     All: 64
+    Jessie: 64
+Centos:
+    "7.0": 64
+Archlinux:                                                                                                        
+    All: 64
 
 
 ```
