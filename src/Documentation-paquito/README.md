@@ -9,6 +9,7 @@ In this documentation we will present you  **paquito project** , we divided the 
 * Create packages through paquito command
 * Compilation sources
 * Test packages
+* Configuration file conf.yaml
 
 
 ##Presentation of paquito 2015:
