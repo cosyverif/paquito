@@ -303,11 +303,12 @@ The function **Generate.php** will just launch the dockers  , and in these docke
 ##Test packages :
 
 To test the created package , we use test package , to ensure that the package is functionnal , for it to be put in the repository dedicated to it .
-Create of the test package is in **Generate_test.php** function  , using the command **generate-test** (see the developer_documentation which explain what this command does) . 
+
+Creation of the test package is in **Generate_test.php** function  , using the command **generate-test** (see the developer_documentation which explain what this command does) . 
 
 **Observation**:
 
-**This step is only available in the first version of paquito (master branch) , in the second version tests are not implemented** .
+**This step is only available in the first version of paquito (master branch) , in the second version , tests are not implemented** .
 
 The command you'll use to create the test package is (unsing the first version of paquito):
 
