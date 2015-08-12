@@ -112,7 +112,7 @@ Knowing we said previously there has two versions of paquito , the generation of
   ./install.sh
 
   ```
-  * Exectute the function **Main.php** to create the package paquito (you will use the **--local** option because in this case we choose to create paquito package locally) :
+  * Exectute the function **Main.php** to create the package paquito :
 
 **To create Debian package:**
 ```bash
