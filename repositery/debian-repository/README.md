@@ -104,7 +104,7 @@ contenant les paquets à ajouter au dépôt:
 
 
 ```bash
-./debian-sign.exp /chemin_vers_un_répertoire_précédemment_créé_contenant_les paquets_à_ajouter_et_à_signer) .
+./debian-sign.exp /chemin_vers_un_répertoire_précédemment_créé_contenant_les paquets_à_ajouter_et_à_signer 
 
 ```
 
