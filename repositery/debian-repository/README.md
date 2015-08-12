@@ -122,7 +122,6 @@ crontab -e
 Ajouter la ligne suivante dans le fichier:
 
 ```bash
-00 * * * * /chemin_vers_debian-sign.exp
-/répertoire_contenant_les_paquets_à_signer_et_à_ajouter_au_dépôt >> /var/log/sign-debian.log 2>&1
+00 * * * * /chemin_vers_debian-sign.exp /répertoire_contenant_les_paquets_à_signer_et_à_ajouter_au_dépôt >> /var/log/sign-debian.log 2>&1
 
 ```
