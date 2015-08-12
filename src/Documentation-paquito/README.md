@@ -116,21 +116,25 @@ Knowing we said previously there has two versions of paquito , the generation of
 
 **To create Debian package:**
 ```bash
-php src/Main.php generate paquito.yaml
+php src/Main.php generate .
 
 ```
 **To create Archlinux or Centos package:**
 ```bash
-php -c php.ini src/Main.php generate paquito.yaml
+php -c php.ini src/Main.php generate .
 
 ```
+
+`.` : represent the actual directory .
+
 At the end you will have paquito package according to the distribution on which you start creating.
 
 
 * For the second version of paquito ( version of the **issue60** branch : create packages using dockers) ,there are to ways to create the command **paquito** , which allow us to create packages from source programs (you will use this command to create all packages you want to build) :
 
+
    * Create the paquito package locally ( only launches docker for the version and architecture of the distribution of the machine : using **--local** option) .
-   * Create the paquito package non locally ( launches all dockers for the versions and architectures of the distributions you specify in the file **/etc/paquito/conf.yaml** : without the option ) .
+   * Create the paquito package non locally ( launches all dockers for the versions and architectures of the distributions , you specify in the file **/etc/paquito/conf.yaml** : without the option ) .
 
 Package paquito in paquito (create paquito package) locally , for this you will follow the following steps :
 
@@ -154,12 +158,12 @@ chmod 755 install.sh
 
 **To create Debian package:**
 ```bash
-php src/Main.php --local generate paquito.yaml
+php src/Main.php --local generate .
 
 ```
 **To create Archlinux or Centos package:**
 ```bash
-php -c php.ini src/Main.php --local generate paquito.yaml
+php -c php.ini src/Main.php --local generate .
 
 ```
 At the end you will have paquito package according to the distribution on which you start creating.
@@ -170,16 +174,17 @@ We use **php.ini** for Archlinux and Centos , because there are some php modules
 
 
 Create package paquito non locally (a lot of dockers ) , for this you follow the same steps as above , the only thing that changes is :
+
 we will not used the **--local** option .
 
 **To create Debian package :**
 ```bash
-php src/Main.php generate paquito.yaml
+php src/Main.php generate .
 
 ```
 **To create Centos or Archlinux package :**
 ```bash
-php -c php.ini src/Main.php generate paquito.yaml
+php -c php.ini src/Main.php generate .
 
 ```
 ##How to install paquito package:
