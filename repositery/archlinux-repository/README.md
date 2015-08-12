@@ -25,7 +25,7 @@ gpg --armor --output public.key --export <user-id>
 
 **public.key**: le nom de la clé public (donner un nom quelconque exemple : **ARCH-GPG-KEY**) .
 
-**<user-id>** : can be specified with your key ID, fingerprint, a part of your name or email address.
+**user-id** : can be specified with your key ID, fingerprint, a part of your name or email address.
 
 
 Enregistrer la clé public sur le serveur de clé pour qu'elle puisse étre
