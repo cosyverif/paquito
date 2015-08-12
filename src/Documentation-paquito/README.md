@@ -350,7 +350,7 @@ The architectures are : 32 and 64 .
 
 There is a shortcut in this file , if you want to generate packages for all versions and architectures of a distribution , you will represent like this :
 
-For Debain :
+For Debian :
 
 ```yaml
 Debian : "*"
