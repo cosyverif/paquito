@@ -82,15 +82,16 @@ class Prune extends Command
 
 	protected function prune_structure($struct) {
 		/* Copy the initial structure of the configuration file. The new structure will be modified */
-		$new_struct = $struct;
-		foreach ($struct['Packages'] as $key => $value) {
+		$new_struct['Packages'] = $struct;
+
+		foreach ($struct as $key => $value) {
 			$key_dependencies = array('Build', 'Runtime', 'Test');
 			/* For each field (in others words 'Build', 'Runtime' and 'Test') */
 			for ($i = 0; $i < 3; ++$i) {
 				/* If there are dependencies in the field Build/Runtime/Test */
-				if (isset($struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'])) { 
+				if (isset($struct[$key][$key_dependencies[$i]]['Dependencies'])) { 
 					/* To clear the follow code */
-					$depend_struct = $struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'];
+					$depend_struct = $struct[$key][$key_dependencies[$i]]['Dependencies'];
 					/* It has to remove the pre-dependencies structure in the new structure, to keep new "dependency" structure */
 					unset($new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies']);
 					/* For each dependency */
@@ -135,6 +136,7 @@ class Prune extends Command
 				}
 			}
 		}
+		#print_r($new_struct);
 		return $new_struct;
 	}
 
@@ -174,14 +176,16 @@ class Prune extends Command
 						$this->getApplication()->dist_name = $dist;
 						$this->getApplication()->dist_version = $ver;
 						$this->getApplication()->dist_arch = $archi;
-						$this->getApplication()->data[$dist][$ver][$archi] = $this->prune_structure($struct);
+						$this->getApplication()->data['Distributions'][$dist][$ver][$archi] = $this->prune_structure($struct['Packages']);
 					}
 				}
 			}
+			/* Removes the original field 'Packages', now useless */
+			unset($this->getApplication()->data['Packages']);
 		} else { /* The prune will be only for the current distribution (where is launched Paquito) */
 			/* Gets the local distribution, version and architecture */
 			$this->getDist();
-			$this->getApplication()->data = $this->prune_structure($struct);
+			$this->getApplication()->data = array_merge($this->getApplication()->data, $this->prune_structure($struct['Packages']));
 		}
 
 		#print_r($this->getApplication()->data);

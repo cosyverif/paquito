@@ -34,10 +34,11 @@ class Generate extends Command
 			;
 	}
 
-	/* Launches for each package her generation */
-	protected function launcher() {
+	/* Launches for each package her generation
+	 * @param $package_struct : 'Packages' field of a distribution */
+	protected function launcher($package_struct) {
 		/* For each package */
-		foreach ($this->current_struct['Packages'] as $key => $value) {
+		foreach ($package_struct as $key => $value) {
 			switch ($this->getApplication()->dist_name) {
 			case 'Debian':
 				$this->make_debian($key, $value);
@@ -59,7 +60,6 @@ class Generate extends Command
 	 * the container before to return the error and stop Paquito */
 	protected function docker_launcher($distribution, $file) {
 		$command = "docker run --name paquito -v ".getcwd().":/paquito -v /etc/localtime/:/etc/localtime:ro -i $distribution bash /paquito/Docker_paquito.sh";
-		echo "$command\n";
 		system($command, $out);
 		$this->_system('docker stop paquito > /dev/null');
 		/* If the output code is more than 0 (error) */
@@ -100,25 +100,26 @@ class Generate extends Command
 		/* If the "--local" option is not set, so there are several YAML structure to use */
 		if (! $local) {
 			/* For each distribution */
-			foreach($struct as $dist => $tab_ver) {
+			foreach($this->struct['Distributions'] as $dist => $tab_ver) {
 				/* For each version */
 				foreach($tab_ver as $ver => $tab_archi) {
 					/* For each architecture */
-					foreach($tab_archi as $archi) {
+					foreach($tab_archi as $archi => $tab_package) {
 						$this->getApplication()->dist_name = $dist;
 						$this->getApplication()->dist_version = $ver;
-						$this->getApplication()->dist_arch = $archi;
-						/* Keeps the structure of the distribution currently treated */
-						$this->current_struct = $this->struct[$dist][$ver][$archi];
+						if ($arch == '64') {
+							$this->getApplication()->dist_arch = 'x86_64';
+						} else {
+							$this->getApplication()->dist_arch = 'i386';
+						}
 						/* Launches the package generation for the distribution currently treated */
-						$this->launcher();
+						$this->launcher($this->struct['Distributions'][$dist][$ver][$archi]['Packages']);
 					}
 				}
 			}
 		} else { /* The generation will be adapted with the current configuration */
-			$this->current_struct = $this->struct;
 			/* Launches the package generation for the current distribution */
-			$this->launcher();
+			$this->launcher($this->struct['Packages']);
 		}
 
 		/* Optionnal argument (output file, which will be parsed) */
@@ -361,7 +362,7 @@ class Generate extends Command
 			$package_arch = 'all';
 		}
 
-		$dirname = $package_name.'_'.$this->current_struct['Version'].'_'.$package_arch;
+		$dirname = $package_name.'_'.$this->struct['Version'].'_'.$package_arch;
 
 		$this->dockerfile = fopen("Docker_paquito.sh", 'w');
 
@@ -372,7 +373,7 @@ class Generate extends Command
 			'Source' => $package_name,
 			'Section' => 'unknown',
 			'Priority' => 'optional',
-			'Maintainer' => $this->current_struct['Maintainer']);
+			'Maintainer' => $this->struct['Maintainer']);
 		/* The "Build-Depends" must be placed before fields like "Package" or "Depends" (else this field is not recognized) */
 		if (isset($struct_package['Build']['Dependencies'])) {
 			/* This variable will contains the list of dependencies (to build) */
@@ -388,10 +389,10 @@ class Generate extends Command
 		/* IMPORTANT : The fields "Standards-Version", "Homepage"... are placed after "Build-Depends", "Source"... because
 		 * the Debian package wants a specific placing order (else there is an error) */
 		$array_field['Standards-Version'] = '3.9.5';
-		$array_field['Homepage'] = $this->current_struct['Homepage']."\n"; # It has to has a line between the "Homepage" field and the "Package" field
+		$array_field['Homepage'] = $this->struct['Homepage']."\n"; # It has to has a line between the "Homepage" field and the "Package" field
 		$array_field['Package'] = $package_name;
 		$array_field['Architecture'] = $package_arch;
-		$array_field['Description'] = $this->current_struct['Summary']."\n ".$this->current_struct['Description'];
+		$array_field['Description'] = $this->struct['Summary']."\n ".$this->struct['Description'];
 		if (isset($struct_package['Runtime']['Dependencies'])) {
 			/* This variable will contains the list of dependencies (to run) */
 			#$list_rundepend =  str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0));
@@ -438,7 +439,7 @@ class Generate extends Command
 		$this->_fwrite($this->dockerfile, "echo -e '#!/usr/bin/make -f\\nDPKG_EXPORT_BUILDFLAGS = 1\\ninclude /usr/share/dpkg/default.mk\\n%:\\n\\tdh $@\\noverride_dh_usrlocal:' > $dirname/debian/rules\n", 'Docker_paquito.sh');
 		$this->_fwrite($this->dockerfile, "chmod 0755 $dirname/debian/rules\n", 'Docker_paquito.sh');
 
-		$this->_fwrite($this->dockerfile, "echo -e \"$package_name (".$this->current_struct['Version'].") unstable; urgency=low\\n\\n  * Initial Release.\\n\\n -- ".$this->current_struct['Maintainer']."  ".date('r')."\" > $dirname/debian/changelog\n", 'Docker_paquito.sh');
+		$this->_fwrite($this->dockerfile, "echo -e \"$package_name (".$this->struct['Version'].") unstable; urgency=low\\n\\n  * Initial Release.\\n\\n -- ".$this->struct['Maintainer']."  ".date('r')."\" > $dirname/debian/changelog\n", 'Docker_paquito.sh');
 
 
 		/* Create and open the file "*.install" (in write mode). This is the
@@ -502,7 +503,7 @@ class Generate extends Command
 		}
 
 		/* Defines the directory where will be stored sources and final package */
-		$dirname = $package_name.'-'.$this->current_struct['Version'].'-'.$package_arch;
+		$dirname = $package_name.'-'.$this->struct['Version'].'-'.$package_arch;
 
 		/* Open the dynamic script that Docker will use */
 		$this->dockerfile = fopen("Docker_paquito.sh", 'w');
@@ -531,14 +532,14 @@ class Generate extends Command
 		$this->_fwrite($this->dockerfile, "pacman-key --init && pacman-key --refresh-keys && pacman-key --populate archlinux\n", 'Docker_paquito.sh');
 
 		$array_field = array(
-			'# Maintainer' => $this->current_struct['Maintainer'],
+			'# Maintainer' => $this->struct['Maintainer'],
 			'pkgname' => "$package_name",
-			'pkgver' => $this->current_struct['Version'],
+			'pkgver' => $this->struct['Version'],
 			'pkgrel' => 1,
 			'arch' => $package_arch,
-			'url' => $this->current_struct['Homepage'],
-			'license' => "('".$this->current_struct['Copyright']."')",
-			'pkgdesc' => "'".$this->current_struct['Summary']."'",
+			'url' => $this->struct['Homepage'],
+			'license' => "('".$this->struct['Copyright']."')",
+			'pkgdesc' => "'".$this->struct['Summary']."'",
 			'install' => "('$package_name.install')", );
 		if (isset($struct_package['Build']['Dependencies'])) {
 			/* This variable will contains the list of dependencies (to build) */
@@ -654,7 +655,7 @@ class Generate extends Command
 		#$this->_fwrite($this->dockerfile, "cd \$TEMP_PWD\n", 'Docker_paquito.sh');
 		fclose($this->dockerfile);
 		/* Starts the generation with Docker */
-		$this->docker_launcher('base/archlinux', "/paquito/$dirname/".$package_name.'-'.$this->current_struct['Version'].'-1-'.$package_arch.'.pkg.tar.xz');
+		$this->docker_launcher('base/archlinux', "/paquito/$dirname/".$package_name.'-'.$this->struct['Version'].'-1-'.$package_arch.'.pkg.tar.xz');
 		/* Deletes the dynamic script */
 		unlink('Docker_paquito.sh');
 	}
@@ -669,7 +670,7 @@ class Generate extends Command
 			$package_arch = $this->getApplication()->dist_arch;
 		}
 
-		$dirname = $package_name - $this->current_struct['Version'].'-'.$package_arch;
+		$dirname = $package_name - $this->struct['Version'].'-'.$package_arch;
 
 		/* Opens the dynamic script that Docker will use */
 		$this->dockerfile = fopen("Docker_paquito.sh", 'w');
@@ -682,13 +683,13 @@ class Generate extends Command
 		$this->_fwrite($this->dockerfile, "cd /paquito\n", 'Docker_paquito.sh');
 
 		$array_field = array(
-			'#Maintainer' => $this->current_struct['Maintainer'],
+			'#Maintainer' => $this->struct['Maintainer'],
 			'Name' => $package_name,
-			'Version' => $this->current_struct['Version'],
+			'Version' => $this->struct['Version'],
 			'Release' => '1%{?dist}',
 			'Summary' => $package_name,
-			'License' => $this->current_struct['Copyright'],
-			'URL' => $this->current_struct['Homepage'],
+			'License' => $this->struct['Copyright'],
+			'URL' => $this->struct['Homepage'],
 			'Packager' => 'Paquito',
 		);
 		if (isset($struct_package['Build']['Dependencies'])) {
@@ -711,7 +712,7 @@ class Generate extends Command
 			$this->_fwrite($this->dockerfile, "$key: $value\n", 'Docker_paquito.sh');
 		}
 		/* (In the Docker) Writes the description */
-		$this->_fwrite($this->dockerfile, "\n%description\n".$this->current_struct['Summary']."\n", 'Docker_paquito.sh');
+		$this->_fwrite($this->dockerfile, "\n%description\n".$this->struct['Summary']."\n", 'Docker_paquito.sh');
 		$this->_fwrite($this->dockerfile, "_EOF_\n", 'Docker_paquito.sh');
 
 		/* (In the Docker) To come back in actual directory if a "cd" command is present in pre-build commands */
@@ -831,7 +832,7 @@ class Generate extends Command
 
 		fclose($this->dockerfile);
 		/* Starts the generation with Docker */
-		$this->docker_launcher('centos:centos'.substr($this->getApplication()->dist_version, 0, 1), '/root/rpmbuild/RPMS/'.$this->getApplication()->dist_arch."/$package_name-".$this->current_struct['Version'].'-1.el'.substr($this->getApplication()->dist_version, 0, 1).".centos.$package_arch.rpm");
+		$this->docker_launcher('centos:centos'.substr($this->getApplication()->dist_version, 0, 1), '/root/rpmbuild/RPMS/'.$this->getApplication()->dist_arch."/$package_name-".$this->struct['Version'].'-1.el'.substr($this->getApplication()->dist_version, 0, 1).".centos.$package_arch.rpm");
 		/* Deletes the dynamic script */
 		unlink('Docker_paquito.sh');
 	}
