@@ -32,11 +32,11 @@ class Prune extends Command
 			;
 	}
 
-	/* Defines the applications variables $dist_name, $dist_version and $dist_arch to inquire Paquito of the distribution where it runs (locally !!!) */
+	/* Defines the applications variables $dist_name, $dist_version and $dist_arch
+	 * to inquire Paquito of the distribution where it runs (locally !!!) */
 	protected function getDist() {
-		/* The file /etc/os-release contains the informations about the distribution (where is executed this program)*/
-		/* TODO Sous Archlinux, la fonction parse_ini_files() ne marchera pas si la variable "open_basedir" du fichier /etc/php/php.ini
-		 * n'inclue pas le chemin /usr/lib/ (qui est la vraie localisation du fichier "os-release" */
+		/* The file /etc/os-release contains the informations about the distribution (what distribution,
+		 * version and architecture is executed Paquito). Tests if this file exists */
 		if (is_file('/etc/os-release')) {
 			$array_ini = parse_ini_file('/etc/os-release');
 			/* Get the name of the distribution */
@@ -62,15 +62,24 @@ class Prune extends Command
 
 				exit(-1);
 			}
-		} else {
+		} else { /* If the file /etc/os-release doesn't exists */
+			/* We try to find the specific file for a distribution */
+
+			/* If the /etc/arch-release exists, so our distribution is Archlinux */
 			if (is_file('/etc/arch-release')) {
+				/* IMPORTANT : We don't need to read this file because Archlinux
+				 * has not version (it is a rolling release) and is only a 64 bits
+				 * architecture */
 				$this->getApplication()->dist_name = 'Archlinux';
 			} else if (is_file('/etc/centos-release')) {
 				$this->getApplication()->dist_name = 'Centos';
+				/* Read the content of the file /etc/centos-release */
 				if (($version = file_get_contents('/etc/centos-release')) === FALSE) {
-					echo "erreur lecture fichier\n";
-					exit(-1);
+					$logger->error($this->getApplication()->translator->trans('prune.read', array('%file%' => '/etc/centos-release')));
+
+					return -1;
 				}
+				/* Get the version of the Centos distribution */
 				preg_match('/[0-9](\.[0-9])?/', $version, $match);
 				$this->getApplication()->dist_version = $match[0];
 			} 
@@ -80,10 +89,13 @@ class Prune extends Command
 		$this->getApplication()->dist_arch = $this->getApplication()->dist_arch['machine'];
 	}
 
+	/* Prunes a 'Packages' structure with current distribution ($dist_name),
+	 * version ($dist_version) and architecture ($dist_arch)
+	 * @param $struct : 'Packages' structure */
 	protected function prune_structure($struct) {
 		/* Copy the initial structure of the configuration file. The new structure will be modified */
 		$new_struct['Packages'] = $struct;
-
+		/* For each package */
 		foreach ($struct as $key => $value) {
 			$key_dependencies = array('Build', 'Runtime', 'Test');
 			/* For each field (in others words 'Build', 'Runtime' and 'Test') */
@@ -92,7 +104,7 @@ class Prune extends Command
 				if (isset($struct[$key][$key_dependencies[$i]]['Dependencies'])) { 
 					/* To clear the follow code */
 					$depend_struct = $struct[$key][$key_dependencies[$i]]['Dependencies'];
-					/* It has to remove the pre-dependencies structure in the new structure, to keep new "dependency" structure */
+					/* It has to remove the 'Dependencies' structure in the new structure, to have new 'Dependencies' structure */
 					unset($new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies']);
 					/* For each dependency */
 					foreach ($depend_struct as $d_key => $d_value) {
@@ -109,7 +121,7 @@ class Prune extends Command
 									/* The version is referenced (by the branch name, like for example "testing") */
 									if (!empty($result) && array_key_exists($result, $depend_struct[$d_key][$this->getApplication()->dist_name])) { 
 										$src_field = $result;
-									} else { /* La version de la distribution en cours d'exécution n'est pas spécifiée, le cas général de la distribution ("All") s'applique donc */
+									} else { /* The version of the current distribution is not specified, the general case of the distribution ("All") applies */
 										$src_field = 'All';
 									}
 								}
@@ -119,6 +131,7 @@ class Prune extends Command
 							}
 							/* If the source field contains a array (in others words, the field contains several dependencies) */
 							if (is_array($depend_struct[$d_key][$this->getApplication()->dist_name][$src_field])) {
+								/* The dependencies are organized in list and added with others dependencies */
 								foreach ($depend_struct[$d_key][$this->getApplication()->dist_name][$src_field] as $dependency) {
 									$new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $dependency ;
 								}
@@ -136,7 +149,6 @@ class Prune extends Command
 				}
 			}
 		}
-		#print_r($new_struct);
 		return $new_struct;
 	}
 
@@ -176,6 +188,9 @@ class Prune extends Command
 						$this->getApplication()->dist_name = $dist;
 						$this->getApplication()->dist_version = $ver;
 						$this->getApplication()->dist_arch = $archi;
+						/* When the generation is not local (for several distributions/versions/architectures), the
+						 * pruned structure for the current configuration is stored in the root field named
+						 * 'Distributions' then the name of the distribution -> the version name -> the architecture */
 						$this->getApplication()->data['Distributions'][$dist][$ver][$archi] = $this->prune_structure($struct['Packages']);
 					}
 				}
@@ -185,10 +200,10 @@ class Prune extends Command
 		} else { /* The prune will be only for the current distribution (where is launched Paquito) */
 			/* Gets the local distribution, version and architecture */
 			$this->getDist();
+			/* The new pruned 'Packages' structure returned by prune_structure()
+			 * function is merged with the YAML structure */
 			$this->getApplication()->data = array_merge($this->getApplication()->data, $this->prune_structure($struct['Packages']));
 		}
-
-		#print_r($this->getApplication()->data);
 
 		/* Optionnal argument (output file, which will be parsed) */
 		$output_file = $input->getArgument('output');

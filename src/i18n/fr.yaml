@@ -18,9 +18,10 @@ generate:
         missing: "L'élément %path% n'existe pas"
         rmkdir: "Impossible de créer la chaine de répertoires (%dir% est un fichier)"
 parse:
-        exist: "L'élément %basename% n'existe pas ou n'est pas un fichier régulier"
+        exist: "Le chemin %basename% n'existe pas ou n'est pas un fichier régulier"
         right: "Droits insuffisants pour lire le fichier %basename%"
 prune:
         exist: "Distribution inconnue"
+        read: "Erreur lors de la lecture du fichier %file%"
 write:
         save: "Erreur lors de l'écriture dans le fichier %output_file%"

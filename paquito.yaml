@@ -20,6 +20,7 @@ Packages:
         paquito:
                 Type: binary
                 Files:
+                        /etc/paquito/: conf.yaml
                         /usr/share/paquito.phar: paquito
                         /usr/bin/paquito:
                                 Source: paquito.sh

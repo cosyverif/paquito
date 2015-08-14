@@ -14,8 +14,8 @@ class Generate extends Command
 {
 	private $logger;
 	private $struct;
-	private $current_struct;
 	private $dockerfile;
+
 	protected function configure()
 	{
 		$this
@@ -104,7 +104,7 @@ class Generate extends Command
 				/* For each version */
 				foreach($tab_ver as $ver => $tab_archi) {
 					/* For each architecture */
-					foreach($tab_archi as $archi => $tab_package) {
+					foreach($tab_archi as $arch => $tab_package) {
 						$this->getApplication()->dist_name = $dist;
 						$this->getApplication()->dist_version = $ver;
 						if ($arch == '64') {
@@ -113,7 +113,7 @@ class Generate extends Command
 							$this->getApplication()->dist_arch = 'i386';
 						}
 						/* Launches the package generation for the distribution currently treated */
-						$this->launcher($this->struct['Distributions'][$dist][$ver][$archi]['Packages']);
+						$this->launcher($this->struct['Distributions'][$dist][$ver][$arch]['Packages']);
 					}
 				}
 			}
@@ -172,19 +172,8 @@ class Generate extends Command
 				}
 			}
 
-			/* Create recursively the directories (if doesn't exist)
-			 * IMPORTANT : the PHP mkdir() function can recursively create directories, but here we create manually
-			 * directories in order to detect if there is a file which has the same name than a directory (so this
-			 * directory cannot be created). */
-
+			/* Create recursively the directories (if doesn't exist) */
 			$this->_fwrite($this->dockerfile, "mkdir -p $dest_directory/$key\n", 'Docker_paquito.sh');
-			#$r_dir = rtrim($dest_directory, '/');
-			/* For each directory of the recursive chain */
-			#foreach (explode('/', $key) as $r_path) {
-			#	$r_dir .= "/$r_path";
-			/* The directories will be created gradually */
-			#	$this->_fwrite($this->dockerfile, "mkdir $r_dir\n", 'Docker_paquito.sh');
-			#}
 
 			if (substr($value['Source'], -1) == '/') {
 				/* The file will be copied in the directory package (recursively) */
@@ -199,7 +188,7 @@ class Generate extends Command
 	}
 
 	/* Generates a string which contain a list of dependencies for a package
-	 * IMPORTANT: Manages groups of packages in Archlinux
+	 * IMPORTANT: Can manage groups of packages in Archlinux
 	 * @param $struct : Bit of the YAML structure which contains the dependencies
 	 * @param $id : Changes the writing format of the returned string
 	 * 0 -> Dependencies separated with spaces
@@ -255,24 +244,6 @@ class Generate extends Command
 		return ltrim($list, ' ');
 	}
 
-	/* This function is like copy() but with checking mecanims */
-	function _copy($source, $destination)
-	{
-		if (file_exists($destination)) {
-			if (is_dir($destination)) {
-				$this->logger->error($this->getApplication()->translator->trans('generate.copyfile', array('%src%' => $source, '%dst%' => $destination)));
-
-				exit(-1);
-			}
-			$this->logger->warning($this->getApplication()->translator->trans('generate.copyexist', array('%src%' => $source, '%dst%' => $destination)));	
-		}
-		if (!copy($source, $destination)) {
-			$this->logger->error($this->getApplication()->translator->trans('generate.copy', array('%src%' => $source, '%dst%' => $destination)));
-
-			exit -1;
-		}
-	}
-
 	/* Recursively copy files from one directory to another
 	 * IMPORTANT The $array_perm argument is a array (owned
 	 * by the move_file() function) passed by reference */
@@ -300,29 +271,6 @@ class Generate extends Command
 				$array_perm[$key.$file] = $perm;
 			} else if (!$file->isDot() && $file->isDir()) {
 				$this->_rcopy("$src/$file", "$dest/$file", $array_perm, $perm);
-			}
-		}
-	}
-
-	/* This function is like mkdir() but with checking mechanisms */
-	protected function _mkdir($name)
-	{
-		/* If the directory would exist */
-		if(file_exists($name)) {
-			/* A file has already the name of the directory that we want create (on Linux, a directory is a file !)
-			 * Else, that means the directory is already created */
-			if (!is_dir($name)) {
-				$this->logger->error($this->getApplication()->translator->trans('generate.dirfile', array('%dir%' => $name)));
-
-				exit(-1);
-			}
-			$this->logger->warning($this->getApplication()->translator->trans('generate.direxist', array('%dir%' => $name)));	
-		} else {
-			/* We have to create the directory */
-			if (!mkdir($name)) {
-				$this->logger->error($this->getApplication()->translator->trans('generate.mkdir', array('%dir%' => $name)));
-
-				exit(-1);
 			}
 		}
 	}
@@ -389,14 +337,12 @@ class Generate extends Command
 		/* IMPORTANT : The fields "Standards-Version", "Homepage"... are placed after "Build-Depends", "Source"... because
 		 * the Debian package wants a specific placing order (else there is an error) */
 		$array_field['Standards-Version'] = '3.9.5';
-		$array_field['Homepage'] = $this->struct['Homepage']."\n"; # It has to has a line between the "Homepage" field and the "Package" field
+		$array_field['Homepage'] = $this->struct['Homepage']."\n"; /* It has to has a line between the "Homepage" field and the "Package" field */
 		$array_field['Package'] = $package_name;
 		$array_field['Architecture'] = $package_arch;
 		$array_field['Description'] = $this->struct['Summary']."\n ".$this->struct['Description'];
 		if (isset($struct_package['Runtime']['Dependencies'])) {
 			/* This variable will contains the list of dependencies (to run) */
-			#$list_rundepend =  str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0));
-			#$array_field['Depends'] = "$list_rundepend";
 			$array_field['Depends'] = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0));
 		}
 
@@ -485,6 +431,7 @@ class Generate extends Command
 		/* (In the Docker) Creates the DEB package */
 		$this->_fwrite($this->dockerfile, "dpkg-buildpackage -us -uc\n", 'Docker_paquito.sh');
 		$this->_fwrite($this->dockerfile, "cd \$TEMP_PWD\n", 'Docker_paquito.sh');
+		/* Closes the dynamic script */
 		fclose($this->dockerfile);
 		/* Starts the generation with Docker */
 		$this->docker_launcher('debian:'.lcfirst($this->getApplication()->dist_version), "/paquito/$dirname.deb");
@@ -652,7 +599,7 @@ class Generate extends Command
 		/* IMPORTANT : The makepkg command is launched with nobody user because since February
 		 * 2015, root user cannot use this command */
 		$this->_fwrite($this->dockerfile,"sudo -u nobody makepkg -f\n", 'Docker_paquito.sh');
-		#$this->_fwrite($this->dockerfile, "cd \$TEMP_PWD\n", 'Docker_paquito.sh');
+		/* Closes the dynamic script */
 		fclose($this->dockerfile);
 		/* Starts the generation with Docker */
 		$this->docker_launcher('base/archlinux', "/paquito/$dirname/".$package_name.'-'.$this->struct['Version'].'-1-'.$package_arch.'.pkg.tar.xz');
@@ -786,7 +733,6 @@ class Generate extends Command
 		/* Moves the files in the src/ directory of the package directory */
 		$post_permissions = $this->move_files("$_SERVER[HOME]/rpmbuild/BUILD/", $struct_package['Files']);
 
-
 		/* (In the Docker) Writes again in the file "p.spec" (%files and %pre/%post sections) */
 		$this->_fwrite($this->dockerfile, "cat << _EOF_ >> ~/rpmbuild/SPECS/p.spec\n", 'Docker_paquito.sh');
 		/* (In the Docker) Writes the %files section */
@@ -830,6 +776,7 @@ class Generate extends Command
 		/* (In the Docker) Launches the creation of the package */
 		$this->_fwrite($this->dockerfile, "rpmbuild -ba ~/rpmbuild/SPECS/p.spec\n", 'Docker_paquito.sh');
 
+		/* Closes the dynamic script */
 		fclose($this->dockerfile);
 		/* Starts the generation with Docker */
 		$this->docker_launcher('centos:centos'.substr($this->getApplication()->dist_version, 0, 1), '/root/rpmbuild/RPMS/'.$this->getApplication()->dist_arch."/$package_name-".$this->struct['Version'].'-1.el'.substr($this->getApplication()->dist_version, 0, 1).".centos.$package_arch.rpm");

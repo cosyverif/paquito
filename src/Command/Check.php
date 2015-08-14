@@ -12,11 +12,14 @@ use Symfony\Component\Console\Input\ArrayInput;
 class Check extends Command
 {
 	public $logger = null;
-	/* First level keys (of the Paquito configuration files) */
-	public $keys_first = array('Name', 'Version', 'Homepage', 'Description', 'Summary', 'Copyright', 'Maintainer', 'Authors', 'Packages');
-	public $keys_first_min = array('Name', 'Version', 'Description', 'Summary', 'Copyright', 'Maintainer', 'Packages');
-	public $keys_package = array('Type', 'Files', 'Build', 'Install', 'Runtime', 'Test');
-	public $keys_package_min = array('Type', 'Files');
+	/* Root level keys (of the Paquito configuration files) */
+	public $keys_root = array('Name', 'Version', 'Homepage', 'Description', 'Summary', 'Copyright', 'Maintainer', 'Authors', 'Packages');
+	/* Required keys for the root level */
+	public $keys_root_required = array('Name', 'Version', 'Description', 'Summary', 'Copyright', 'Maintainer', 'Packages');
+	/* 'Packages' level keys */
+	public $keys_packages = array('Type', 'Files', 'Build', 'Install', 'Runtime', 'Test');
+	/* Required keys for the 'Packages' level */
+	public $keys_packages_required = array('Type', 'Files');
 	/* Package types */
 	public $keys_type = array('binary', 'library', 'source', 'arch_independant');
 
@@ -38,7 +41,9 @@ class Check extends Command
 			;
 	}
 
-	/* Check a structure of files */
+	/* Check a structure of files
+	 * @param $fieldbase : Path (in the YAML file) to the analyzed field
+	 * @param $struct : 'Files' structure */
 	protected function check_files($fieldbase, $struct) {
 		foreach ($struct as $f_key => $f_value) {
 			/* If the file will have specifics permissions */
@@ -59,11 +64,14 @@ class Check extends Command
 		}
 	}
 
-
-	/* fieldbase: Path of the superiors fields
-	 * struct: Structure that contains the superior field
-	 * array_comparer: Array of standards fields of the superior field
-	 * array_min: Array of the fields which must appear in the superior field */
+	/* Verifies for the analyzed field :
+	 * 		- all its sub-fields are an array
+	 * 		- all its sub-fields are not empty
+	 * 		- it owns all required sub-fields 
+	 * @param $fieldbase : Path (in the YAML file) to the analyzed field
+	 * @param $struct : Structure that contains the analyzed field
+	 * @param $array_comparer : Array of expected fields for the analyzed field
+	 * @param $array_min : Array of the fields which must appear in the structure */
 	protected function check_field($fieldbase, $struct, $array_comparer, $array_min)
 	{
 		/* Total number of expected fields. This number will be decremented for each expected
@@ -121,7 +129,7 @@ class Check extends Command
 		$this->logger = new ConsoleLogger($output);
 
 		/* Analysis of the root structure */
-		$this->check_field(array('Root'), $struct, $this->keys_first, $this->keys_first_min);
+		$this->check_field(array('Root'), $struct, $this->keys_root, $this->keys_root_required);
 		/* Checks if the string giving the maintainer is well formed */
 		if(! preg_match('/^[A-Z][A-Za-z- ]*[A-Za-z] +<[A-Za-z0-9][A-Za-z0-9._%+-]*[A-Za-z0-9]@[A-Za-z0-9][A-Za-z0-9.-]*[A-Za-z0-9]\.[A-Za-z]{2,4}>$/', $struct['Maintainer'])) {
 			$this->logger->error($this->getApplication()->translator->trans('check.maintainer', array('%value%' => $struct['Maintainer'], '%path%' => "Root -> Maintainer")));
@@ -133,7 +141,7 @@ class Check extends Command
 		/* For each package */
 		foreach ($struct['Packages'] as $key => $value) {
 			/* Analysis of the structure to each package */
-			$this->check_field(array('Root','Packages', $key), $value, $this->keys_package, array());
+			$this->check_field(array('Root','Packages', $key), $value, $this->keys_packages, $this->keys_packages_required);
 			/* ----- TYPE ----- */
 			/* If the type of package is unknown */
 			if (!in_array($value['Type'], $this->keys_type)) {
