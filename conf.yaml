@@ -1,0 +1,6 @@
+Debian: 
+    Jessie: 64 
+Centos:
+    "7.0": 64
+Archlinux: 
+    All: 64
