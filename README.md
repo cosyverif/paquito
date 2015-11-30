@@ -1,20 +1,66 @@
 Paquito
 =======
 
-For Developers
---------------
+Paquito is a set of tools allowing to easily build and publish packages
+of softwares for various package managers and distributions.
 
-During development, run `php src/Main.php` to run the application.
-For release of a single binary, please run `./bin/create-phar.sh`
-to build a `paquito` binary.
+How to build
+------------
 
-The following links explain the tools and libraries used:
+Clone the repository and run the following shell command:
 
-* [PHP The Right Way](http://www.phptherightway.com/)
-* [Composer](https://getcomposer.org/)
-* [Box](http://box-project.org/)
-* [PHP-CS-Fixer](http://cs.sensiolabs.org/)
-* [Symfony Console](http://symfony.com/fr/doc/current/components/console/introduction.html)
-* [Symfony Logger](http://symfony.com/doc/current/components/console/logger.html)
-* [Symfony YAML](http://symfony.com/fr/doc/current/components/yaml/introduction.html)
-* 
+````bash
+git clone https://github.com/CosyVerif/paquito.git
+cd paquito
+./bin/create-phar.sh
+````
+
+It creates a `paquito` binary, that proposes several commands:
+
+````bash
+$ ./paquito
+paquito version 0.1
+
+Usage:
+  command [options] [arguments]
+
+Options:
+  -h, --help            Display this help message
+  -q, --quiet           Do not output any message
+  -V, --version         Display this application version
+      --ansi            Force ANSI output
+      --no-ansi         Disable ANSI output
+  -n, --no-interaction  Do not ask any interactive question
+  -v|vv|vvv, --verbose  Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug
+
+Available commands:
+  check          Check validity of a YaML file
+  generate       Generate a package
+  generate-test  Generate a test package
+  help           Displays help for a command
+  list           Lists commands
+  normalize      Normalize a YaML file
+  parse          Parse a YaML file
+  prune          Prune a structure
+  update         Updates paquito to the latest version
+  write          Write a YaML file
+````
+
+How to use it
+-------------
+
+Create a `paquito.yaml` file at the root of your project.
+Look at examples in the following repostories:
+
+* [hello-world](https://github.com/saucisson/hello-world)
+* [paquito](https://github.com/CosyVerif/paquito)
+* [imitator](https://github.com/etienneandre/imitator)
+
+Generate a package using the folliginw command:
+
+````bash
+./paquito generate <path-to-your-project>
+````
+
+**Warning:** be sure to have [docker](https://www.docker.com) installed and
+ready to run.
