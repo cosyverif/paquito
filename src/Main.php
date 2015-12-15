@@ -35,7 +35,7 @@ $application->add(new Generate_test());
 // Add i18n:
 // http://symfony.com/doc/master/components/translation/usage.html
 $application->translator = new Translator(\Locale::getDefault());
-$application->translator->setFallbackLocale(array('en'));
+$application->translator->setFallbackLocales(array('en'));
 $application->translator->addLoader('yaml', new YamlFileLoader());
 foreach (new DirectoryIterator(__DIR__.'/i18n/') as $file) {
     $extension = pathinfo($file, PATHINFO_EXTENSION);
