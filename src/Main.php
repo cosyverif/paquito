@@ -28,9 +28,10 @@ $application->dist_version = null;
 $application->dist_arch = null;
 $application->architectures = array('32', '64');
 $application->distributions = array(
-	'Debian' => array('All', 'Stable', 'Testing', 'Wheezy', 'Jessie'), /* Debian */
-	'Archlinux' => array('All'), /* Debian */
-	'Centos' => array('All', '6.6', '7.0'), ); /* CentOS */
+	'Debian' => array('All', 'Stable', 'Testing', 'Wheezy', 'Jessie'),
+	'Archlinux' => array('All'),
+	'Centos' => array('All', '6.6', '7.0'), );
+    
 $application->alias_distributions = array(
 	'Debian' => array('Stable' => 'Wheezy', 'Testing' => 'Jessie'),
 	'Centos' => array(),
