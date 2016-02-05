@@ -32,192 +32,186 @@ class Prune extends Command
 			;
 	}
 
-	/* Defines the applications variables $dist_name, $dist_version and $dist_arch
-	 * to inquire Paquito of the distribution where it runs (locally !!!) */
-	protected function getDist() {
-		/* The file /etc/os-release contains the informations about the distribution (what distribution,
-		 * version and architecture is executed Paquito). Tests if this file exists */
-		if (is_file('/etc/os-release')) {
+	// Defines the applications variables $dist_name, $dist_version and $dist_arch
+	protected function getDist()
+    {
+        // /etc/os-release contains informations about the distribution (name, version and architecture)
+        // TODO : Search info about lsb_release
+		if (is_file('/etc/os-release'))
+        {
 			$array_ini = parse_ini_file('/etc/os-release');
-			/* Get the name of the distribution */
+			
+            // Get the name of the distribution
 			$this->getApplication()->dist_name = ucfirst($array_ini['ID']);
-			switch ($this->getApplication()->dist_name) {
+			
+            switch ($this->getApplication()->dist_name) {
 			case 'Debian':
 				preg_match('/[a-z]+/', $array_ini['VERSION'], $match);
 				$this->getApplication()->dist_version = ucfirst($match[0]);
 				break;
-			case 'Arch':
+			
+            case 'Arch':
 				/* TODO Install on Archlinux the package "filesystem" */
 				$this->getApplication()->dist_name = 'Archlinux';
 				break;
-			case 'Centos':
+			
+            case 'Centos':
 				preg_match('/[0-9](\.[0-9])?/', $array_ini['VERSION'], $match);
 				$this->getApplication()->dist_version = $match[0];
 				if (strlen($this->getApplication()->dist_version) == 1) {
 					$this->getApplication()->dist_version = $this->getApplication()->dist_version.'.0';
 				}
 				break;
-			default:
+			
+            default:
+                // Vraiment generer une erreur ?
 				$logger->error($this->getApplication()->translator->trans('prune.exist'));
-
 				exit(-1);
 			}
-		} else { /* If the file /etc/os-release doesn't exists */
-			/* We try to find the specific file for a distribution */
+		}
+        
+        else
+        {
+            // Let's find a specific file for the distribution
 
-			/* If the /etc/arch-release exists, so our distribution is Archlinux */
+			// Archlinux
 			if (is_file('/etc/arch-release')) {
 				/* IMPORTANT : We don't need to read this file because Archlinux
-				 * has not version (it is a rolling release) and is only a 64 bits
-				 * architecture */
+				 * has only one version and is only available on 64bits */
 				$this->getApplication()->dist_name = 'Archlinux';
 			} else if (is_file('/etc/centos-release')) {
 				$this->getApplication()->dist_name = 'Centos';
-				/* Read the content of the file /etc/centos-release */
+				
+                // Read the content of the file /etc/centos-release
 				if (($version = file_get_contents('/etc/centos-release')) === FALSE) {
 					$logger->error($this->getApplication()->translator->trans('prune.read', array('%file%' => '/etc/centos-release')));
-
 					return -1;
 				}
-				/* Get the version of the Centos distribution */
+                
+				// Get the version of the Centos distribution
 				preg_match('/[0-9](\.[0-9])?/', $version, $match);
 				$this->getApplication()->dist_version = $match[0];
-			} 
+			}
 		}
+        
 		/* Get the architecture of the current machine */
 		$this->getApplication()->dist_arch = posix_uname();
 		$this->getApplication()->dist_arch = $this->getApplication()->dist_arch['machine'];
 	}
 
-	/* Prunes a 'Packages' structure with current distribution ($dist_name),
+	/* Prune a 'Packages' node with current distribution ($dist_name),
 	 * version ($dist_version) and architecture ($dist_arch)
-	 * @param $struct : 'Packages' structure */
-	protected function prune_structure($struct) {
-		/* Copy the initial structure of the configuration file. The new structure will be modified */
-		$new_struct['Packages'] = $struct;
-		/* For each package */
-		foreach ($struct as $key => $value) {
-			$key_dependencies = array('Build', 'Runtime', 'Test');
-			/* For each field (in others words 'Build', 'Runtime' and 'Test') */
+	 * @param $pkg_node : 'Packages' node */
+	protected function prune_node($pkg_node) {
+		// my_distribution should be const
+        $my_distribution = array('Name' => $this->getApplication()->dist_name,
+                                 'Version' => $this->getApplication()->dist_version,
+                                 'architecture' => $this->getApplication()->dist_arch);
+                                 
+		$pruned_pkg_node = $pkg_node;
+        $key_dependencies = array('Build', 'Runtime', 'Test');
+        
+        echo "DEBUG - ".$my_distribution['Name']." - ".$my_distribution['Version']." - ".$my_distribution['architecture']."\n";
+        
+		foreach ($pkg_node as $pkg_name => $value) {
+			$cur_pkg =& $pkg_node[$pkg_name];
+            
+			// For each field (in others words 'Build', 'Runtime' and 'Test')
 			for ($i = 0; $i < 3; ++$i) {
-				/* If there are dependencies in the field Build/Runtime/Test */
-				if (isset($struct[$key][$key_dependencies[$i]]['Dependencies'])) { 
-					/* To clear the follow code */
-					$depend_struct = $struct[$key][$key_dependencies[$i]]['Dependencies'];
-					/* It has to remove the 'Dependencies' structure in the new structure, to have new 'Dependencies' structure */
-					unset($new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies']);
-					/* For each dependency */
-					foreach ($depend_struct as $d_key => $d_value) {
-						/* If there is a field having the name of the current distribution */
-						if (isset($depend_struct[$d_key][$this->getApplication()->dist_name])) {
-							if ($this->getApplication()->dist_name != 'Archlinux') {
-								/* The version is referenced (by her name, like for example "wheezy" for Debian ; the version number for CentOS) */
-								if (array_key_exists($this->getApplication()->dist_version, $depend_struct[$d_key][$this->getApplication()->dist_name])) {
-									$src_field = $this->getApplication()->dist_version;
-								} else {
-									/* To prepare the next condition and avoid that the function array_key_exists() works
-									 *  with an empty value ($result may be empty, when there is only the field 'All') */
-									$result = array_search($this->getApplication()->dist_version, $this->getApplication()->alias_distributions[$this->getApplication()->dist_name]);
-									/* The version is referenced (by the branch name, like for example "testing") */
-									if (!empty($result) && array_key_exists($result, $depend_struct[$d_key][$this->getApplication()->dist_name])) { 
-										$src_field = $result;
-									} else { /* The version of the current distribution is not specified, the general case of the distribution ("All") applies */
-										$src_field = 'All';
-									}
-								}
-							} else { /* The distribution is Archlinux */
-								/* Archlinux doesn't have versions (rolling release), the content of the field "All" always applies */
-								$src_field = 'All';
-							}
-							/* If the source field contains a array (in others words, the field contains several dependencies) */
-							if (is_array($depend_struct[$d_key][$this->getApplication()->dist_name][$src_field])) {
-								/* The dependencies are organized in list and added with others dependencies */
-								foreach ($depend_struct[$d_key][$this->getApplication()->dist_name][$src_field] as $dependency) {
-									$new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $dependency ;
-								}
-							} else {
-								$new_struct['Packages'][$key][$key_dependencies[$i]]['Dependencies'][] = $depend_struct[$d_key][$this->getApplication()->dist_name][$src_field];
-							}
-						}
-					}
-				}
-				/* Sometimes, the "Build"/"Runtime"/"Test" section can contains only one dependency (any
-				 * other keyword). This dependency, for a specific distribution, can be erased (<none>
-				 * keyword) so the section is empty. If the section is empty, we delete this section */
-				if (empty($new_struct['Packages'][$key][$key_dependencies[$i]])) {
+                
+                if(!isset($cur_pkg[$key_dependencies[$i]]))
+                    continue;
+
+                $cur_dep =& $cur_pkg[$key_dependencies[$i]]['Dependencies'];
+                
+                $cur_pruned_dep =& $pruned_pkg_node[$pkg_name][$key_dependencies[$i]]['Dependencies'];
+                $cur_pruned_dep = array();
+                
+                // If there are dependencies in the field Build/Runtime/Test
+				if (isset($cur_dep)) { 
+					// Remove the 'Dependencies' node in the pruned package node
+					unset($pruned_pkg_node['Packages'][$pkg_name][$key_dependencies[$i]]['Dependencies']);
+                    
+					// For each node in 'Dependencies' node
+					foreach($cur_dep as $dep_name => $d_value)
+                    {
+                        // A problem may occur w/ All
+                        if(isset($cur_dep[$dep_name][$my_distribution['Name']]['All']))
+                            $dep_for_my_dist = $cur_dep[$dep_name][$my_distribution['Name']]['All'];
+                        else
+                            $dep_for_my_dist = $cur_dep[$dep_name][$my_distribution['Name']]['Version'];
+                            
+                        if($dep_for_my_dist != "<none>")
+                            array_push($cur_pruned_dep, $dep_for_my_dist);
+                    }
+                }
+                
+                // the distribution don't need any dependencies => erase the dependencies node
+                // TODO : Check if it work
+                if(empty($cur_pruned_dep))
+                    unset($cur_pruned_dep);
+				/*if (empty($new_struct['Packages'][$key][$key_dependencies[$i]])) {
 					unset($new_struct['Packages'][$key][$key_dependencies[$i]]);
-				}
-			}
+				}*/
+                
+            }
 		}
-		return $new_struct;
+        //print_r($pruned_pkg_node);
+		return $pruned_pkg_node;
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
-		/* Get path and name of the input file */
 		$input_file = $input->getArgument('input');
-		/* Get presence of the "--local" option */
 		$local = $input->getOption('local');
-		/* Get references of the command parse() */
+		
+        // Get references of the command parse()
+        //
 		$command = $this->getApplication()->find('normalize');
-		/* Declare the arguments in a array (arguments has to gave like this) */
-		$arguments = array(
-			'command' => 'normalize',
-			'input' => $input_file,
-			'--local' => $local,
-		);
-		$array_input = new ArrayInput($arguments);
-		/* Run command */
+		$array_input = new ArrayInput(array('command' => 'normalize',
+                                            'input' => $input_file,
+                                            '--local' => $local)
+        );
 		$command->run($array_input, $output);
 
-		/* Get structure of YaML file (which was parsed and checked) */
-		$struct = $this->getApplication()->data;
-		/* Launch Logger module */
-		$logger = new ConsoleLogger($output);
+        $logger = new ConsoleLogger($output);
 
-		/* If the "--local" option is not set, so there are several pruned YAML structure */
-		if (! $local) {
-			/* Get the structure of the YaML file (which was parsed) */
-			$conf = $this->getApplication()->conf;
-			/* For each distribution */
-			foreach($conf as $dist => $tab_ver) {
-				/* For each version */
-				foreach($tab_ver as $ver => $tab_archi) {
-					/* For each architecture */
-					foreach($tab_archi as $archi) {
-						$this->getApplication()->dist_name = $dist;
-						$this->getApplication()->dist_version = $ver;
-						$this->getApplication()->dist_arch = $archi;
-						/* When the generation is not local (for several distributions/versions/architectures), the
-						 * pruned structure for the current configuration is stored in the root field named
-						 * 'Distributions' then the name of the distribution -> the version name -> the architecture */
-						$this->getApplication()->data['Distributions'][$dist][$ver][$archi] = $this->prune_structure($struct['Packages']);
+		// If the "--local" option is not set, so we generate pruned YAML for each distrib
+		if (!$local)
+        {
+			$YAML_conf = $this->getApplication()->conf;
+			
+            foreach($YAML_conf as $distribution => $arr_version) {
+				foreach($arr_version as $cur_version => $arr_architecture) {
+					foreach($arr_architecture as $cur_architecture) {
+						$this->getApplication()->dist_name = $distribution;
+						$this->getApplication()->dist_version = $cur_version;
+						$this->getApplication()->dist_arch = $cur_architecture;
+                        
+                        // Add a node for each distributions/versions/architecture
+                        $this->getApplication()->data['Distributions'][$distribution][$cur_version][$cur_architecture] = $this->prune_node($this->getApplication()->data['Packages']);
 					}
 				}
 			}
-			/* Removes the original field 'Packages', now useless */
+            
+			// Removes the original field 'Packages', now it's useless <= is it usefull to unset ? For memory purpose I guess */
 			unset($this->getApplication()->data['Packages']);
-		} else { /* The prune will be only for the current distribution (where is launched Paquito) */
-			/* Gets the local distribution, version and architecture */
+		}
+        
+        else
+        {
 			$this->getDist();
-			/* The new pruned 'Packages' structure returned by prune_structure()
-			 * function is merged with the YAML structure */
-			$this->getApplication()->data = array_merge($this->getApplication()->data, $this->prune_structure($struct['Packages']));
+            $this->getApplication()->data['Packages'] = $this->prune_node($this->getApplication()->data['Packages']);
 		}
 
-		/* Optionnal argument (output file, which will be parsed) */
+		// Optionnal argument
 		$output_file = $input->getArgument('output');
-		/* If the optionnal argument is present */
 		if ($output_file) {
-			/* Get references of the command write() */
+			// Get references of the command write()
 			$command = $this->getApplication()->find('write');
-			/* Declare the arguments in a array (arguments has to gave like this) */
-			$arguments = array(
-				'command' => 'write',
-				'output' => $output_file,
-			);
-			$array_input = new ArrayInput($arguments);
-			/* Run command */
+			$array_input = new ArrayInput(array('command' => 'write',
+                                                'output' => $output_file)
+            );
 			$command->run($array_input, $output);
 		}
 	}

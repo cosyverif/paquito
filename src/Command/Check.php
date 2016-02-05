@@ -50,11 +50,12 @@ class Check extends Command
 			if (is_array($f_value)) {
 				$this->check_field($fieldbase, $f_value, array('Source', 'Permissions'), array('Source', 'Permissions'));
 				
-                // Check if the file/directory do not exist
-                /*if(!file_exists($f_value['Source'])) {
-                    $this->logger->error($this->getApplication()->translator->trans());
-                    exit(-1);
-                }*/
+                // Check if the file/directory exist
+                if(!file_exists($f_value['Source'])) {
+                    $fieldbase = implode(' -> ', $fieldbase);
+                    $this->logger->error($this->getApplication()->translator->trans('check.inexistant', array('%path%' => $fieldbase.' -> '.$f_value['Source'])));
+					exit(-1);
+                }
                 
                 // Check if the permissions is well formated
 				if (!preg_match('/^[0-7]{3,4}$/', $f_value['Permissions'])) {
@@ -66,12 +67,13 @@ class Check extends Command
 				}
 			}
             
-            /*else {
+            else {
                 if(!file_exists($f_value)) {
-                    $this->logger->error($this->getApplication()->translator->trans());
-                    exit(-1);
+                    $fieldbase = implode(' -> ', $fieldbase);
+                    $this->logger->error($this->getApplication()->translator->trans('check.inexistant', array('%path%' => $fieldbase.' -> '.$f_value)));
+					exit(-1);
                 }
-            }*/
+            }
 		}
 	}
 
@@ -283,6 +285,7 @@ class Check extends Command
 					$this->check_field(array('Root', $distribution), $YAML_conf[$distribution], array_diff($this->getApplication()->distributions[$distribution], array_keys($this->getApplication()->alias_distributions[$distribution])), array());
 					
 					foreach($YAML_conf[$distribution] as $nom_code_version => $architecture) {
+                        
                         if (is_array($architecture)) { // Multiple architecture
 							foreach ($architecture as $current_architecture) {
 								if (is_array($current_architecture) || !in_array($current_architecture, $this->getApplication()->architectures)) {
@@ -293,8 +296,8 @@ class Check extends Command
 							}
 						} else { /* One architecture is specified or "*" */
 							if (!in_array($architecture, $this->getApplication()->architectures) && $architecture != '*') {
-								$field = implode(' -> ', array('Root', $key, $v_key));
-								$this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%field%' => $v_key, '%value%' => $v_value, '%path%' => $field)));
+								$field = implode(' -> ', array('Root', $nom_code_version, $architecture));
+								$this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%field%' => $nom_code_version, '%value%' => $architecture, '%path%' => $field)));
 								exit(-1);
 							}
 						}
