@@ -6,6 +6,7 @@ check:
         missing: "%field% : Le champ ne contient pas tous les champs requis"
         package: "%path% : Mauvais type de paquet (%value%)"
         void: "%path% : Le champ %key% est vide"
+        inexistant: "%path% : Le fichier ou le repertoire n'existe pas"
 generate:
         chdir: "Echec du changement de répertoire (%dst%)"
         command: "Echec de la commande : \"%command%\" (code sortie %code%)"

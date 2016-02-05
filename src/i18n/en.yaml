@@ -6,6 +6,7 @@ check:
         missing: "%field% : The field doesn't contain all required fields"
         package: "%path% : Bad type of package (%value%)"
         void: "%path% : The field %key% is empty"
+        inexistant: "%path% : File or directory do not exist"
 generate:
         chdir: "Failed to change directory (%dst%)"
         command: "The command : \"%command%\" has failed (output code %code%)"
