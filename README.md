@@ -3,12 +3,20 @@ Paquito (dev branch)
 
 This version of Paquito aim to be less platform-restricted. It can handle generation of package for multiple LINUX based operating system. `/etc/paquito/conf.yaml` file must be define.
 
+SUGGESTIONS
+-----------
+* Define a global ConsoleLogger for the application, instead of create one for each command
+
 
 TO DO
 -----
 * [FIX issue #62 - GPG keys with Docker in Archlinux](https://github.com/CosyVerif/paquito/issues/62)
 * [FIX issue #55 - Print error message to /usr/local](https://github.com/CosyVerif/paquito/issues/62)
-
+* Normalize : Check if every version has a dependency or at least "All" field is define
+* Define a proper definition of conf.yaml
+* Define a proper definition of version ans alias distribution
+* Search info about lsb_release
+* Install on Archlinux the package filesystem
 
 For Developers
 --------------
