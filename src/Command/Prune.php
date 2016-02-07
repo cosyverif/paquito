@@ -111,8 +111,6 @@ class Prune extends Command
 		$pruned_pkg_node = $pkg_node;
         $key_dependencies = array('Build', 'Runtime', 'Test');
         
-        echo "DEBUG - ".$my_distribution['Name']." - ".$my_distribution['Version']." - ".$my_distribution['architecture']."\n";
-        
 		foreach ($pkg_node as $pkg_name => $value) {
 			$cur_pkg =& $pkg_node[$pkg_name];
             
@@ -189,7 +187,7 @@ class Prune extends Command
 						$this->getApplication()->dist_arch = $cur_architecture;
                         
                         // Add a node for each distributions/versions/architecture
-                        $this->getApplication()->data['Distributions'][$distribution][$cur_version][$cur_architecture] = $this->prune_node($this->getApplication()->data['Packages']);
+                        $this->getApplication()->data['Distributions'][$distribution][$cur_version][$cur_architecture]['Packages'] = $this->prune_node($this->getApplication()->data['Packages']);
 					}
 				}
 			}

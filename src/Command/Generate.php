@@ -30,11 +30,10 @@ class Generate extends Command
 				'output',
 				InputArgument::OPTIONAL,
 				'Name of a YaML file'
-			)
-			;
+			);
 	}
 
-	/* Launches for each package her generation
+	/* Launches generation of each package
 	 * @param $package_struct : 'Packages' field of a distribution */
 	protected function launcher($package_struct) {
 		/* For each package */
@@ -66,7 +65,6 @@ class Generate extends Command
 		if($out) {
 			$this->_system('docker rm paquito > /dev/null');
 			$this->logger->error($this->getApplication()->translator->trans('generate.command', array('%command%' => $command, '%code%' => $out)));
-
 			exit(-1);
 		} else { /* The command has succeeded */
 			$this->_system("docker cp paquito:$file .");
@@ -76,29 +74,25 @@ class Generate extends Command
 
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
-		/* Get the path and the name of the input file */
 		$input_file = $input->getArgument('input');
-		/* Get presence of the "--local" option */
 		$local = $input->getOption('local');
-		/* Get the references of the command parse() */
+		
+        /* Get the references of the command parse() */
 		$command = $this->getApplication()->find('prune');
-		/* Declare the arguments in a array (arguments have to be given like this) */
-		$arguments = array(
-			'command' => 'prune',
-			'input' => $input_file,
-			'--local' => $local,
-		);
-		$array_input = new ArrayInput($arguments);
-		/* Run command */
+		$array_input = new ArrayInput(array('command' => 'prune',
+                                            'input' => $input_file,
+                                            '--local' => $local)
+        );
 		$command->run($array_input, $output);
+
+        // Logger Module
+        $this->logger = new ConsoleLogger($output);
 
 		/* Get the structure of the YaML file (which was parsed) */
 		$this->struct = $this->getApplication()->data;
-		/* Launch Logger module */
-		$this->logger = new ConsoleLogger($output);
 
 		/* If the "--local" option is not set, so there are several YAML structure to use */
-		if (! $local) {
+		if(!$local) {
 			/* For each distribution */
 			foreach($this->struct['Distributions'] as $dist => $tab_ver) {
 				/* For each version */
@@ -122,19 +116,14 @@ class Generate extends Command
 			$this->launcher($this->struct['Packages']);
 		}
 
-		/* Optionnal argument (output file, which will be parsed) */
+		//  Optionnal argument (output file, which will be parsed)
 		$output_file = $input->getArgument('output');
-		/* If the optionnal argument is present */
 		if ($output_file) {
 			/* Get references of the command write() */
 			$command = $this->getApplication()->find('write');
-			/* Declare the arguments in a array (arguments has to gave like this) */
-			$arguments = array(
-				'command' => 'write',
-				'output' => $output_file,
+			$array_input = new ArrayInput(array('command' => 'write',
+                                                'output' => $output_file)
 			);
-			$array_input = new ArrayInput($arguments);
-			/* Run command */
 			$command->run($array_input, $output);
 		}
 	}
@@ -143,15 +132,15 @@ class Generate extends Command
 	{
 		/* Array to store the permissions to apply in post-installation commands */
 		$array_perm = array();
-		/* Security precaution : if it misses a slash at the end of the $dest_directory variable, add this slash  */
+		
+        /* Security precaution : if it misses a slash at the end of the $dest_directory variable, add this slash  */
 		if (substr($dest_directory, -1) != '/') {
 			$dest_directory .= '/';
 		}
 
 		/* Copy each file in the directory of the current package */
 		foreach ($struct as $key => $value) {
-
-			/* If the source is a directory */
+        	// If the source is a directory 
 			if (substr($value['Source'], -1) != '/') {
 				/* If the file will be renamed in its destination */	
 				if (substr($key, -1) != '/') {
@@ -187,7 +176,7 @@ class Generate extends Command
 		return $array_perm;
 	}
 
-	/* Generates a string which contain a list of dependencies for a package
+	/* Generate a string which contain a list of dependencies for a package
 	 * IMPORTANT: Can manage groups of packages in Archlinux
 	 * @param $struct : Bit of the YAML structure which contains the dependencies
 	 * @param $id : Changes the writing format of the returned string
@@ -196,51 +185,36 @@ class Generate extends Command
 	protected function generate_list_dependencies($struct, $id)
 	{
 		$list = null;
-		/* If there are dependencies */
+        
+		// If there are dependencies
 		if (!empty($struct)) {
-			/* If the current is an Archlinux (where there are package groups) */
+			// If the current is an Archlinux (where there are package groups)
 			if ($this->getApplication()->dist_name == 'Archlinux') {
 				/* Get a list of package groups (like "base-devel") */
 				$groups = rtrim(shell_exec("pacman -Qg | awk -F ' ' '{print $1}' | sort -u | sed -e ':a;N;s/\\n/ /;ba'"));
 				/* Transforms the string of package groups in an array (easier to use) */
 				$groups = explode(" ", $groups);
 			}
-			/* Concatenate all build dependencies on one line */
+            
+			// Concatenate all build dependencies on one line
 			foreach ($struct as $value) {
-				/* If the current is an Archlinux (where there are package groups) */
-				if ($this->getApplication()->dist_name == 'Archlinux') {
+				if ($this->getApplication()->dist_name == 'Archlinux')
+                {
 					/* If the dependencie is in fact a group */
 					if (in_array($value, $groups)) {
 						/* Get the list of packages which compose the group */
 						$p_groups = rtrim(shell_exec("pacman -Qgq $value | sed -e ':a;N;s/\\n/ /;ba'"));
 						$p_groups = explode(" ", $p_groups);
 						/* Foreach package of the group */
-						foreach ($p_groups as $p_value) {
-							switch ($id) {
-							case 0:
-								$list .= ' '.$p_value;
-								break;
-							case 1:
-								$list .= " '".$p_value."'";
-								break;
-							}
-						}
-						continue;
+						foreach ($p_groups as $p_value)
+                            $list .= ($id == 0 ? ' '.$p_value : " '".$p_value."'");
 					}
-				}
-				/* In Archlinux, this next code is not executed
-				 * if the dependencie is a package */
-				switch ($id) {
-				case 0:
-					$list .= ' '.$value;
-					break;
-				case 1:
-					$list .= " '".$value."'";
-					break;
-				}
+				} else {
+                    $list .= ($id == 0 ? ' '.$value : " '".$value."'");
+                }
 			}
 		}
-		/* Delete superfluous element (space) */
+		// Delete superfluous element (space)
 		return ltrim($list, ' ');
 	}
 
@@ -316,50 +290,58 @@ class Generate extends Command
 
 		$this->_fwrite($this->dockerfile, "cd /paquito\n", 'Docker_paquito.sh');
 		$this->_fwrite($this->dockerfile, "mkdir -p $dirname/debian/source\n", 'Docker_paquito.sh');
+        $this->_fwrite($this->dockerfile, "apt-get update\n", 'Docker_paquito.sh');
 
-		$array_field = array(
-			'Source' => $package_name,
-			'Section' => 'unknown',
-			'Priority' => 'optional',
-			'Maintainer' => $this->struct['Maintainer']);
-		/* The "Build-Depends" must be placed before fields like "Package" or "Depends" (else this field is not recognized) */
-		if (isset($struct_package['Build']['Dependencies'])) {
-			/* This variable will contains the list of dependencies (to build) */
-			$list_buildepend =  str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0));
-			$array_field['Build-Depends'] = "$list_buildepend";
-			$this->_fwrite($this->dockerfile, "apt-get update\n", 'Docker_paquito.sh');
-			/* Install the packages required by the Buildtime dependencies */
-			foreach(explode(' ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)) as $p_value) {
-				/* Installs package */
+		$array_field = array('Source' => $package_name,
+			                 'Section' => 'unknown',
+			                 'Priority' => 'optional',
+			                 'Maintainer' => $this->struct['Maintainer']);
+
+		//  The "Build-Depends" must be placed before fields like "Package" or "Depends" (else this field is not recognized)
+		// TODO : check if isset is neccessary
+        if (isset($struct_package['Build']['Dependencies']))
+        {
+			// This variable will contains the list of dependencies (to build)
+            $list_dep = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
+			//$list_buildepend =  str_replace(' ', ', ', $list_dep);
+			$array_field['Build-Depends'] = str_replace(' ', ', ', $list_dep);//"$list_buildepend";
+			
+			// Install the packages required by the Buildtime dependencies
+            /*$array_list = explode(' ', $list_dep);
+			foreach($array_list as $p_value) {
+				//  Installs package
 				$this->_fwrite($this->dockerfile, "apt-get --yes install $p_value\n", 'Docker_paquito.sh');
-			}
+			}*/
+            $this->_fwrite($this->dockerfile, "apt-get --yes install $list_dep\n", 'Docker_paquito.sh');
 		}
+        
 		/* IMPORTANT : The fields "Standards-Version", "Homepage"... are placed after "Build-Depends", "Source"... because
 		 * the Debian package wants a specific placing order (else there is an error) */
 		$array_field['Standards-Version'] = '3.9.5';
-		$array_field['Homepage'] = $this->struct['Homepage']."\n"; /* It has to has a line between the "Homepage" field and the "Package" field */
+		$array_field['Homepage'] = $this->struct['Homepage']."\n";
 		$array_field['Package'] = $package_name;
 		$array_field['Architecture'] = $package_arch;
 		$array_field['Description'] = $this->struct['Summary']."\n ".$this->struct['Description'];
-		if (isset($struct_package['Runtime']['Dependencies'])) {
-			/* This variable will contains the list of dependencies (to run) */
+		
+        if(isset($struct_package['Runtime']['Dependencies'])) {
 			$array_field['Depends'] = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0));
 		}
 
 		/* Create and open the file "control" (in write mode) */
 		$this->_fwrite($this->dockerfile, "cat << _EOF_ > $dirname/debian/control\n", 'Docker_paquito.sh');
-		/* For each field that will contains the file "control" */
+		
+        /* For each field that will contains the file "control" */
 		foreach ($array_field as $key => $value) {
 			$this->_fwrite($this->dockerfile, "$key: $value\n", 'Docker_paquito.sh');
 		}
-		/* Add a line at the end (required) */
+		// Add a line at the end (required)
 		$this->_fwrite($this->dockerfile, "\n", 'Docker_paquito.sh');
-
 		$this->_fwrite($this->dockerfile, "_EOF_\n", 'Docker_paquito.sh');
 
+        /* If there are pre-build commands */
 		/* To come back in actual directory if a "cd" command is present in pre-build commands */
 		$this->_fwrite($this->dockerfile, "TEMP_PWD=$(pwd)\n", 'Docker_paquito.sh');
-		/* If there are pre-build commands */
+        
 		if (!empty($struct_package['Build']['Commands'])) {
 			/* Execute each command */
 			foreach ($struct_package['Build']['Commands'] as $value) {
@@ -372,7 +354,8 @@ class Generate extends Command
 				}
 			}
 		}
-		/* To come back in usual directory if a "cd" command was present in pre-build commands */
+		
+        /* To come back in usual directory if a "cd" command was present in pre-build commands */
 		$this->_fwrite($this->dockerfile, "cd \$TEMP_PWD\n", 'Docker_paquito.sh');
 
 		/* Move the files specified in the configuration file and store the returned array of permissions (for post-installation) */
