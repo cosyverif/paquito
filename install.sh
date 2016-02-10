@@ -27,3 +27,9 @@ php="php -d open_basedir= $m_phar $m_posix $m_openssl $m_zip"
 # Get Composer and install the modules
 curl -sS https://getcomposer.org/installer | $php
 $php composer.phar install
+
+# Install docker (only available for 64 bits)
+# TODO : Launch service
+if ! [ docker -v "$@" > /dev/null 2>&1 ]; then
+    curl -sSL https://get.docker.com | sh
+fi

@@ -13,6 +13,7 @@ TO DO
 * [FIX issue #62 - GPG keys with Docker in Archlinux](https://github.com/CosyVerif/paquito/issues/62)
 * [FIX issue #55 - Print error message to /usr/local](https://github.com/CosyVerif/paquito/issues/62)
 * Normalize : Check if every version has a dependency or at least "All" field is define
+* Generate : wildcard for centos generation
 * Define a proper definition of conf.yaml
 * Define a proper definition of version ans alias distribution
 * Search info about lsb_release

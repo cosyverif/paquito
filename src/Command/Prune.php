@@ -35,68 +35,116 @@ class Prune extends Command
 	// Defines the applications variables $dist_name, $dist_version and $dist_arch
 	protected function getDist()
     {
-        // /etc/os-release contains informations about the distribution (name, version and architecture)
-        // TODO : Search info about lsb_release
-		if (is_file('/etc/os-release'))
-        {
-			$array_ini = parse_ini_file('/etc/os-release');
-			
-            // Get the name of the distribution
-			$this->getApplication()->dist_name = ucfirst($array_ini['ID']);
-			
-            switch ($this->getApplication()->dist_name) {
-			case 'Debian':
-				preg_match('/[a-z]+/', $array_ini['VERSION'], $match);
-				$this->getApplication()->dist_version = ucfirst($match[0]);
-				break;
-			
-            case 'Arch':
-				/* TODO Install on Archlinux the package "filesystem" */
-				$this->getApplication()->dist_name = 'Archlinux';
-				break;
-			
-            case 'Centos':
-				preg_match('/[0-9](\.[0-9])?/', $array_ini['VERSION'], $match);
-				$this->getApplication()->dist_version = $match[0];
-				if (strlen($this->getApplication()->dist_version) == 1) {
-					$this->getApplication()->dist_version = $this->getApplication()->dist_version.'.0';
-				}
-				break;
-			
-            default:
-                // Vraiment generer une erreur ?
-				$logger->error($this->getApplication()->translator->trans('prune.exist'));
-				exit(-1);
-			}
-		}
-        
-        else
-        {
-            // Let's find a specific file for the distribution
+        // Init
+        $supported_distributions = array_keys($this->getApplication()->distributions);
 
-			// Archlinux
-			if (is_file('/etc/arch-release')) {
-				/* IMPORTANT : We don't need to read this file because Archlinux
-				 * has only one version and is only available on 64bits */
-				$this->getApplication()->dist_name = 'Archlinux';
-			} else if (is_file('/etc/centos-release')) {
-				$this->getApplication()->dist_name = 'Centos';
-				
-                // Read the content of the file /etc/centos-release
-				if (($version = file_get_contents('/etc/centos-release')) === FALSE) {
-					$logger->error($this->getApplication()->translator->trans('prune.read', array('%file%' => '/etc/centos-release')));
-					return -1;
-				}
+        // Perform some very rudimentary platform detection
+        /*$get_lsb_distribution = ucfirst(shell_exec('lsb_release -si 2>&1'));
+        if($get_lsb_distribution != NULL) // Check if lsb_release exist
+        {
+            if($get_lsb_distribution == "Debian") { echo "YES!\n"; } else { echo "NO!\n"; }
+            print_r($this->getApplication()->distributions[$get_lsb_distribution]);
+           $list_versions = $this->getApplication()->distributions[$get_lsb_distribution];
+           if(!isset($list_versions)) {
+            //    $logger->error("caca"); // To translate
+               exit(-1);
+           }
+           
+           // Set distribution
+           $this->getApplication()->dist_name = $get_lsb_distribution;
+
+           $get_lsb_version = ucfirst(shell_exec('lsb_release -sc'));
+           if($get_lsb_version != NULL)
+                $this->getApplication()->dist_version = $get_lsb_version;
                 
-				// Get the version of the Centos distribution
-				preg_match('/[0-9](\.[0-9])?/', $version, $match);
-				$this->getApplication()->dist_version = $match[0];
-			}
-		}
+           //lsb_release -sc ne fonctionne pas => regarder le fichier specifique à la distribution
+           // TODO : Gerer le cas de debian (BTW: archlinux n'a pas de différentes versions)
+           switch($get_lsb_distribution)
+           {
+               case 'Centos':
+                    if(is_file('/etc/centos-release') || is_file('/etc/redhat-release'))
+                    {
+                        //TODO: Install Centos and check those files => get current version
+                    }
+               break;
+               
+               default:
+           }
+        }*/
         
-		/* Get the architecture of the current machine */
-		$this->getApplication()->dist_arch = posix_uname();
-		$this->getApplication()->dist_arch = $this->getApplication()->dist_arch['machine'];
+        // No output from lsb_release command
+        // Parse /etc/os-release first, then parse specific file if we do not have enough info
+        // else
+        // {
+            if(is_file('etc/os-release'))
+            {
+                $arr_os_release = parse_ini_file('etc/os-release'); // We suppose the file is well formated
+                
+                $get_ini_distribution = ucfirst($arr_os_release['ID']);
+                switch($get_ini_distribution)
+                {
+                    case 'Debian':
+                        preg_match('/[a-z]+/', $arr_os_release['VERSION'], $match);
+                        $this->getApplication()->dist_name = 'Debian';
+                        $this->getApplication()->dist_version = ucfirst($match[0]);
+                    break;
+                    
+                    case 'Arch':
+                        // TODO : Install on Archlinux the package "filesystem" <== why ? 
+                        $this->getApplication()->dist_name = 'Archlinux';
+                    break;
+                    
+                    case 'Centos':
+                        preg_match('/[0-9](\.[0-9])?/', $array_ini['VERSION'], $match);
+                        $this->getApplication()->dist_name = 'Centos';
+                        if(strlen($match[0]) == 1)
+                            $this->getApplication()->dist_version = $match[0]."0";
+                    break;
+                    
+                    default:
+                        $logger->error($this->getApplication()->translator->trans('prune.exist'));
+				        exit(-1);
+                }
+            }
+            
+            // Parse specific file
+            else
+            {
+                // Check archlinux file. Archlinux is only available in one version and on 64 bits 
+                if(is_file('/etc/arch-release'))
+                    $this->getApplication()->dist_name = 'Archlinux';
+                    
+                // Check centos or redhat file
+                else if(is_file('/etc/centos-release') || is_file('etc/redhat-release'))
+                {
+                    $this->getApplication()->dist_name = 'Centos';
+                    
+                    // TODO : Install and get the version
+                    // Read the content of the file /etc/centos-release
+                    /*if (($version = file_get_contents('/etc/centos-release')) === FALSE) {
+                        $logger->error($this->getApplication()->translator->trans('prune.read', array('%file%' => '/etc/centos-release')));
+                        return -1;
+                    }
+                    
+                    // Get the version of the Centos distribution
+                    preg_match('/[0-9](\.[0-9])?/', $version, $match);
+                    $this->getApplication()->dist_version = $match[0];*/
+                }
+                
+                else if(is_file('/etc/debian_version'))
+                {
+                    $this->getApplication()->dist_name = 'Debian';
+                    if(($version = file_get_contents('/etc/debian_version')) === FALSE) {
+                        $logger->error($this->getApplication()->translator->trans('prune.read', array('%file%' => '/etc/centos-release')));
+                        return -1;
+                    }
+                    $this->getApplication()->dist_version = $version;
+                }
+            }
+            
+            // Set architecture
+            $this->getApplication()->dist_arch = posix_uname()['machine'];   
+        // }
 	}
 
 	/* Prune a 'Packages' node with current distribution ($dist_name),
