@@ -29,7 +29,6 @@ curl -sS https://getcomposer.org/installer | $php
 $php composer.phar install
 
 # Install docker (only available for 64 bits)
-# TODO : Launch service
 if ! [ docker -v "$@" > /dev/null 2>&1 ]; then
     curl -sSL https://get.docker.com | sh
 fi
