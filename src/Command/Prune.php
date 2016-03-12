@@ -39,21 +39,19 @@ class Prune extends Command
         $supported_distributions = array_keys($this->getApplication()->distributions);
 
         // Perform some very rudimentary platform detection
-        /*$get_lsb_distribution = ucfirst(shell_exec('lsb_release -si 2>&1'));
+        $get_lsb_distribution = ucfirst(rtrim(shell_exec('lsb_release -si 2>&1')));
         if($get_lsb_distribution != NULL) // Check if lsb_release exist
         {
-            if($get_lsb_distribution == "Debian") { echo "YES!\n"; } else { echo "NO!\n"; }
-            print_r($this->getApplication()->distributions[$get_lsb_distribution]);
            $list_versions = $this->getApplication()->distributions[$get_lsb_distribution];
            if(!isset($list_versions)) {
-            //    $logger->error("caca"); // To translate
+            //    $logger->error("caca"); // Distribution non supportée => To translate
                exit(-1);
            }
            
            // Set distribution
            $this->getApplication()->dist_name = $get_lsb_distribution;
 
-           $get_lsb_version = ucfirst(shell_exec('lsb_release -sc'));
+           $get_lsb_version = ucfirst(rtrim(shell_exec('lsb_release -sc 2>&1')));
            if($get_lsb_version != NULL)
                 $this->getApplication()->dist_version = $get_lsb_version;
                 
@@ -70,15 +68,15 @@ class Prune extends Command
                
                default:
            }
-        }*/
+        }
         
         // No output from lsb_release command
         // Parse /etc/os-release first, then parse specific file if we do not have enough info
-        // else
-        // {
-            if(is_file('etc/os-release'))
+        else
+        {
+            if(is_file('/etc/os-release'))
             {
-                $arr_os_release = parse_ini_file('etc/os-release'); // We suppose the file is well formated
+                $arr_os_release = parse_ini_file('/etc/os-release'); // We suppose the file is well formated
                 
                 $get_ini_distribution = ucfirst($arr_os_release['ID']);
                 switch($get_ini_distribution)
@@ -115,7 +113,7 @@ class Prune extends Command
                     $this->getApplication()->dist_name = 'Archlinux';
                     
                 // Check centos or redhat file
-                else if(is_file('/etc/centos-release') || is_file('etc/redhat-release'))
+                else if(is_file('/etc/centos-release') || is_file('/etc/redhat-release'))
                 {
                     $this->getApplication()->dist_name = 'Centos';
                     
@@ -138,13 +136,13 @@ class Prune extends Command
                         $logger->error($this->getApplication()->translator->trans('prune.read', array('%file%' => '/etc/centos-release')));
                         return -1;
                     }
-                    $this->getApplication()->dist_version = $version;
+                    $this->getApplication()->dist_version = rtrim($version);
                 }
             }
-            
-            // Set architecture
-            $this->getApplication()->dist_arch = posix_uname()['machine'];   
-        // }
+         }
+         
+         // Set architecture
+         $this->getApplication()->dist_arch = posix_uname()['machine'];
 	}
 
 	/* Prune a 'Packages' node with current distribution ($dist_name),

@@ -22,10 +22,15 @@ class Generate extends Command
 			->setName('generate')
 			->setDescription('Generate a package')
 			->addArgument(
-				'input',
+				'directory',
 				InputArgument::REQUIRED,
 				'Name of the directory which contains the sources and the paquito.yaml file'
 			)
+            ->addArgument(
+                'target',
+                InputArgument::OPTIONAL,
+                'Name of the platform you want generate the package'
+            )
 			->addArgument(
 				'output',
 				InputArgument::OPTIONAL,
@@ -35,19 +40,25 @@ class Generate extends Command
 
 	/* Launches generation of each package
 	 * @param $package_struct : 'Packages' field of a distribution */
-	protected function launcher($package_struct) {
-		/* For each package */
-		foreach ($package_struct as $key => $value) {
+	protected function launcher($package_struct)
+    {
+		foreach ($package_struct as $key => $value)
+        {
 			switch ($this->getApplication()->dist_name) {
-			case 'Debian':
-				$this->make_debian($key, $value);
+                case 'Debian':
+				    $this->make_deb($key, $value);
 				break;
-			case 'Archlinux':
-				$this->make_archlinux($key, $value);
+                
+                case 'Archlinux':
+                    $this->make_archlinux($key, $value);
+                break;
+                
+                case 'Centos':
+				    $this->make_centos($key, $value);
 				break;
-			case 'Centos':
-				$this->make_centos($key, $value);
-				break;
+                
+                default:
+                    $logger->error();
 			}
 		}
 	}
@@ -59,6 +70,7 @@ class Generate extends Command
 	 * the container before to return the error and stop Paquito */
 	protected function docker_launcher($distribution, $file) {
 		$command = "docker run --name paquito -v ".getcwd().":/paquito -v /etc/localtime/:/etc/localtime:ro -i $distribution bash /paquito/Docker_paquito.sh";
+        echo $command."\n";
 		system($command, $out);
 		$this->_system('docker stop paquito > /dev/null');
 		/* If the output code is more than 0 (error) */
@@ -74,7 +86,8 @@ class Generate extends Command
 
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
-		$input_file = $input->getArgument('input');
+		$input_file = $input->getArgument('directory');
+        //$input_target = $input->getArgument('target');
 		$local = $input->getOption('local');
 		
         /* Get the references of the command parse() */
@@ -99,28 +112,27 @@ class Generate extends Command
             exit(-1);
         }*/
 
-		/* If the "--local" option is not set, so there are several YAML structure to use */
-		if(!$local) {
-			/* For each distribution */
+		// If the "--local" option is not set, so there are several YAML structure to use
+		if(!$local)
+        {
 			foreach($this->struct['Distributions'] as $dist => $tab_ver) {
-				/* For each version */
 				foreach($tab_ver as $ver => $tab_archi) {
-					/* For each architecture */
 					foreach($tab_archi as $arch => $tab_package) {
 						$this->getApplication()->dist_name = $dist;
 						$this->getApplication()->dist_version = $ver;
-						if ($arch == '64') {
+                        
+						if ($arch == '64')
 							$this->getApplication()->dist_arch = 'x86_64';
-						} else {
+						else
 							$this->getApplication()->dist_arch = 'i386';
-						}
-						/* Launches the package generation for the distribution currently treated */
+						
+						// Launches the package generation for the distribution currently treated
 						$this->launcher($this->struct['Distributions'][$dist][$ver][$arch]['Packages']);
 					}
 				}
 			}
-		} else { /* The generation will be adapted with the current configuration */
-			/* Launches the package generation for the current distribution */
+		}
+        else {
 			$this->launcher($this->struct['Packages']);
 		}
 
@@ -146,48 +158,74 @@ class Generate extends Command
 			$dest_directory .= '/';
 		}
 
-		foreach($file_node as $destination => $arr_source) {
+		foreach($file_node as $destination => $arr_source)
+        {
             // Case #1 : the source is a directory
+            // We suppose that the destination is also a directory (rely on check stage)
             if(substr($arr_source['Source'], -1) == '/')
             {
-                
+                $buffer .= "mkdir -p ".$dest_directory.$destination."\n"; // Create recursively the directory
+                $this->_rcopy($buffer, $value['Source'], $dest_directory.$destination, $array_perm, $value['Permissions']); // Copy recursively the directory
             }
             
         	// Case #2 : the source is a file
 			else
             {
-				/* If the file will be renamed in its destination */	
-				if (substr($destination, -1) != '/') {
-					$explode_array = explode('/', ltrim($key, '/'));
-					/* Get the new name */
-					$filename = end($explode_array);
-					/* If the moved file will be in a directory */
-					if (count($explode_array) > 1) {
-						/* Remove the new name to keep only the destination path */
-						unset($explode_array[count($explode_array) - 1]);
-						/* Transform the array in a string (which is the destination path) */
-						$key = implode('/', $explode_array).'/';
-					}
-				} else { /* The destination file name will be the same than the source */
-					$explode_array = explode('/', ltrim($value['Source'], '/'));
-					/* Get the name */
-					$filename = end($explode_array);
-				}
-			}
-
-			/* Create recursively the directories (if doesn't exist) */
-			$this->_fwrite($this->dockerfile, "mkdir -p $dest_directory/$key\n", 'Docker_paquito.sh');
-
-			if (substr($value['Source'], -1) == '/') {
-				/* The file will be copied in the directory package (recursively) */
-				$this->_rcopy($value['Source'], $dest_directory.$key, $array_perm, $value['Permissions']);
-			} else { /* If the source is a file */
-				/* The file will be copied in the directory package */
-				$this->_fwrite($this->dockerfile, "cp $value[Source] $dest_directory$key$filename\n", 'Docker_paquito.sh');
-				$array_perm[$key.$filename] = $value['Permissions'];
-			}
+                $filename = '';
+                if(substr($destination, -1) == '/') { // We just copy the file into the directory
+                    $explode_array = explode('/', ltrim($arr_source['Source'], '/'));
+                    $filename = end($explode_array); // if the file is contain in a directory
+                    $destination = ltrim($destination, '/');
+                } else {
+                    // Rename & copy the file into the directory
+                    $explode_array = explode('/', ltrim($destination, '/'));
+                    $filename = end($explode_array);
+                    $explode_array_sz = count($explode_array);
+                 
+                    if($explode_array_sz > 1) {
+                        unset($explode_array[$explode_array_sz-1]);
+                        $destination = implode('/', $explode_array).'/';
+                    }
+                }
+                $buffer .= "mkdir -p ".$dest_directory.$destination."\n";
+                $buffer .= "cp $arr_source[Source] ".$dest_directory.$destination.$filename."\n";
+                $array_perm[$destination.$filename] = $arr_source['Permissions'];
+            }
 		}
 		return $array_perm;
+	}
+    
+    /* Recursively copy files from one directory to another
+	 * IMPORTANT The $array_perm argument is an array (owned
+	 * by the move_file() function) passed by reference */
+	function _rcopy(&$buffer, $src, $dest, &$array_perm, $perm){
+		// If source is not a directory stop processing
+		if (!is_dir($src)) {
+			return false;
+		}
+
+		/* Open the source directory to read in files
+		 * IMPORTANT The backslash before DirectoryIterator is
+		 * to resolve namespace problem with this class */
+		$i = new \DirectoryIterator($src);
+		foreach ($i as $file)
+        {
+			if ($file->isFile())
+            {
+                $buffer .= "cp $src/$file $dest/\n";
+
+				// Remove the package directory of the string
+				$explode_array = explode('/', ltrim($dest, '/'));
+				array_shift($explode_array);
+				$key = ltrim(implode('/', $explode_array).'/', '/');
+				$array_perm[$key.$file] = $perm;
+			}
+            
+            // isDot vérifie si l'élement est un dossier caché
+            else if (!$file->isDot() && $file->isDir()) {
+				$this->_rcopy($buffer, "$src/$file", "$dest/$file", $array_perm, $perm);
+			}
+		}
 	}
 
 	/* Generate a string which contain a list of dependencies for a package
@@ -232,38 +270,8 @@ class Generate extends Command
 		return ltrim($list, ' ');
 	}
 
-	/* Recursively copy files from one directory to another
-	 * IMPORTANT The $array_perm argument is a array (owned
-	 * by the move_file() function) passed by reference */
-	function _rcopy($src, $dest, &$array_perm, $perm){
-		/* If source is not a directory stop processing */
-		if (!is_dir($src)) {
-			return false;
-		}
 
-		/* The destination directory will be created */
-		$this->_fwrite($this->dockerfile, "mkdir $dest\n", 'Docker_paquito.sh');
-
-		/* Open the source directory to read in files
-		 * IMPORTANT The backslash before DirectoryIterator is
-		 * to resolve namespace problem with this class */
-		$i = new \DirectoryIterator($src);
-		foreach ($i as $file) {
-			if ($file->isFile()) {
-				$this->_fwrite($this->dockerfile, "cp $src/$file $dest/$file\n", 'Docker_paquito.sh');
-
-				/* Remove the package directory of the string */
-				$explode_array = explode('/', ltrim($dest, '/'));
-				array_shift($explode_array);
-				$key = ltrim(implode('/', $explode_array).'/', '/');
-				$array_perm[$key.$file] = $perm;
-			} else if (!$file->isDot() && $file->isDir()) {
-				$this->_rcopy("$src/$file", "$dest/$file", $array_perm, $perm);
-			}
-		}
-	}
-
-	/* This function is like _fwrite() but with checking mechanisms */
+	// fwrite() with checking mechanisms
 	protected function _fwrite($fd, $str, $file)
 	{
 		if (fwrite($fd, $str) === false) {
@@ -272,40 +280,33 @@ class Generate extends Command
 		}
 	}
 
-	/* This function is like _system() but with checking mechanisms */
+	// system() with checking mechanisms
 	protected function _system($command)
 	{
 		system($command, $out);
-		/* If the output code is more than 0 (error) */
 		if($out) {
 			$this->logger->error($this->getApplication()->translator->trans('generate.command', array('%command%' => $command, '%code%' => $out)));
-
 			exit(-1);
 		}
 	}
 
-	protected function make_debian($package_name, $struct_package)
+	protected function make_deb($package_name, $struct_package)
 	{
 		if ($struct_package['Type'] == 'binary') {
-			/* In Debian, the 64 bits is called "amd64" (not "x86_64") */
-			if ($this->getApplication()->dist_arch == 'x86_64') {
+			if ($this->getApplication()->dist_arch == 'x86_64')
 				$package_arch = 'amd64';
-			} else {
+			else
 				$package_arch = 'i386';
-			}
 		} else {
 			$package_arch = 'all';
 		}
 
 		$dirname = $package_name.'_'.$this->struct['Version'].'_'.$package_arch;
 
-        // DEBUG
-        $t0 = microtime(true);
-
         $buffer = "#!/bin/bash\n";
-        $buffer .= "apt-get update\n";
         $buffer .= "cd /paquito\n";
-        $buffer .= "mkdir -p ".$dirname."/debian/source\n";
+        $buffer .= "mkdir -p $dirname/debian/source\n";
+        $buffer .= "apt-get update\n";
 
 		$array_field = array('Source' => $package_name,
 			                 'Section' => 'unknown',
@@ -316,10 +317,9 @@ class Generate extends Command
         if (isset($struct_package['Build']['Dependencies']))
         {
 			// This variable will contains the list of dependencies (to build)
-            $list_dep = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0));
-			$array_field['Build-Depends'] = $list_dep;
-            $buffer .= "apt-get -y install ".$list_dep."\n";
-            // $this->_fwrite($this->dockerfile, "apt-get --yes install $list_dep\n", 'Docker_paquito.sh');
+            $list_dep = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
+			$array_field['Build-Depends'] = str_replace(' ', ', ', $list_dep);
+            $buffer .= "apt-get -y install $list_dep\n";
 		}
         
 		/* IMPORTANT : The fields "Standards-Version", "Homepage"... are placed after "Build-Depends", "Source"... because
@@ -334,11 +334,11 @@ class Generate extends Command
 			$array_field['Depends'] = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0));
 
 		// Create and open the file "control" (in write mode)
-        $buffer .= "cat << _EOF_ > ".$dirname."/debian/control\n";
+        $buffer .= "cat << _EOF_ > $dirname/debian/control\n";
 		
         // For each field that will contains the file "control"
 		foreach ($array_field as $key => $value)
-            $buffer .= $key.": ".$value."\n";
+            $buffer .= "$key: $value\n";
         
 		// Add a line at the end (required)
         $buffer .= "\n";
@@ -353,9 +353,9 @@ class Generate extends Command
 				/* "cd" commands don't work (each shell_exec() has its owns
 				 * shell), so it has to translates in chdir() functions */
 				if (preg_match('/cd (.+)/', $value, $matches))
-                    $buffer .= "cd ".$matches[1]."\n";
+                    $buffer .= "cd $matches[1]\n";
 				else
-                    $buffer .= $value."\n";
+                    $buffer .= "$value\n";
 			}
 		}
 		
@@ -384,7 +384,7 @@ class Generate extends Command
             $buffer .= "#!/bin/bash\n";
 			
             foreach ($struct_package['Install']['Pre'] as $value)
-				$this->_fwrite($handle_pre, "$value\n", "$dirname/debian/preinst");
+                $buffer .= "$value\n";
                 
             $buffer .= "_EOF_\n";
             
@@ -402,7 +402,7 @@ class Generate extends Command
             
 			if (count($post_permissions)) {
                 $buffer .= "#!/bin/bash\n";
-				foreach ($post_permissions as $key => $value)
+				foreach ($post_permissions as $key => $value) // !!!! TODO: Peut etre que $value est mal formaté !!!!
                     $buffer .= "chmod $value $key\n";
 			}
             
@@ -416,11 +416,8 @@ class Generate extends Command
         $buffer .= "cd $dirname\n";
         
 		// Creates the DEB package
-        $buffer .= "dpkg-buildpackage -us -c\n";
+        $buffer .= "dpkg-buildpackage -us -uc\n";
         $buffer .= "cd \$TEMP_PWD\n";
-        
-        $t1 = microtime(true);
-        echo "Temps d'execution : ".number_format($t1-$t0, 5)." ms\n";
         
 		// Write and closes the dynamic script
         $this->dockerfile = fopen("Docker_paquito.sh", 'w');
@@ -442,7 +439,7 @@ class Generate extends Command
 			$package_arch = $this->getApplication()->dist_arch;
 
 		// Defines the directory where will be stored sources and final package
-		$dirname = $package_name.'-'.$this->struct['Version'].'-'.$package_arch;
+        $dirname = $package_name.'_'.$this->struct['Version'].'_'.$package_arch;
         
         /* VERY IMPORTANT : When Archlinux is in a Docker, it seems to have some problems with GPG/PGP
 		 * keys. So, lines are added (compared to Debian or Centos) in dynamic script to avoid these problems
@@ -604,10 +601,7 @@ class Generate extends Command
 		else
 			$package_arch = $this->getApplication()->dist_arch;
 
-		$dirname = $package_name - $this->struct['Version'].'-'.$package_arch;
-
-		/* Opens the dynamic script that Docker will use
-		$this->dockerfile = fopen("Docker_paquito.sh", 'w');*/
+		$dirname = $package_name.'_'.$this->struct['Version'].'_'.$package_arch;
 
         // Create buffer which will handle the generate script
         $buffer = "#!/bin/bash\n";
@@ -637,7 +631,7 @@ class Generate extends Command
 		if (isset($struct_package['Runtime']['Dependencies']))
 			$array_field['Requires'] = $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0);
 
-		// Writes the file "p.spec"
+		// Write the file "p.spec"
         $buffer .= "cat << _EOF_ > ~/rpmbuild/SPECS/p.spec\n";
         
 		// For each field that will contains the file "p.spec"
@@ -645,7 +639,7 @@ class Generate extends Command
             $buffer .= "$key: $value\n";
             
 		// Write the description
-        $buffer .= "\n%description\n$this->struct['Summary']\n";
+        $buffer .= "\n%description\n".$this->struct['Summary']."\n";
         $buffer .= "_EOF_\n";
         
 		// If any "cd" command is present in pre-build commands, we need to know where we are actually
@@ -666,7 +660,7 @@ class Generate extends Command
         $buffer .= "cat << _EOF_ >> ~/rpmbuild/SPECS/p.spec\n";
         
 		/* TODO Faire wildcard */
-		$this->_fwrite($this->dockerfile, "\n%install\n\trm -rf %{buildroot}\n", 'Docker_paquito.sh');
+		$buffer .= "\n%install\n\trm -rf %{buildroot}\n";
 
 		// The file section uses macros to include files
 		$spec_files = array(array('/usr/bin' => 'bin'),
@@ -717,7 +711,7 @@ class Generate extends Command
 			}
 			
             // Writes the "cp" command in the %install section
-            $buffer .= "\tcp --preserve ".ltrim($dest, '/')." \\\$RPM_BUILD_ROOT/".ltrim($key, '/')."\n";
+            $buffer .= "\tcp --preserve /".ltrim($dest, '/')." \\\$RPM_BUILD_ROOT/".ltrim($key, '/')."\n";
 		}
         $buffer .= "_EOF_\n";
         
@@ -762,7 +756,7 @@ class Generate extends Command
 		// Launch the creation of the package
         $buffer .= "rpmbuild -ba ~/rpmbuild/SPECS/p.spec\n";
 
-		// Write the dynamic script
+		// Open & write the dynamic script
         $this->dockerfile = fopen('Docker_paquito.sh', 'w');
         $this->_fwrite($this->dockerfile, $buffer, 'Docker_paquito.sh');
 		fclose($this->dockerfile);
