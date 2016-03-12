@@ -1,7 +1,9 @@
 bin/composer.phar
 vendor/
 composer.lock
+composer.phar
 paquito.phar
 paquito
 Docker_paquito.sh
 *.deb
+*.rpm
