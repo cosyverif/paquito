@@ -3,11 +3,6 @@ Paquito (dev branch)
 
 This version of Paquito aim to be less platform-restricted. It can handle generation of package for multiple LINUX based operating system. `/etc/paquito/conf.yaml` file must be define.
 
-SUGGESTIONS
------------
-* Define a global ConsoleLogger for the application, instead of create one for each command
-
-
 TO DO
 -----
 * [FIX issue #62 - GPG keys with Docker in Archlinux](https://github.com/CosyVerif/paquito/issues/62)
@@ -16,7 +11,6 @@ TO DO
 * Generate : wildcard for centos generation
 * Define a proper definition of conf.yaml
 * Define a proper definition of version ans alias distribution
-* Search info about lsb_release
 * Install on Archlinux the package filesystem
 
 For Developers
@@ -37,11 +31,11 @@ at the following links :
 * [Symfony Translation](http://symfony.com/doc/current/components/translation/index.html)
 * [Docker](https://docs.docker.com/)
 
-Credits - Contributeurs
+Credits - Contributors
 -----------------------
-Le projet Paquito à été créé en 2014 dans le cadre du projet [CosyVerif](https://github.com/CosyVerif), développé par le groupe [MeFoSyLoMa](http://www.mefosyloma.fr/).
+Project Paquito was created back in 2014 for the purpose of [CosyVerif](https://github.com/CosyVeirf), founded by [MeFoSyLoMa](http://www.mefosyloma.fr/).
 
-L'évolution et la maintenance du projet est dans le cadre d'un projet de fin d'année de la formation Master 1 Informatique de l'[Université Pars 13](https://www.univ-paris13.fr/).
+L'évolution du projet se maintient dans le cadre d'un projet de fin d'année du Master 1 Informatique de l'[Université Pars 13](https://www.univ-paris13.fr/).
 
 [Damien Mehala](mailto:damien.mehala@me.com) / David Rukata / Malik Hadadi / Mandana Ahmadi / Ronald Choundong / Sassa Benamoura / Souhila Zeddam
 
