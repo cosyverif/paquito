@@ -51,11 +51,11 @@ class Check extends Command
 				$this->check_field($fieldbase, $f_value, array('Source', 'Permissions'), array('Source', 'Permissions'));
 				
                 // Check if the file/directory exist
-                if(!file_exists($f_value['Source'])) {
+               /*if(!file_exists($f_value['Source'])) {
                     $fieldbase = implode(' -> ', $fieldbase);
                     $this->logger->error($this->getApplication()->translator->trans('check.inexistant', array('%path%' => $fieldbase.' -> '.$f_value['Source'])));
 					exit(-1);
-                }
+                }*/
                 
                 // Check if the permissions is well formated
 				if (!preg_match('/^[0-7]{3,4}$/', $f_value['Permissions'])) {
@@ -67,13 +67,13 @@ class Check extends Command
 				}
 			}
             
-            else {
+            /*else {
                 if(!file_exists($f_value)) {
                     $fieldbase = implode(' -> ', $fieldbase);
                     $this->logger->error($this->getApplication()->translator->trans('check.inexistant', array('%path%' => $fieldbase.' -> '.$f_value)));
 					exit(-1);
                 }
-            }
+            }*/
 		}
 	}
 
