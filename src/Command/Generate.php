@@ -54,7 +54,7 @@ class Generate extends Command
                 break;
                 
                 case 'Centos':
-				    $this->make_centos($key, $value);
+				    $this->make_rpm($key, $value);
 				break;
                 
                 default:
@@ -79,6 +79,7 @@ class Generate extends Command
 			$this->logger->error($this->getApplication()->translator->trans('generate.command', array('%command%' => $command, '%code%' => $out)));
 			exit(-1);
 		} else { /* The command has succeeded */
+            // $this->_system("mkdir -p packages");
 			$this->_system("docker cp paquito:$file .");
 			$this->_system('docker rm paquito > /dev/null');
 		}
@@ -103,14 +104,6 @@ class Generate extends Command
 
 		/* Get the structure of the YaML file (which was parsed) */
 		$this->struct = $this->getApplication()->data;
-
-        // Check if docker-engine is installed
-        // Only work for debian ATM
-        // TODO : Support other platform
-        /*if(shell_exec('dpkg-query -l | grep -c docker-engine') <= 0) {
-            $this->logger->error("Docker-engine is not installed");
-            exit(-1);
-        }*/
 
 		// If the "--local" option is not set, so there are several YAML structure to use
 		if(!$local)
@@ -241,31 +234,32 @@ class Generate extends Command
 		// If there are dependencies
 		if (!empty($struct)) {
 			// If the current is an Archlinux (where there are package groups)
-			if ($this->getApplication()->dist_name == 'Archlinux') {
-				/* Get a list of package groups (like "base-devel") */
+			/*if ($this->getApplication()->dist_name == 'Archlinux') {
+				// Get a list of package groups (like "base-devel") 
 				$groups = rtrim(shell_exec("pacman -Qg | awk -F ' ' '{print $1}' | sort -u | sed -e ':a;N;s/\\n/ /;ba'"));
-				/* Transforms the string of package groups in an array (easier to use) */
+				// Transforms the string of package groups in an array (easier to use) 
 				$groups = explode(" ", $groups);
-			}
+			}*/
             
 			// Concatenate all build dependencies on one line
 			foreach ($struct as $value) {
-				if ($this->getApplication()->dist_name == 'Archlinux')
+				/*if ($this->getApplication()->dist_name == 'Archlinux')
                 {
-					/* If the dependencie is in fact a group */
+					// If the dependencie is in fact a group 
 					if (in_array($value, $groups)) {
-						/* Get the list of packages which compose the group */
+						// Get the list of packages which compose the group 
 						$p_groups = rtrim(shell_exec("pacman -Qgq $value | sed -e ':a;N;s/\\n/ /;ba'"));
 						$p_groups = explode(" ", $p_groups);
-						/* Foreach package of the group */
+						// Foreach package of the group 
 						foreach ($p_groups as $p_value)
                             $list .= ($id == 0 ? ' '.$p_value : " '".$p_value."'");
 					}
-				} else {
+				} else {*/
                     $list .= ($id == 0 ? ' '.$value : " '".$value."'");
-                }
+                //}
 			}
 		}
+
 		// Delete superfluous element (space)
 		return ltrim($list, ' ');
 	}
@@ -290,6 +284,9 @@ class Generate extends Command
 		}
 	}
 
+    /* For further information about how deb package work :
+       Check : https://wiki.debian.org/HowToPackageForDebian
+               https://www.debian.org/doc/manuals/maint-guide/ */
 	protected function make_deb($package_name, $struct_package)
 	{
 		if ($struct_package['Type'] == 'binary') {
@@ -304,8 +301,7 @@ class Generate extends Command
 		$dirname = $package_name.'_'.$this->struct['Version'].'_'.$package_arch;
 
         $buffer = "#!/bin/bash\n";
-        $buffer .= "cd /paquito\n";
-        $buffer .= "mkdir -p $dirname/debian/source\n";
+        $buffer .= "#Setup environment to build the package\n";
         $buffer .= "apt-get update\n";
 
 		$array_field = array('Source' => $package_name,
@@ -322,30 +318,11 @@ class Generate extends Command
             $buffer .= "apt-get -y install $list_dep\n";
 		}
         
-		/* IMPORTANT : The fields "Standards-Version", "Homepage"... are placed after "Build-Depends", "Source"... because
-		 * the Debian package wants a specific placing order (else there is an error) */
-		$array_field['Standards-Version'] = '3.9.5';
-		$array_field['Homepage'] = $this->struct['Homepage']."\n";
-		$array_field['Package'] = $package_name;
-		$array_field['Architecture'] = $package_arch;
-		$array_field['Description'] = $this->struct['Summary']."\n ".$this->struct['Description'];
-		
-        if(isset($struct_package['Runtime']['Dependencies']))
-			$array_field['Depends'] = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0));
-
-		// Create and open the file "control" (in write mode)
-        $buffer .= "cat << _EOF_ > $dirname/debian/control\n";
-		
-        // For each field that will contains the file "control"
-		foreach ($array_field as $key => $value)
-            $buffer .= "$key: $value\n";
-        
-		// Add a line at the end (required)
-        $buffer .= "\n";
-        $buffer .= "_EOF_\n";
+        $buffer .= "\ncd /paquito\n";
         
         /* If there are pre-build commands */
 		/* To come back in actual directory if a "cd" command is present in pre-build commands */
+        $buffer .= "\n#Execute commands\n";
         $buffer .= "TEMP_PWD=$(pwd)\n";
 		
 		if (!empty($struct_package['Build']['Commands'])) {
@@ -362,17 +339,51 @@ class Generate extends Command
         // To come back in usual directory if a "cd" command was present in pre-build commands
         $buffer .= "cd \$TEMP_PWD\n";
         
-		/* Move the files specified in the configuration file and store the returned array of permissions (for post-installation) */
-		$post_permissions = $this->move_files($buffer, $dirname, $struct_package['Files']);
+        /* Move the files specified in the configuration file and store the returned array of permissions (for post-installation) */
+		$buffer .= "\n#Move files to the debian folder\n";
+        $post_permissions = $this->move_files($buffer, $dirname, $struct_package['Files']);
+        
+		/* IMPORTANT : The fields "Standards-Version", "Homepage"... are placed after "Build-Depends", "Source"... because
+		 * the Debian package wants a specific placing order (else there is an error) */
+		$array_field['Standards-Version'] = '3.9.5';
+		$array_field['Homepage'] = $this->struct['Homepage']."\n";
+		$array_field['Package'] = $package_name;
+		$array_field['Architecture'] = $package_arch;
+		$array_field['Description'] = $this->struct['Summary']."\n ".$this->struct['Description'];
+		
+        if(isset($struct_package['Runtime']['Dependencies']))
+			$array_field['Depends'] = str_replace(' ', ', ', $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0));
 
+		// Create and open the file "control" (in write mode)
+        $buffer .= "\n#Start configuring for packaging the source\n";
+        $buffer .= "mkdir -p $dirname/debian\n";
+        $buffer .= "\n#Write control file\n";
+        $buffer .= "cat << _EOF_ > $dirname/debian/control\n";
+		
+        // For each field that will contains the file "control"
+		foreach ($array_field as $key => $value)
+            $buffer .= "$key: $value\n";
+        
+		// Add a line at the end (required)
+        $buffer .= "\n";
+        $buffer .= "_EOF_\n";
+        
+        $buffer .= "\n#Write format file\n";
         $buffer .= "echo '3.0 (native)' > $dirname/debian/source/format\n";
+        
+        $buffer .= "\n#Write compat file\n";
         $buffer .= "echo '9' > $dirname/debian/compat\n";
+        
+        $buffer .= "\n#Write rule file\n";
         $buffer .= "echo -e '#!/usr/bin/make -f\\nDPKG_EXPORT_BUILDFLAGS = 1\\ninclude /usr/share/dpkg/default.mk\\n%:\\n\\tdh $@\\noverride_dh_usrlocal:' > $dirname/debian/rules\n";
         $buffer .= "chmod 0755 $dirname/debian/rules\n";
+        
+        $buffer .= "\n#Write changelog file\n";
         $buffer .= "echo -e \"$package_name (".$this->struct['Version'].") unstable; urgency=low\\n\\n  * Initial Release.\\n\\n -- ".$this->struct['Maintainer']."  ".date('r')."\" > $dirname/debian/changelog\n";
 
 		/* Create and open the file "*.install" (in write mode). This is the
 		 * file which specifies what is the files of the project to packager */
+        $buffer .= "\n#Write install script\n";
         $buffer .= "cat << _EOF_ > $dirname/debian/$package_name.install\n";
 		foreach($post_permissions as $f_key => $f_value)
             $buffer .= ltrim($f_key, '/').' '.ltrim(dirname($f_key), '/')."\n";
@@ -380,6 +391,7 @@ class Generate extends Command
         $buffer .= "_EOF_\n";
         
 		if (isset($struct_package['Install']['Pre'])) {
+            $buffer .= "\n#Write pre-install script\n";
             $buffer .= "cat << _EOF_ > $dirname/debian/preinst\n";
             $buffer .= "#!/bin/bash\n";
 			
@@ -393,6 +405,7 @@ class Generate extends Command
 		}
 
 		if (count($post_permissions) || isset($struct_package['Install']['Post'])) {
+            $buffer .= "\n#Write post-install script\n";
             $buffer .= "cat << _EOF_ > $dirname/debian/postinst\n";
 			
             if (isset($struct_package['Install']['Post'])) {
@@ -413,6 +426,7 @@ class Generate extends Command
 		}
 
 		// The command dpkg-buildpackage must be executed in the package directory
+        $buffer .= "\n#Start building the package\n";
         $buffer .= "cd $dirname\n";
         
 		// Creates the DEB package
@@ -430,6 +444,9 @@ class Generate extends Command
 		unlink('Docker_paquito.sh');
 	}
 
+    /* For further information about how pkg package work
+       Check : https://wiki.archlinux.fr/Standard_paquetage
+               https://wiki.archlinux.fr/PKGBUILD */
 	protected function make_archlinux($package_name, $struct_package)
 	{
 		// TODO Adapter pour les librairies et les autres types
@@ -438,19 +455,19 @@ class Generate extends Command
 		else
 			$package_arch = $this->getApplication()->dist_arch;
 
-		// Defines the directory where will be stored sources and final package
-        $dirname = $package_name.'_'.$this->struct['Version'].'_'.$package_arch;
+        $exclude_dependencies = "'base-devel'";
+        $dirname = $package_name.'_'.$this->struct['Version'].'_'.$package_arch; // Defines the directory where will be stored sources and final package
         
         /* VERY IMPORTANT : When Archlinux is in a Docker, it seems to have some problems with GPG/PGP
 		 * keys. So, lines are added (compared to Debian or Centos) in dynamic script to avoid these problems
 		 * -> The problem seems to be the package database (of Pacman) in Docker which could be too old */
         $buffer = "#!/bin/bash\n";
         $buffer .= "cd /paquito\n";
-        $buffer .= "mkdir -p $dirname/src\n";
+        $buffer .= "\n#Setup environment to build the package\n";
         $buffer .= "pacman -Sy\n"; // Update list of packages
         $buffer .= "pacman -S --noconfirm --needed openssl pacman\npacman-db-upgrade\n"; // upgrade and download openssl (used by cucrl, which is pacman dependency)
        
-		/* (In the Docker) Dirmngr is a server for managing and downloading certificate revocation
+		/*  Dirmngr is a server for managing and downloading certificate revocation
 		 *  lists (CRLs) for X.509 certificates and for downloading the certificates themselves.
 		 *  It is used here to avoid the "invalid of corrupted package (PGP signature)" error (see
 		 *  Docker_launcher() function) */ 
@@ -461,36 +478,28 @@ class Generate extends Command
         
 		$array_field = array(
 			'# Maintainer' => $this->struct['Maintainer'],
-			'pkgname' => "$package_name",
+			'pkgname' => $package_name,
 			'pkgver' => $this->struct['Version'],
 			'pkgrel' => 1,
-			'arch' => $package_arch,
-			'url' => $this->struct['Homepage'],
+            'pkgdesc' => '"'.$this->struct['Summary'].'"',
+			'arch' => "('$package_arch')",
+			'url' => '"'.$this->struct['Homepage'].'"',
 			'license' => "('".$this->struct['Copyright']."')",
-			'pkgdesc' => "'".$this->struct['Summary']."'",
-			'install' => "('$package_name.install')", );
+			'install' => "$package_name.install", );
 
 		if (isset($struct_package['Build']['Dependencies'])) {
-			$array_field['makedepends'] = '('.$this->generate_list_dependencies($struct_package['Build']['Dependencies'], 1).')';
+            $l_dependencies = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 1);
+            $l_dependencies = str_replace($exclude_dependencies, "", $l_dependencies);
+			$array_field['makedepends'] = "($l_dependencies)";
             
             /* Install all dependencies specified in paquito.yaml
                 --needed skip the reinstallation of existing packages */
+                //print_r($struct_package['Build']['Dependencies']);
             $buffer .= 'pacman -S --noconfirm --needed '.$this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)."\npacman-db-upgrade\n";
 		}
         
-		if (isset($struct_package['Runtime']['Dependencies']))
-			$array_field['depends'] = '('.$this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 1).')';
-
-		// (In the Docker) Writes the file PKGBUILD
-        $buffer .= "cat << _EOF_ > $dirname/PKGBUILD\n";
-		
-		/* For each field that will contains the file PKGBUILD */
-		foreach ($array_field as $key => $value)
-            $buffer .= "$key=$value\n";
-            
-        $buffer .= "_EOF_\n";
-        
         // If any "cd" command is present in pre-build commands, we need to know where we are actually
+        $buffer .= "\n#Execute commands\n";
         $buffer .= "TEMP_PWD=$(pwd)\n";
         
 		/* If there are pre-build commands */
@@ -502,10 +511,27 @@ class Generate extends Command
 		}
         
         // Go back in the usual directory
-        $buffer .= "cd \$TEMPS_PWD\n";
+        $buffer .= "cd \$TEMP_PWD\n";
         
-		// Writes again in the file PKGBUILD (to do the package() function)
-        $buffer .= "cat << _EOF_ >> $dirname/PKGBUILD\n";
+        // Moves the files of the src/ directory in the package directory
+        $buffer .= "\n#Move files to the pkg directory\n";
+		$post_permissions = $this->move_files($buffer, $dirname.'/src/', $struct_package['Files']);
+        
+        $buffer .= "\n#Write PKGBUILD file\n";
+        $buffer .= "mkdir -p $dirname/src\n";
+        
+		if (isset($struct_package['Runtime']['Dependencies'])) {
+            $l_dependencies = str_replace($exclude_dependencies, "", $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 1));
+            $array_field['depends'] = '('.$l_dependencies.')';
+        }
+
+		// (In the Docker) Writes the file PKGBUILD
+        $buffer .= "cat << _EOF_ > $dirname/PKGBUILD\n";
+		
+		/* For each field that will contains the file PKGBUILD */
+		foreach ($array_field as $key => $value)
+            $buffer .= "$key=$value\n";
+            
         $buffer .= "\npackage() {\n";
         
         // TODO : Rewrite the following section
@@ -533,13 +559,11 @@ class Generate extends Command
 		}
         $buffer .= "}\n";
         $buffer .= "_EOF_\n";
-        
-		// Moves the files of the src/ directory in the package directory
-		$post_permissions = $this->move_files($buffer, $dirname.'/src/', $struct_package['Files']);
 
 		/* If there are pre/post-install commands */
 		if (isset($struct_package['Install']) || count($post_permissions)) {
 			// Writes the file *.install (for pre/post commands)
+            $buffer .= "\n#Write .install file\n";
             $buffer .= "cat << _EOF_ > $dirname/$package_name.install\n";
             
 			// If there are pre-install commands
@@ -573,7 +597,19 @@ class Generate extends Command
             $buffer .= "_EOF_\n";
 		}
 
+        $buffer .= "\n#Change owner for makepkg\n";
         $buffer .= "/bin/chown -R nobody $dirname\n"; // Changes owner of the package directory (to allow the creation of the package)
+        
+        //  SUDO FIX : http://bit-traveler.blogspot.fr/2015/11/sudo-error-within-docker-container-arch.html
+        $buffer .= "\n#SUDO FIX FOR DOCKER\n";
+        $buffer .= "cat << _EOF_ > /etc/security/limits.conf\n";
+        $buffer .= "*\t-\trtprio\t0\n";
+        $buffer .= "@audio\t-\trtprio\t65\n";
+        $buffer .= "@audio\t-\tnice\t-10\n";
+        $buffer .= "@audio\t-\tmemlock\t40000\n";
+        $buffer .= "_EOF_\n";
+        
+        $buffer .= "\n#Start building the .pkg\n";
         $buffer .= "cd $dirname\n"; // Moves in the package directory
         
 		/* Launches the creation of the package */
@@ -593,7 +629,10 @@ class Generate extends Command
 		unlink('Docker_paquito.sh');
 	}
 
-	protected function make_centos($package_name, $struct_package)
+    /* For further information about how rpm package work
+       Check : http://doc.fedora-fr.org/wiki/La_cr%C3%A9ation_de_RPM_pour_les_nuls_:_Cr%C3%A9ation_du_fichier_SPEC_et_du_Paquetage
+               https://fedoraproject.org/wiki/How_to_create_an_RPM_package */
+	protected function make_rpm($package_name, $struct_package)
 	{
 		// TODO Adapter pour les librairies et les autres types
 		if ($struct_package['Type'] != 'binary')
@@ -601,51 +640,27 @@ class Generate extends Command
 		else
 			$package_arch = $this->getApplication()->dist_arch;
 
-		$dirname = $package_name.'_'.$this->struct['Version'].'_'.$package_arch;
-
+        
         // Create buffer which will handle the generate script
         $buffer = "#!/bin/bash\n";
-        $buffer .= "yum -y install rpmdevtools rpm-build\n"; // Install needed packages to build new packages
-        $buffer .= "rpmdev-setuptree\n"; // Create the directories for building packages (/home/ dir)
-        $buffer .= "cd /paquito\n";
-        
-        // Create array_field which will handle the description file for the packages
-		$array_field = array(
-			'#Maintainer' => $this->struct['Maintainer'],
-			'Name' => $package_name,
-			'Version' => $this->struct['Version'],
-			'Release' => '1%{?dist}',
-			'Summary' => $package_name,
-			'License' => $this->struct['Copyright'],
-			'URL' => $this->struct['Homepage'],
-			'Packager' => 'Paquito',
-		);
+        $buffer .= "#Setup environment to build the package\n";
+        $buffer .= "yum -y install rpmdevtools rpm-build "; // Install all needed dependencies once
         
 		if (isset($struct_package['Build']['Dependencies'])) {
             $list_dep = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
             
 			$array_field['BuildRequires'] = $list_dep;
-            $buffer .= "yum -y install $list_dep\n"; // Install multiple dependencies at once
+            $buffer .= "$list_dep\n";
 		}
         
-		if (isset($struct_package['Runtime']['Dependencies']))
-			$array_field['Requires'] = $this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0);
-
-		// Write the file "p.spec"
-        $buffer .= "cat << _EOF_ > ~/rpmbuild/SPECS/p.spec\n";
+        $buffer .= "rpmdev-setuptree\n"; // Create the directories for building packages (/home/ dir)
+        $buffer .= "cd /paquito\n";
         
-		// For each field that will contains the file "p.spec"
-		foreach ($array_field as $key => $value)
-            $buffer .= "$key: $value\n";
-            
-		// Write the description
-        $buffer .= "\n%description\n".$this->struct['Summary']."\n";
-        $buffer .= "_EOF_\n";
-        
-		// If any "cd" command is present in pre-build commands, we need to know where we are actually
+        // If any "cd" command is present in pre-build commands, we need to know where we are actually
+        $buffer .= "\n#Execute commands\n";
         $buffer .= "TEMP_PWD=$(pwd)\n";
         
-		/* If there are pre-build commands */
+        /* If there are pre-build commands */
 		/* IMPORTANT The build() function is not used because the pre-commands work directly
 		 * in the src/ directory (of the package). It is simpler to launch commands directly */
 		if (!empty($struct_package['Build']['Commands'])) {
@@ -655,11 +670,41 @@ class Generate extends Command
         
 		// Go back to the usual directory
         $buffer .= "cd \$TEMP_PWD\n";
+            
+        // Moves the files in the src/ directory of the package directory
+        $buffer .= "\n#Move files to the RPM folder\n";
+		$post_permissions = $this->move_files($buffer, "~/rpmbuild/BUILD/", $struct_package['Files']);
+
+		// Write the "p.spec" file
+        $buffer .= "\n#Write the spec file\n";
+        $buffer .= "cat << _EOF_ > ~/rpmbuild/SPECS/$package_name.spec\n";
         
-		// Writes again in the file "p.spec" (%install section)
-        $buffer .= "cat << _EOF_ >> ~/rpmbuild/SPECS/p.spec\n";
+		// For each field that will contains the file "p.spec"
+        // Create array_field which will handle the description file for the packages
+		$array_field = array(
+			//'#Maintainer' => $this->struct['Maintainer'],
+			'Name' => $package_name,
+			'Version' => $this->struct['Version'],
+			'Release' => '1%{?dist}',
+			'Summary' => $this->struct['Summary'],
+			'License' => $this->struct['Copyright'],
+			'URL' => $this->struct['Homepage'],
+            //'Source0' => $this->struct['Git'],
+			'Packager' => 'Paquito',
+		);
         
-		/* TODO Faire wildcard */
+		foreach ($array_field as $key => $value)
+            $buffer .= "$key: $value\n";
+            
+        // Dépendences
+        $buffer .= "\nBuildRequires: $list_dep\n";
+        if (isset($struct_package['Runtime']['Dependencies']))
+			$buffer .= "Requires: ".$this->generate_list_dependencies($struct_package['Runtime']['Dependencies'], 0)."\n";
+            
+		// Write the description
+        $buffer .= "\n%description\n".$this->struct['Description']."\n";
+        
+		// %install section - TODO : Faire wildcard   
 		$buffer .= "\n%install\n\trm -rf %{buildroot}\n";
 
 		// The file section uses macros to include files
@@ -678,7 +723,8 @@ class Generate extends Command
 		$spec_files_add = array();
 
         // TODO : Rewrite the following section
-		foreach ($struct_package['Files'] as $key => $value) {
+		foreach ($struct_package['Files'] as $key => $value)
+        {
 			/* The destination file will be in a sub-directory */
 			if (strrpos($key, '/') !== false) {
 				/* Splits the path in a array */
@@ -700,7 +746,7 @@ class Generate extends Command
 					}
 				}
 				// Writes the "mkdir" command in the %install section
-                $buffer .= "\tmkdir -p \\\$RPM_BUILD_ROOT/$directory/\n";
+                $buffer .= "\tmkdir -p %{buildroot}/$directory/\n";
 			}
             
 			/* The last character is a slash (in others words, the given path is a directory) */
@@ -711,17 +757,10 @@ class Generate extends Command
 			}
 			
             // Writes the "cp" command in the %install section
-            $buffer .= "\tcp --preserve /".ltrim($dest, '/')." \\\$RPM_BUILD_ROOT/".ltrim($key, '/')."\n";
+            $buffer .= "\tcp --preserve ".ltrim($dest, '/')." %{buildroot}/".ltrim($key, '/')."\n";
 		}
-        $buffer .= "_EOF_\n";
         
-		// Moves the files in the src/ directory of the package directory
-		$post_permissions = $this->move_files($buffer, "$_SERVER[HOME]/rpmbuild/BUILD/", $struct_package['Files']);
-
-		// Write again in the file "p.spec" (%files and %pre/%post sections)
-        $buffer .= "cat << _EOF_ >> ~/rpmbuild/SPECS/p.spec\n";
-        
-		// Write the %files section
+        // %files and %pre/%post sections
         $buffer .= "\n%files\n";
 		foreach ($spec_files_add as $value)
             $buffer .= "\t$value\n";
@@ -754,7 +793,8 @@ class Generate extends Command
         $buffer .= "_EOF_\n";
 
 		// Launch the creation of the package
-        $buffer .= "rpmbuild -ba ~/rpmbuild/SPECS/p.spec\n";
+        $buffer .= "\n#Start building the package\n";
+        $buffer .= "rpmbuild -ba ~/rpmbuild/SPECS/$package_name.spec\n";
 
 		// Open & write the dynamic script
         $this->dockerfile = fopen('Docker_paquito.sh', 'w');
