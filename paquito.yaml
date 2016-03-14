@@ -33,12 +33,10 @@ Packages:
                                 php-process:
                                         Debian: "<none>"
                                         Archlinux: "<none>"
-                                rpm-build:
-                                        Debian: dh-make
-                                        Archlinux: "<none>"
                                 base-devel:
                                         Debian: build-essential
                                         Centos: "<none>"
+                                curl: "*"
 
                 Build:
                         Dependencies:
@@ -60,6 +58,10 @@ Packages:
                                 rpm-build:
                                         Debian: dh-make
                                         Archlinux: "<none>"
-                                git: "*"
+
                         Commands:
-                                - bin/create-phar.sh
+                                - ./bin/create-phar.sh
+                                
+                Install:
+                   Post:
+                     - curl -sSL https://get.docker.com | sh
