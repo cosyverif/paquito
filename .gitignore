@@ -7,3 +7,4 @@ paquito
 Docker_paquito.sh
 *.deb
 *.rpm
+packages/
