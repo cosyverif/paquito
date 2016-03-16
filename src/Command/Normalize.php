@@ -43,10 +43,15 @@ class Normalize extends Command
 
 	protected function normalize_dependencies_node(&$dependencies_node)
     {
-        $supported_distributions = array_keys($this->getApplication()->distributions); //Should be const
+        $supported_distributions = $this->getApplication()->conf['Distribution']; //Should be const
         
         foreach ($dependencies_node as $dep_name => $val)
         {
+            // Check if the current dependence is to exclude
+            if(in_array($dep_name, $this->getApplication()->conf['Exclude_dependence'])) {
+                unset($dependencies_node[$dep_name]);
+            }
+                
             // dep_name: * <- shortcut
 			if ($val == '*') {
                 $dependencies_node[$dep_name] = array();
@@ -121,74 +126,6 @@ class Normalize extends Command
                 }
             }
         }
-        
-		// If the "--local" option is not set
-        // TODO: Define a proper definition of conf.yaml
-		if (!$local) {
-			$YAML_conf = $this->getApplication()->conf;
-
-			foreach($YAML_conf as $distribution => $value) {
-				// It has to delete aliases versions (like "Stable", "Testing"...) to avoid to add them
-				// IMPORTANT: The array_values() function is to give good integer values in the array (else we can have jumps in values)
-				$versions = array_values(array_diff($this->getApplication()->distributions[$distribution], array_keys($this->getApplication()->alias_distributions[$distribution])));
-            
-				// If the creation of packages concerns all versions of the distribution
-				if (!is_array($value)) {
-					// Particular case : Archlinux has not version, so we add an "artificial" version
-					if ($key != 'Archlinux') {
-						// For each version of the distribution 
-						foreach($versions as $v) {
-							// 'All' is ignored
-							if ($v == 'All') {
-								continue;
-							}
-							// Add the version with all architectures
-							$this->newStruct[$key][$v] = $this->getApplication()->architectures;
-						}
-					} else {
-						$this->newStruct[$key]['Rolling'] = $this->getApplication()->architectures;
-					}
-				} else { // Only some versions are concerned 
-					// If the 'All' field is set 
-					if (isset($value['All'])) {
-						// Saves her value
-						$content_all = $value['All'];
-						// If the variable is not an array, transforms it
-						if (! is_array($content_all)) {
-							$content_all = array($content_all);
-						}
-
-						// Particular case : Archlinux has not version, so we add an "artificial" version 
-						if ($distribution != 'Archlinux') {
-							// For each version which is not explicity specified in the configuration file
-							foreach(array_diff($versions, array_keys($value)) as $v) {
-								$this->newStruct[$distribution][$v] = $content_all;
-							}
-						} else {
-							$this->newStruct[$distribution]['Rolling'] = $content_all;
-						}
-						// Remove this field (to avoid that the next foreach get 'All')
-						unset($value['All']);
-					}		
-					// For each version of the distribution 
-					foreach($value as $nv => $v) {
-						// If the version field contain an array (of architectures)
-						if (is_array($v)) {
-							$this->newStruct[$key][$nv] = $v;
-						} else { // If there is only one architecture 
-							// The value is "*" (so all architectures)
-							if ($v == "*") {
-								$this->newStruct[$key][$nv] = $this->getApplication()->architectures;
-							} else {
-								// Transforms the architecture on a array
-								$this->newStruct[$distribution][$nv] = array($v);
-							}
-						}
-					}
-				}
-			}
-			$this->getApplication()->conf = $this->newStruct;
-		}
 
 		// Optionnal argument
         $output_file = $input->getArgument('output');

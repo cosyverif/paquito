@@ -2,11 +2,10 @@ check:
         bit: "Les permissions du fichier %file% comportent un bit spécial (%permissions%)"
         field: "%path% : Le champ %value% n'est pas attendu"
         incorrect: "%path% : Le contenu du champ %field% est incorrect (%value%)"
-        maintainer: "%path% : Le mainteneur n'est pas correctement formulé (%value%)\nLa bonne façon de l'écrire est : Prénom Nom <mail@adresse@com>"
+        maintainer: "%path% : Le mainteneur n'est pas correctement formulé (%value%)\nLa bonne façon de l'écrire est : Prénom Nom <mail@adresse@com> sans lettre accentuée"
         missing: "%field% : Le champ ne contient pas tous les champs requis"
         package: "%path% : Mauvais type de paquet (%value%)"
         void: "%path% : Le champ %key% est vide"
-        inexistant: "%path% : Le fichier ou le repertoire n'existe pas"
 generate:
         chdir: "Echec du changement de répertoire (%dst%)"
         command: "Echec de la commande : \"%command%\" (code sortie %code%)"
@@ -24,5 +23,7 @@ parse:
 prune:
         exist: "Distribution inconnue"
         read: "Erreur lors de la lecture du fichier %file%"
+        distribution: "Votre distribution unix n'est pas supportée"
+        version: "La version de votre distribution unix n'est pas supportée"
 write:
         save: "Erreur lors de l'écriture dans le fichier %output_file%"

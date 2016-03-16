@@ -16,17 +16,12 @@ class Parse extends Command
     {
         $this
             ->setName('parse')
-            ->setDescription('Parse YaML file')
+            ->setDescription('Parse YAML file')
             ->addArgument(
                 'input',
                 InputArgument::REQUIRED,
-                'Name of YaML file'
+                'Name of YAML file'
             );
-            /*->addArgument(
-				'output',
-				InputArgument::REQUIRED,
-				'Array of YaML structure'
-			);*/
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -37,8 +32,7 @@ class Parse extends Command
         // Launch Logger module
 		$logger = new ConsoleLogger($output);
 
-        //TODO : Check if its a .yaml
-
+        // Rudimentary check
         if (!is_file($YAMLFile)) {
             $logger->error($this->getApplication()->translator->trans('parse.exist', array('%basename%' => "$YAMLFile")));
             exit(-1);
@@ -47,24 +41,27 @@ class Parse extends Command
             exit(-1);
         }
         
-        // Parse the file
-        $this->getApplication()->data = Yaml::parse(file_get_contents($YAMLFile));
-
-		if (!$local) {
-			// The configuration file of Paquito not exists
-			if (!is_file('/etc/paquito/conf.yaml')) {
-				$logger->error($this->getApplication()->translator->trans('parse.exist', array('%basename%' => '/etc/paquito/conf.yaml')));
-				exit(-1);
-			} elseif (!is_readable('/etc/paquito/conf.yaml')) { /* If the file is not readable */
-				$logger->error($this->getApplication()->translator->trans('parse.right', array('%basename%' =>  '/etc/paquito/conf.yaml')));
-				exit(-1);
-			}
-            
-			// Parse the file and return its content like a array (hashmap)
-			$this->getApplication()->conf = Yaml::parse(file_get_contents('/etc/paquito/conf.yaml'));
+        // Parse the input file
+        try {
+            $this->getApplication()->data = Yaml::parse(file_get_contents($YAMLFile));
+        } catch (ParseException $e) {
+            $logger->error("Unable to parse the YAML file");//$this->getApplication()->translator->trans('parse.exception', arra))
         }
         
-		/* Change the current directory to the project directory
-		chdir($basename);*/
+		// Rudimentary check for conf.yaml
+		if (!is_file($this->getApplication()->conf)) {
+			$logger->error($this->getApplication()->translator->trans('parse.exist', array('%basename%' => '/etc/paquito/conf.yaml')));
+			exit(-1);
+		} elseif (!is_readable($this->getApplication()->conf)) {
+			$logger->error($this->getApplication()->translator->trans('parse.right', array('%basename%' =>  '/etc/paquito/conf.yaml')));
+			exit(-1);
+		}
+            
+		// Parse the configuration file
+        try {
+		     $this->getApplication()->conf = Yaml::parse(file_get_contents($this->getApplication()->conf));
+        } catch(ParseException $e) {
+             $logger->error("Unabl to parse the YAML file");
+        }
     }
 }

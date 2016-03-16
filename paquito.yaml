@@ -40,9 +40,6 @@ Packages:
 
                 Build:
                         Dependencies:
-                                base-devel:
-                                        Debian: build-essential
-                                        Centos: "<none>"
                                 php-cli:
                                         Debian: php5-cli
                                         Archlinux: php-cgi
@@ -51,12 +48,6 @@ Packages:
                                         Archlinux: "<none>"
                                 php-process:
                                         Debian: "<none>"
-                                        Archlinux: "<none>"
-                                rpmdevtools: 
-                                        Debian: "<none>"
-                                        Archlinux: "<none>"
-                                rpm-build:
-                                        Debian: dh-make
                                         Archlinux: "<none>"
 
                         Commands:

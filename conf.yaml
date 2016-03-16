@@ -1,6 +1,28 @@
-Debian: 
-    Jessie: 64 
-Centos:
-    "7.0": 64
-Archlinux: 
-    All: 64
+Distribution_supported:
+     Debian:
+        Package_manager: APT
+        Container: debian
+        Version:
+           - Jessie
+           - Wheezy
+           - Stable
+           - Testing
+                 
+     Centos:
+        Package_manager: RPM
+        Container: centos
+        Version:
+           - 7
+           - 6
+           - 5
+                 
+     Archlinux:
+        Package_manager: ABS
+        Container: base/archlinux
+        
+Exclude_dependence:
+     - dh-make
+     - build-essential
+     - base-devel
+     - rpm-build
+     - rpmdevtools

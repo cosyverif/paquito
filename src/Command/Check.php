@@ -16,10 +16,19 @@ class Check extends Command
     //Root Node -> lvl 1
     private $root_node = array('Name', 'Version', 'Homepage', 'Description', 'Summary', 'Copyright', 'Maintainer', 'Authors', 'Packages');
     private $root_node_required = array('Name', 'Version', 'Description', 'Summary', 'Copyright', 'Maintainer', 'Packages');
+    private $root_conf_node = array('Distribution_supported', 'Exclude_dependence');
+    private $root_conf_node_required = array('Distribution_supported');
     
     //Packages Node -> lvl 2
     private $packages_node = array('Type', 'Files', 'Build', 'Install', 'Runtime', 'Test');
     private $packages_node_required = array('Type','Files');
+    
+    //Package_manager_supported Node -> lvl 2
+    private $pkg_manager_supported = array('RPM', 'APT', 'ABS');
+    
+    //Distribution_supported Node -> lvl 2
+    private $distro_supported = array('Package_manager', 'Version', 'Container');
+    private $distro_supported_required = array('Package_manager', 'Container');
     
     //Types Values 
     private $type_values = array('binary', 'library', 'source', 'arch_independant');
@@ -33,11 +42,6 @@ class Check extends Command
 				'input',
 				InputArgument::REQUIRED,
 				'Name of the directory which contains the sources and the paquito.yaml file'
-			)
-			->addArgument(
-				'output',
-				InputArgument::OPTIONAL,
-				'Name of a YaML file'
 			);
 	}
 
@@ -49,13 +53,6 @@ class Check extends Command
             // If a file need specific permissions -> check integry of the field
 			if (is_array($f_value)) {
 				$this->check_field($fieldbase, $f_value, array('Source', 'Permissions'), array('Source', 'Permissions'));
-				
-                // Check if the file/directory exist
-               /*if(!file_exists($f_value['Source'])) {
-                    $fieldbase = implode(' -> ', $fieldbase);
-                    $this->logger->error($this->getApplication()->translator->trans('check.inexistant', array('%path%' => $fieldbase.' -> '.$f_value['Source'])));
-					exit(-1);
-                }*/
                 
                 // Check if the permissions is well formated
 				if (!preg_match('/^[0-7]{3,4}$/', $f_value['Permissions'])) {
@@ -66,14 +63,6 @@ class Check extends Command
 					$this->logger->warning($this->getApplication()->translator->trans('check.bit', array('%file%' => $f_key, '%permissions%' => $f_value['Permissions'])));
 				}
 			}
-            
-            /*else {
-                if(!file_exists($f_value)) {
-                    $fieldbase = implode(' -> ', $fieldbase);
-                    $this->logger->error($this->getApplication()->translator->trans('check.inexistant', array('%path%' => $fieldbase.' -> '.$f_value)));
-					exit(-1);
-                }
-            }*/
 		}
 	}
 
@@ -91,7 +80,7 @@ class Check extends Command
 		 * fields found. If more than 0, error (because it misses one or more required fields) */
 		$fieldmin = count($array_min);
 		$fieldbase = implode(' -> ', $fieldbase);
-        
+
 		foreach ($struct as $key => $value) {
 			/* If the name of the current field doesn't part of the superior field */
 			if (!in_array($key, $array_comparer)) {
@@ -135,7 +124,7 @@ class Check extends Command
             else
             {
 				// force array($this->getApplication()->currentDistrib) ? 
-				$this->check_field($basefield, $d_value, array_keys($this->getApplication()->distributions), array());
+				$this->check_field($basefield, $d_value, $this->getApplication()->conf['Distribution'], array());
 
                 // Check dependencies for each distribution
 				foreach ($d_value as $distribution => $v_value) {
@@ -181,19 +170,13 @@ class Check extends Command
 
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
-       	$input_dir = $input->getArgument('input');
+       	$input_file = $input->getArgument('input');
 		$local = $input->getOption('local');
-        
-        //Precaution : if a slash miss at the end of the directory, add it
-        if(substr($input_dir, -1) != '/')
-            $input_dir .= '/';
-
-        $YAML_paquito = $input_dir."paquito.yaml"; 
         
 		// Get the references of the command parse()
 		$command = $this->getApplication()->find('parse');
 		$array_input = new ArrayInput(array('command' => 'parse',
-                                            'input' => $YAML_paquito,
+                                            'input' => $input_file,
                                             '--local' => $local)
         );
         
@@ -201,13 +184,43 @@ class Check extends Command
 		$command->run($array_input, $output);
 
         // Launch logger module
-        // TODO : creer un logger general !
         $this->logger = new ConsoleLogger($output);
         
-		// Get the structure of the YaML file
+        // Get, Check and Set application variable
+		$YAML_conf = $this->getApplication()->conf;
+
+        /* Analysis of the root structure (which contains distribution names) */
+		$this->check_field(array('Root'), $YAML_conf, $this->root_conf_node, $this->root_conf_node_required);
+        
+        // On n'impose pas de structure exacte a conf.yaml
+		foreach($YAML_conf as $nodeLVL2 => $value) {
+            if($nodeLVL2 == 'Distribution_supported')
+            {
+                //print_r($value);//print_r($YAML_conf);
+                foreach($value as $distribution => $infos)
+                {
+                    $this->check_field(array('Root', 'Distribution_supported'), $infos, $this->distro_supported, $this->distro_supported_required);
+                    if(!in_array($infos['Package_manager'], $this->pkg_manager_supported)) {
+                        unset($YAML_conf['Distribution_supported'][$distribution]); //Supprime le noeud
+                    }
+                }
+            }
+            
+            if($nodeLVL2 == 'Exclude_dependence')
+            {
+                $YAML_conf['Exclude_dependence'] = array();
+                foreach($value as $exclude_dep)
+                    array_push($YAML_conf['Exclude_dependence'], $exclude_dep);
+            }
+		}
+        $this->getApplication()->conf = $YAML_conf['Distribution_supported'];
+        $this->getApplication()->conf['Distribution'] = array_keys($this->getApplication()->conf);
+        $this->getApplication()->conf['Exclude_dependence'] = $YAML_conf['Exclude_dependence'];
+
+        // Get & Check the structure of the paquito.yaml file
 		$YAML_node = $this->getApplication()->data;
         
-		/* Analysis of the root structure */
+		// Analysis of the root structure 
 		$this->check_field(array("Root"), $YAML_node, $this->root_node, $this->root_node_required);
         
 		// Check if the maintainer is well formatted
@@ -223,31 +236,31 @@ class Check extends Command
 		foreach ($YAML_node['Packages'] as $pkg_name => $value) {
 			$this->check_field(array("Root", "Packages", $pkg_name), $value, $this->packages_node, $this->packages_node_required);
             
-			/* ----- TYPE ----- */
-			/* If the type of package is unknown */
+			// ----- TYPE -----
+			// If the type of package is unknown
 			if (!in_array($value['Type'], $this->type_values)) {
 				$this->logger->error($this->getApplication()->translator->trans('check.package', array('%value%' => $value['Type'], '%path%' => "Root -> Packages -> $key -> Type")));
 				exit(-1);
 			}
             
-			/* ----- FILES ----- */
+			// ----- FILES ----- 
 			$this->check_files_node(array("Root", "Packages", $pkg_name, "Files"), $value['Files']);
             
             $key_dependencies = array();
             
-			/* ----- OPTIONAL : BUILD ----- */
+			// ----- OPTIONAL : BUILD ----- 
 			if (isset($value['Build'])) {
 				$this->check_field(array("Root", "Packages", $pkg_name, "Build"), $value['Build'], array('Dependencies', 'Commands'), array());
                 array_push($key_dependencies, "Build");
             }
             
-            /* ----- OPTION : RUN ----- */
+            // ----- OPTION : RUN ----- 
 			if (isset($value['Runtime'])) {
 				$this->check_field(array("Root", "Packages", $pkg_name, "Runtime"), $value['Runtime'], array('Dependencies'), array('Dependencies'));
                 array_push($key_dependencies, "Runtime");
             }
             
-            /* ----- OPTIONAL : TEST ----- */
+            // ----- OPTIONAL : TEST ----- 
 			if (isset($value['Test'])) {
 				$this->check_field(array('Root','Packages', $pkg_name, 'Test'), $value['Test'], array('Files','Dependencies', 'Commands'), array());
 				if (isset($value['Test']['Files']))
@@ -263,68 +276,10 @@ class Check extends Command
                     $this->check_dependencies(array("Root", "Packages", $pkg_name, $key_dependencies[$i], "Dependencies"), $current_node);
             }
             
-            /* ----- OPTIONAL : INSTALL ----- */
+            // ----- OPTIONAL : INSTALL -----
 			if (isset($value['Install']))
 				$this->check_field(array('Root','Packages', $pkg_name, 'Install'), $value['Install'], array('Pre', 'Post'), array());
             
-		}
-
-		/* If the "--local" option is not set */
-		if (!$local) {
-			$YAML_conf = $this->getApplication()->conf;
-
-			/* Analysis of the root structure (which contains distribution names) */
-			$this->check_field(array('Root'), $YAML_conf, array_keys($this->getApplication()->distributions), array_keys($this->getApplication()->distributions));
-
-			foreach($YAML_conf as $distribution => $value) {
-				if (is_array($value))
-                {
-                    $versions =& $value;
-                   
-					/* Checks versions of the current distribution */
-					$this->check_field(array('Root', $distribution), $YAML_conf[$distribution], array_diff($this->getApplication()->distributions[$distribution], array_keys($this->getApplication()->alias_distributions[$distribution])), array());
-					
-					foreach($YAML_conf[$distribution] as $nom_code_version => $architecture) {
-                        
-                        if (is_array($architecture)) { // Multiple architecture
-							foreach ($architecture as $current_architecture) {
-								if (is_array($current_architecture) || !in_array($current_architecture, $this->getApplication()->architectures)) {
-									$field = implode(' -> ', array('Root', $distribution, $version));
-									$this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%field%' => $v_key, '%value%' => $v_key, '%path%' => $field)));
-									exit(-1);
-								}
-							}
-						} else { /* One architecture is specified or "*" */
-							if (!in_array($architecture, $this->getApplication()->architectures) && $architecture != '*') {
-								$field = implode(' -> ', array('Root', $nom_code_version, $architecture));
-								$this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%field%' => $nom_code_version, '%value%' => $architecture, '%path%' => $field)));
-								exit(-1);
-							}
-						}
-					}
-				}
-                
-                else
-                {
-					if ($value != "*") {
-						$field = implode(' -> ', array('Root', $key));
-						$this->logger->error($this->getApplication()->translator->trans('check.incorrect', array('%field%' => $key, '%value%' => $value, '%path%' => $field)));
-						exit(-1);
-					}
-				}
-			}
-		}
-
-		// Write the output - OPTIONAL
-		$output_file = $input->getArgument('output');
-		if ($output_file) {
-			/* Get references of the command write() */
-			$command = $this->getApplication()->find('write');
-			$array_input = new ArrayInput(array('command' => 'write',
-                                                'output' => $output_file)
-            );
-            
-			$command->run($array_input, $output);
 		}
 	}
 }

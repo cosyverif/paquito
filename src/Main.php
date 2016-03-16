@@ -18,22 +18,14 @@ use \Paquito\Command\Generate_test;
 // FIXME: erase when release
 error_reporting(E_ALL | E_STRICT);
 
-$application = new Application('paquito', '0.2'); //0.2 Docker implementation
+$application = new Application('paquito', '0.3'); //0.3 Docker implementation
 
 /* Globals variables */
-$application->conf = null;
+$application->conf = '/etc/paquito/conf.yaml';
 $application->data = null;
 $application->dist_name = null;
 $application->dist_version = null;
-$application->dist_arch = null;
-$application->architectures = array('32', '64');
-$application->distributions = array('Debian' => array('All', 'Stable', 'Testing', 'Wheezy', 'Jessie'),
-	                                'Archlinux' => array('All'),
-	                                'Centos' => array('All', '6.6', '7.0'), );
-    
-$application->alias_distributions = array('Debian' => array('Stable' => 'Wheezy', 'Testing' => 'Jessie'),
-	                                      'Centos' => array(),
-	                                      'Archlinux' => array(),);
+$application->dist_arch = 'x86_64'; //For futur purpose
     
 /* Globals options */
 $application->getDefinition()->addOptions(

@@ -12,7 +12,8 @@ use Symfony\Component\Console\Input\ArrayInput;
 
 class Prune extends Command
 {
-	public $logger = null;
+	private $logger = null;
+    private $to_prune = array();
 
 	protected function configure()
 	{
@@ -22,29 +23,32 @@ class Prune extends Command
 			->addArgument(
 				'input',
 				InputArgument::REQUIRED,
-				'Name of the directory which contains the sources and the paquito.yaml file'
+				'Name of the YAML file'
 			)
-			->addArgument(
+            /*->addArgument(
 				'output',
 				InputArgument::OPTIONAL,
 				'Name of a YaML file'
-			)
-			;
+			)*/
+            ->addArgument(
+                'target',
+                InputArgument::IS_ARRAY | InputArgument::OPTIONAL,
+                'Distribution on which normalize paquito.yaml'
+            );
 	}
 
 	// Defines the applications variables $dist_name, $dist_version and $dist_arch
 	protected function getDist()
     {
         // Init
-        $supported_distributions = array_keys($this->getApplication()->distributions);
+        $supported_distributions = $this->getApplication()->conf['Distribution'];
 
         // Perform some very rudimentary platform detection
         $get_lsb_distribution = ucfirst(rtrim(shell_exec('lsb_release -si 2>&1')));
         if($get_lsb_distribution != NULL) // Check if lsb_release exist
         {
-           $list_versions = $this->getApplication()->distributions[$get_lsb_distribution];
-           if(!isset($list_versions)) {
-            //    $logger->error("caca"); // Distribution non supportée => To translate
+           if(!in_array($get_lsb_distribution, $supported_distributions)) {
+               $this->logger->error($this->getApplication()->translator->trans('prune.distribution'));
                exit(-1);
            }
            
@@ -53,20 +57,30 @@ class Prune extends Command
 
            $get_lsb_version = ucfirst(rtrim(shell_exec('lsb_release -sc 2>&1')));
            if($get_lsb_version != NULL)
+           {
+                if(!in_array($get_lsb_version, $this->getApplication()->conf[$get_lsb_distribution]['Version'])) {
+                    $this->logger->error($this->getApplication()->translator->trans('prune.version'));
+                    exit(-1);
+                }
+                
                 $this->getApplication()->dist_version = $get_lsb_version;
+           }
                 
            //lsb_release -sc ne fonctionne pas => regarder le fichier specifique à la distribution
-           // TODO : Gerer le cas de debian (BTW: archlinux n'a pas de différentes versions)
-           switch($get_lsb_distribution)
+           // TODO : Gerer les différents cas dynamiquement (BTW: archlinux n'a pas de différentes versions)
+           else
            {
-               case 'Centos':
-                    if(is_file('/etc/centos-release') || is_file('/etc/redhat-release'))
-                    {
-                        //TODO: Install Centos and check those files => get current version
-                    }
-               break;
-               
-               default:
+                switch($get_lsb_distribution)
+                {
+                    case 'Centos':
+                            if(is_file('/etc/centos-release') || is_file('/etc/redhat-release'))
+                            {
+                                //TODO: Install Centos and check those files => get current version
+                            }
+                    break;
+                    
+                    default:
+                }
            }
         }
         
@@ -133,26 +147,22 @@ class Prune extends Command
                 {
                     $this->getApplication()->dist_name = 'Debian';
                     if(($version = file_get_contents('/etc/debian_version')) === FALSE) {
-                        $logger->error($this->getApplication()->translator->trans('prune.read', array('%file%' => '/etc/centos-release')));
+                        $this->logger->error($this->getApplication()->translator->trans('prune.read', array('%file%' => '/etc/centos-release')));
                         return -1;
                     }
                     $this->getApplication()->dist_version = rtrim($version);
                 }
             }
          }
-         
-         // Set architecture
-         $this->getApplication()->dist_arch = posix_uname()['machine'];
 	}
 
 	/* Prune a 'Packages' node with current distribution ($dist_name),
-	 * version ($dist_version) and architecture ($dist_arch)
+	 * version ($dist_version)
 	 * @param $pkg_node : 'Packages' node */
 	protected function prune_node($pkg_node) {
 		// my_distribution should be const
         $my_distribution = array('Name' => $this->getApplication()->dist_name,
-                                 'Version' => $this->getApplication()->dist_version,
-                                 'architecture' => $this->getApplication()->dist_arch);
+                                 'Version' => $this->getApplication()->dist_version);
                                  
 		$pruned_pkg_node = $pkg_node;
         $key_dependencies = array('Build', 'Runtime', 'Test');
@@ -179,11 +189,18 @@ class Prune extends Command
 					// For each node in 'Dependencies' node
 					foreach($cur_dep as $dep_name => $d_value)
                     {
-                        // A problem may occur w/ All
                         if(isset($cur_dep[$dep_name][$my_distribution['Name']]['All']))
                             $dep_for_my_dist = $cur_dep[$dep_name][$my_distribution['Name']]['All'];
-                        else
-                            $dep_for_my_dist = $cur_dep[$dep_name][$my_distribution['Name']]['Version'];
+                        else {
+                            if($my_distribution['Version'] != null) {
+                                print_r($cur_dep[$dep_name][$my_distribution['Name']]['Version']);
+                                // echo "Version : ".array_keys($cur_dep[$dep_name][$my_distribution['Name']]['Version'])."\n";
+                                //if(!in_array($to_push, array_keys($cur_dep[$dep_name][$my_distribution['Name']]['Version'])))
+                                $dep_for_my_dist = $cur_dep[$dep_name][$my_distribution['Name']]['Version'];
+                            }
+                            else
+                                $dep_for_my_dist = $cur_dep[$dep_name][$my_distribution['Name']];
+                        }
                             
                         if($dep_for_my_dist != "<none>")
                             array_push($cur_pruned_dep, $dep_for_my_dist);
@@ -207,10 +224,10 @@ class Prune extends Command
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
 		$input_file = $input->getArgument('input');
+        $input_target = $input->getArgument('target');
 		$local = $input->getOption('local');
-		
-        // Get references of the command parse()
-        //
+        
+        // Get references of the command normalize
 		$command = $this->getApplication()->find('normalize');
 		$array_input = new ArrayInput(array('command' => 'normalize',
                                             'input' => $input_file,
@@ -218,38 +235,70 @@ class Prune extends Command
         );
 		$command->run($array_input, $output);
 
-        $logger = new ConsoleLogger($output);
-
-		// If the "--local" option is not set, so we generate pruned YAML for each distrib
-		if (!$local)
+        // Launch logger module
+        $this->logger = new ConsoleLogger($output);
+		
+        // "--local" or "-l" is set => generate pruned YAML for the CURRENT distribution
+        if($local)
         {
-			$YAML_conf = $this->getApplication()->conf;
-			
-            foreach($YAML_conf as $distribution => $arr_version) {
-				foreach($arr_version as $cur_version => $arr_architecture) {
-					foreach($arr_architecture as $cur_architecture) {
-						$this->getApplication()->dist_name = $distribution;
-						$this->getApplication()->dist_version = $cur_version;
-						$this->getApplication()->dist_arch = $cur_architecture;
+            $this->getDist();
+            $this->getApplication()->data['Packages'] = $this->prune_node($this->getApplication()->data['Packages']);
+        }
+        
+        // If the "--local" option is not set, so we generate pruned YAML for each distrib
+		else
+        {
+            // If input target is set, always compile for all version
+            $target = array();
+            
+            if($input_target)
+            {   
+                foreach($input_target as $distrib_name) {
+                    $distrib_name = ucfirst(strtolower($distrib_name)); //Normalize input
+                    if(in_array($distrib_name, $this->getApplication()->conf['Distribution']))
+                        array_push($target, $distrib_name);
+                }
+            }
+            
+            if(count($target) == 0)
+                    $target = $this->getApplication()->conf['Distribution']; // Compile on every distribution
+            
+            // Generate prune packages node for each distribution targetted
+			foreach($target as $distribution)
+            {
+                $this->getApplication()->dist_name = $distribution;
+                // echo "PRUNING : $distribution\n";
+                
+                //Gere cas où la distribution n'a pas version
+                if(!isset($this->getApplication()->conf[$distribution]['Version'])) {
+                    $this->getApplication()->dist_version = null;
+                    $this->getApplication()->data['To_build'][$distribution]['Packages'] = $this->prune_node($this->getApplication()->data['Packages']);
+                    // print_r($this->getApplication()->data['Distributions'][$distribution]['Packages']);
+                } else {
+                    array_push($this->to_prune, current($this->getApplication()->conf[$distribution]['Version']));
+                    foreach($this->to_prune as $cur_version)
+                    {
+                        $this->getApplication()->dist_version = $cur_version;
                         
-                        // Add a node for each distributions/versions/architecture
-                        $this->getApplication()->data['Distributions'][$distribution][$cur_version][$cur_architecture]['Packages'] = $this->prune_node($this->getApplication()->data['Packages']);
-					}
-				}
+                        // Add a node for each distributions/versions
+                        // Foreach packages ? 
+                        $this->getApplication()->data['To_build'][$distribution][$cur_version]['Packages'] = $this->prune_node($this->getApplication()->data['Packages']);
+                        // print_r($this->getApplication()->data['Distributions'][$distribution][$cur_version]['Packages']);
+                    }
+                }
+                
+                // unset($this->to_prune);
+                $this->to_prune = array();
 			}
             
-			// Removes the original field 'Packages', now it's useless <= is it usefull to unset ? For memory purpose I guess */
+			// Removes the original field 'Packages', now it's useless <= is it usefull to unset ? For memory purpose I guess
 			unset($this->getApplication()->data['Packages']);
-		}
-        
-        else
-        {
-			$this->getDist();
-            $this->getApplication()->data['Packages'] = $this->prune_node($this->getApplication()->data['Packages']);
+            
+            // print_r($this->getApplication()->data['To_build']);
 		}
 
 		// Optionnal argument
-		$output_file = $input->getArgument('output');
+		/*$output_file = $input->getArgument('output');
 		if ($output_file) {
 			// Get references of the command write()
 			$command = $this->getApplication()->find('write');
@@ -257,6 +306,6 @@ class Prune extends Command
                                                 'output' => $output_file)
             );
 			$command->run($array_input, $output);
-		}
+		}*/
 	}
 }

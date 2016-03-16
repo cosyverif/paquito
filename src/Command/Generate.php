@@ -14,6 +14,7 @@ class Generate extends Command
 {
 	private $logger;
 	private $struct;
+    private $directory;
 	private $dockerfile;
 
 	protected function configure()
@@ -28,117 +29,113 @@ class Generate extends Command
 			)
             ->addArgument(
                 'target',
-                InputArgument::OPTIONAL,
-                'Name of the platform you want generate the package'
-            )
-			->addArgument(
-				'output',
-				InputArgument::OPTIONAL,
-				'Name of a YaML file'
-			);
+                InputArgument::IS_ARRAY | InputArgument::OPTIONAL,
+                'Distribution on which normalize paquito.yaml'
+            );
 	}
 
 	/* Launches generation of each package
 	 * @param $package_struct : 'Packages' field of a distribution */
-	protected function launcher($package_struct)
+	protected function launcher($package_struct, $target_distrib, $target_version)
     {
 		foreach ($package_struct as $key => $value)
         {
-			switch ($this->getApplication()->dist_name) {
-                case 'Debian':
-				    $this->make_deb($key, $value);
-				break;
-                
-                case 'Archlinux':
-                    $this->make_archlinux($key, $value);
+            echo "Lancement genereation $target_distrib - $target_version\n";
+			switch ($this->getApplication()->conf[$target_distrib]['Package_manager']) {
+                case 'APT':
+                    $this->make_deb($key, $value, $target_distrib, $target_version);
                 break;
                 
-                case 'Centos':
-				    $this->make_rpm($key, $value);
+                case 'ABS':
+                    $this->make_archlinux($key, $value, $target_distrib, $target_version);
+                break;
+                
+                case 'RPM':
+				    $this->make_rpm($key, $value, $target_distrib, $target_version);
 				break;
                 
                 default:
                     $logger->error();
 			}
+            echo "\n";
 		}
 	}
+    
 
 	/* Launches Docker and get its result (the package) at the end
 	 * @param $distribution : Name of the distribution, followed by a ':' and its name version
-	 * @param $file : Name of the file which will be got (the package)
-	 * This function is like _system() but if there is an error it will stop and delete
-	 * the container before to return the error and stop Paquito */
+	 * @param $file : Name of the file which will be got (the package) */
 	protected function docker_launcher($distribution, $file) {
-		$command = "docker run --name paquito -v ".getcwd().":/paquito -v /etc/localtime/:/etc/localtime:ro -i $distribution bash /paquito/Docker_paquito.sh";
+		$command = "docker run --name paquito -v ".$this->directory.":/paquito -v /etc/localtime/:/etc/localtime:ro -i $distribution bash /paquito/Docker_paquito.sh";
         echo $command."\n";
 		system($command, $out);
 		$this->_system('docker stop paquito > /dev/null');
-		/* If the output code is more than 0 (error) */
+        
+		// If the output code is more than 0 (error)
+        // Failed case
 		if($out) {
 			$this->_system('docker rm paquito > /dev/null');
 			$this->logger->error($this->getApplication()->translator->trans('generate.command', array('%command%' => $command, '%code%' => $out)));
 			exit(-1);
-		} else { /* The command has succeeded */
-            // $this->_system("mkdir -p packages");
-			$this->_system("docker cp paquito:$file .");
+		} else {
+			//$this->_system('docker cp paquito:/paquito/$file '.$this->directory.'packages');
 			$this->_system('docker rm paquito > /dev/null');
 		}
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
-		$input_file = $input->getArgument('directory');
-        //$input_target = $input->getArgument('target');
+        // TODO: Normalize input
+		$input_directory = $input->getArgument('directory');
+        $input_target = $input->getArgument('target');
 		$local = $input->getOption('local');
+        
+        //Precaution : if a slash miss at the end of the directory, add it
+        if(substr($input_directory, -1) != '/')
+            $input_directory .= '/';
+
+        $YAML_paquito = $input_directory."paquito.yaml";
+        
+        $this->directory = $input_directory;
 		
-        /* Get the references of the command parse() */
+        // Get the references of prune
 		$command = $this->getApplication()->find('prune');
 		$array_input = new ArrayInput(array('command' => 'prune',
-                                            'input' => $input_file,
+                                            'input' => $YAML_paquito,
+                                            'target' => $input_target,
                                             '--local' => $local)
         );
 		$command->run($array_input, $output);
 
         // Logger Module
         $this->logger = new ConsoleLogger($output);
-
-		/* Get the structure of the YaML file (which was parsed) */
-		$this->struct = $this->getApplication()->data;
-
-		// If the "--local" option is not set, so there are several YAML structure to use
-		if(!$local)
+        
+        $this->struct =& $this->getApplication()->data;
+        
+        //$this->_system("rm -r ".$input_directory."packages");
+        $this->_system("mkdir -p ".$input_directory."packages");
+        
+        // "--local" or "-l" is set => launch the packaging process
+        if($local) {
+           $this->launcher($this->struct['Packages'], $this->getApplication()->dist_name, $this->getApplication()->dist_version);
+        }
+        
+        // Launch the packaging process for each distribution
+        else
         {
-			foreach($this->struct['Distributions'] as $dist => $tab_ver) {
-				foreach($tab_ver as $ver => $tab_archi) {
-					foreach($tab_archi as $arch => $tab_package) {
-						$this->getApplication()->dist_name = $dist;
-						$this->getApplication()->dist_version = $ver;
-                        
-						if ($arch == '64')
-							$this->getApplication()->dist_arch = 'x86_64';
-						else
-							$this->getApplication()->dist_arch = 'i386';
-						
-						// Launches the package generation for the distribution currently treated
-						$this->launcher($this->struct['Distributions'][$dist][$ver][$arch]['Packages']);
-					}
-				}
+            // print_r($this->getApplication()->data);
+            foreach($this->struct['To_build'] as $dist => $tab_vers)
+            {
+                if(!isset($this->getApplication()->conf[$dist]['Version'])) {
+                    $this->launcher($this->struct['To_build'][$dist]['Packages'], $dist, null); // A REVOIR
+                } else {
+                    foreach($tab_vers as $version => $node_version) {
+                        // Launches the package generation for the distribution currently treated
+                        $this->launcher($node_version['Packages'], $dist, $version);
+                    }
+                }
 			}
-		}
-        else {
-			$this->launcher($this->struct['Packages']);
-		}
-
-		//  Optionnal argument (output file, which will be parsed)
-		$output_file = $input->getArgument('output');
-		if ($output_file) {
-			/* Get references of the command write() */
-			$command = $this->getApplication()->find('write');
-			$array_input = new ArrayInput(array('command' => 'write',
-                                                'output' => $output_file)
-			);
-			$command->run($array_input, $output);
-		}
+        }
 	}
 
 	function move_files(&$buffer, $dest_directory, $file_node)
@@ -287,7 +284,7 @@ class Generate extends Command
     /* For further information about how deb package work :
        Check : https://wiki.debian.org/HowToPackageForDebian
                https://www.debian.org/doc/manuals/maint-guide/ */
-	protected function make_deb($package_name, $struct_package)
+	protected function make_deb($package_name, $struct_package, $target_distrib, $target_version)
 	{
 		if ($struct_package['Type'] == 'binary') {
 			if ($this->getApplication()->dist_arch == 'x86_64')
@@ -301,7 +298,8 @@ class Generate extends Command
 		$dirname = $package_name.'_'.$this->struct['Version'].'_'.$package_arch;
 
         $buffer = "#!/bin/bash\n";
-        $buffer .= "#Setup environment to build the package\n";
+        $buffer .= "\ncd /paquito\n";
+        $buffer .= "\n#Setup environment to build the package\n";
         $buffer .= "apt-get update\n";
 
 		$array_field = array('Source' => $package_name,
@@ -309,16 +307,16 @@ class Generate extends Command
 			                 'Priority' => 'optional',
 			                 'Maintainer' => $this->struct['Maintainer']);
 
+        $buffer .= "apt-get -y install build-essential dh-make apt-utils ";
 		//  The "Build-Depends" must be placed before fields like "Package" or "Depends" (else this field is not recognized)
         if (isset($struct_package['Build']['Dependencies']))
         {
 			// This variable will contains the list of dependencies (to build)
             $list_dep = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
 			$array_field['Build-Depends'] = str_replace(' ', ', ', $list_dep);
-            $buffer .= "apt-get -y install $list_dep\n";
+            $buffer .= $list_dep;
 		}
-        
-        $buffer .= "\ncd /paquito\n";
+        $buffer .= "\n";
         
         /* If there are pre-build commands */
 		/* To come back in actual directory if a "cd" command is present in pre-build commands */
@@ -356,7 +354,7 @@ class Generate extends Command
 
 		// Create and open the file "control" (in write mode)
         $buffer .= "\n#Start configuring for packaging the source\n";
-        $buffer .= "mkdir -p $dirname/debian\n";
+        $buffer .= "mkdir -p $dirname/debian/source\n";
         $buffer .= "\n#Write control file\n";
         $buffer .= "cat << _EOF_ > $dirname/debian/control\n";
 		
@@ -433,21 +431,35 @@ class Generate extends Command
         $buffer .= "dpkg-buildpackage -us -uc\n";
         $buffer .= "cd \$TEMP_PWD\n";
         
+        // Clean
+        $buffer .= "\n#Cleaning\n";
+        $buffer .= "rm -r $dirname\n";
+        $buffer .= "rm -f $dirname.changes ".$package_name.'_'.$this->struct['Version'].'.dsc '.$package_name.'_'.$this->struct['Version'].".tar.xz\n";
+        $buffer .= "ls\n";
+        
+        // Move to the right folder
+        $buffer .= "\n#Move\n";
+        $buffer .= "mv $dirname.deb packages/\n";
+        
 		// Write and closes the dynamic script
-        $this->dockerfile = fopen("Docker_paquito.sh", 'w');
+        $this->dockerfile = fopen($this->directory.'Docker_paquito.sh', 'w');
         $this->_fwrite($this->dockerfile, $buffer, 'Docker_paquito.sh');
 		fclose($this->dockerfile);
         
 		// Start the generation in a the correct container
-		$this->docker_launcher('debian:'.lcfirst($this->getApplication()->dist_version), "/paquito/$dirname.deb");
+        $container_final = $this->getApplication()->conf[$target_distrib]['Container'];
+        if($target_version != null) {
+            $container_final .= ':'.strtolower($target_version);
+        }
+		$this->docker_launcher($container_final, "$dirname.deb");
 
-		unlink('Docker_paquito.sh');
+		unlink($this->directory.'Docker_paquito.sh');
 	}
 
     /* For further information about how pkg package work
        Check : https://wiki.archlinux.fr/Standard_paquetage
                https://wiki.archlinux.fr/PKGBUILD */
-	protected function make_archlinux($package_name, $struct_package)
+	protected function make_archlinux($package_name, $struct_package, $target_distrib, $target_version)
 	{
 		// TODO Adapter pour les librairies et les autres types
 		if ($struct_package['Type'] != 'binary')
@@ -475,6 +487,7 @@ class Generate extends Command
         
 		// (In the Docker) Creates a keyring (trusted keys), refresh this with the remote server and checks keys
         $buffer .= "pacman-key --init && pacman-key --refresh-keys && pacman-key --populate archlinux\n";
+        $buffer .= "pacman -S --noconfirm --needed base-devel ";
         
 		$array_field = array(
 			'# Maintainer' => $this->struct['Maintainer'],
@@ -495,8 +508,9 @@ class Generate extends Command
             /* Install all dependencies specified in paquito.yaml
                 --needed skip the reinstallation of existing packages */
                 //print_r($struct_package['Build']['Dependencies']);
-            $buffer .= 'pacman -S --noconfirm --needed '.$this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0)."\npacman-db-upgrade\n";
+            $buffer .= $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
 		}
+        $buffer .= "\npacman-db-upgrade\n";
         
         // If any "cd" command is present in pre-build commands, we need to know where we are actually
         $buffer .= "\n#Execute commands\n";
@@ -617,44 +631,55 @@ class Generate extends Command
 		 * 2015, root user cannot use this command */
         $buffer .= "sudo -u nobody makepkg -f\n";
         
+        // Move operation
+        $buffer .= "\n#Moving to the right folder\n";
+        $buffer .= "mv /paquito/$dirname/$package_name-".$this->struct['Version'].'-1-'.$package_arch.".pkg.tar.xz /paquito/packages\n";
+        
+        // Clean operation
+        $buffer .= "\n#Cleaning\n";
+        $buffer .= "rm -r /paquito/$dirname\n";
+        
 		// Write the dynamic script
-        $this->dockerfile = fopen('Docker_paquito.sh', 'w');
+        $this->dockerfile = fopen($this->directory.'Docker_paquito.sh', 'w');
         $this->_fwrite($this->dockerfile, $buffer, 'Docker_paquito.sh');
 		fclose($this->dockerfile);
         
 		// Starts the generation in the container
-		$this->docker_launcher('base/archlinux', "/paquito/$dirname/".$package_name.'-'.$this->struct['Version'].'-1-'.$package_arch.'.pkg.tar.xz');
+        $container_final = $this->getApplication()->conf[$target_distrib]['Container'];
+        if($target_version != null) {
+            $container_final .= ':'.strtolower($target_version);
+        }
+		$this->docker_launcher($container_final, $package_name.'-'.$this->struct['Version'].'-1-'.$package_arch.'.pkg.tar.xz');
 		
         // Deletes the dynamic script
-		unlink('Docker_paquito.sh');
+	    unlink($this->directory.'Docker_paquito.sh');
 	}
 
     /* For further information about how rpm package work
        Check : http://doc.fedora-fr.org/wiki/La_cr%C3%A9ation_de_RPM_pour_les_nuls_:_Cr%C3%A9ation_du_fichier_SPEC_et_du_Paquetage
                https://fedoraproject.org/wiki/How_to_create_an_RPM_package */
-	protected function make_rpm($package_name, $struct_package)
+	protected function make_rpm($package_name, $struct_package, $target_distrib, $target_version)
 	{
 		// TODO Adapter pour les librairies et les autres types
 		if ($struct_package['Type'] != 'binary')
 			$package_arch = 'all';
 		else
 			$package_arch = $this->getApplication()->dist_arch;
-
         
         // Create buffer which will handle the generate script
         $buffer = "#!/bin/bash\n";
-        $buffer .= "#Setup environment to build the package\n";
+        $buffer .= "cd /paquito\n";
+        $buffer .= "\n#Setup environment to build the package\n";
         $buffer .= "yum -y install rpmdevtools rpm-build "; // Install all needed dependencies once
         
 		if (isset($struct_package['Build']['Dependencies'])) {
             $list_dep = $this->generate_list_dependencies($struct_package['Build']['Dependencies'], 0);
             
 			$array_field['BuildRequires'] = $list_dep;
-            $buffer .= "$list_dep\n";
+            $buffer .= $list_dep;
 		}
-        
+        $buffer .= "\n";
         $buffer .= "rpmdev-setuptree\n"; // Create the directories for building packages (/home/ dir)
-        $buffer .= "cd /paquito\n";
         
         // If any "cd" command is present in pre-build commands, we need to know where we are actually
         $buffer .= "\n#Execute commands\n";
@@ -795,16 +820,24 @@ class Generate extends Command
 		// Launch the creation of the package
         $buffer .= "\n#Start building the package\n";
         $buffer .= "rpmbuild -ba ~/rpmbuild/SPECS/$package_name.spec\n";
+        
+        // Copy the generated package into the right folder
+        $buffer .= "\n#Copy the .rpm file to packages\n";
+        $buffer .= "cp -r ~/rpmbuild/RPMS/$package_arch/* /paquito/packages\n";
 
 		// Open & write the dynamic script
-        $this->dockerfile = fopen('Docker_paquito.sh', 'w');
+        $this->dockerfile = fopen($this->directory.'Docker_paquito.sh', 'w');
         $this->_fwrite($this->dockerfile, $buffer, 'Docker_paquito.sh');
 		fclose($this->dockerfile);
         
 		// Start the generation with Docker
-		$this->docker_launcher('centos:centos'.substr($this->getApplication()->dist_version, 0, 1), '/root/rpmbuild/RPMS/'.$this->getApplication()->dist_arch."/$package_name-".$this->struct['Version'].'-1.el'.substr($this->getApplication()->dist_version, 0, 1).".centos.$package_arch.rpm");
+        $container_final = $this->getApplication()->conf[$target_distrib]['Container'];
+        if($target_version != null) {
+            $container_final .= ':'.strtolower($target_version);
+        }
+		$this->docker_launcher($container_final, '/root/rpmbuild/RPMS/'.$this->getApplication()->dist_arch."/$package_name-".$this->struct['Version'].'-1.el'.substr($this->getApplication()->dist_version, 0, 1).".centos.$package_arch.rpm");
 		
         // Delete the dynamic script
-		unlink('Docker_paquito.sh');
+	    unlink($this->directory.'Docker_paquito.sh');
 	}
 }
