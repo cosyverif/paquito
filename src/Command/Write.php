@@ -27,36 +27,26 @@ class Write extends Command
                 'input',
                 InputArgument::OPTIONAL,
                 'Name of the directory which contains the sources and the paquito.yaml file'
-            )
-            ;
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        /* Optionnal argument (input file, which will be parsed) */
-    $input_file = $input->getArgument('input');
-    /* If the optionnal argument is present */
-    if ($input_file) {
-        /* Get references of the command parse() */
-        $command = $this->getApplication()->find('parse');
-        /* Declare the arguments in a array (arguments has to gave like this) */
-        $arguments = array(
-            'command' => 'parse',
-            'input' => $input_file,
-        );
-        $array_input = new ArrayInput($arguments);
-        /* Run command */
-        $command->run($array_input, $output);
-    }
-    /* Get path and name of the output file */
-    $output_file = $input->getArgument('output');
-    /* Launch Logger module */
-    $logger = new ConsoleLogger($output);
-    /* Write content of the structure on the output file */
+        $input_file = $input->getArgument('input');
+        if ($input_file) {
+            $command = $this->getApplication()->find('parse');
+            $array_input = new ArrayInput(array('command' => 'parse',
+                                                'input' => $input_file)
+            );
+            $command->run($array_input, $output);
+        }
+        
+        $output_file = $input->getArgument('output');
+        $logger = new ConsoleLogger($output);
+        
         if (file_put_contents($output_file, Yaml::dump($this->getApplication()->data)) === false) {
             $logger->error($this->getApplication()->translator->trans('write.save', array('%output_file%' => $output_file)));
-
-            return -1;
+            exit(-1);
         }
     }
 }

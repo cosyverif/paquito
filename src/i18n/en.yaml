@@ -2,7 +2,7 @@ check:
         bit: "The permissions of the file %file% own a special bit (%permissions%)"
         field: "%path% : The field %value% is unexpected"
         incorrect: "%path% : The content of the field %field% is incorrect (%value%)"
-        maintainer: "%path% : The maintainer is not correctly formed (%value%)\nThe good way is : FirstName FamilyName <mail@address@com>"
+        maintainer: "%path% : The maintainer is not correctly formed (%value%)\nThe good way is : FirstName FamilyName <mail@address@com> without any accented characters"
         missing: "%field% : The field doesn't contain all required fields"
         package: "%path% : Bad type of package (%value%)"
         void: "%path% : The field %key% is empty"
@@ -23,5 +23,7 @@ parse:
 prune:
         exist: "Unknown distribution"
         read: "Error during reading of the file %file%"
+        distribution: "Your current unix distribution is not supported"
+        version: "The version of your unix distribution is not supported"
 write:
         save: "Error during writing in the file %output_file%"

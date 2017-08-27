@@ -15,29 +15,27 @@ use \Paquito\Command\Normalize;
 use \Paquito\Command\Generate;
 use \Paquito\Command\Generate_test;
 
-
 // FIXME: erase when release
 error_reporting(E_ALL | E_STRICT);
 
-$application = new Application('paquito', '0.1');
+$application = new Application('paquito', '0.3'); //0.3 Docker implementation
+
 /* Globals variables */
-$application->conf = null;
+$application->conf = '/etc/paquito/conf.yaml';
 $application->data = null;
 $application->dist_name = null;
 $application->dist_version = null;
-$application->dist_arch = null;
-$application->architectures = array('32', '64');
-$application->distributions = array(
-	'Debian' => array('All', 'Stable', 'Testing', 'Wheezy', 'Jessie'), /* Debian */
-	'Archlinux' => array('All'), /* Debian */
-	'Centos' => array('All', '6.6', '7.0'), ); /* CentOS */
-$application->alias_distributions = array(
-	'Debian' => array('Stable' => 'Wheezy', 'Testing' => 'Jessie'),
-	'Centos' => array(),
-	'Archlinux' => array(),);
+$application->dist_arch = 'x86_64'; //For futur purpose
+    
 /* Globals options */
-$application->getDefinition()->addOptions([new InputOption('local', 'l', InputOption::VALUE_NONE, 'Creates a package only for the current distribution, version and architecture')]);
-/* Register commands */
+$application->getDefinition()->addOptions(
+    [new InputOption('local',
+                    'l',
+                    InputOption::VALUE_NONE,
+                    'Creates a package only for the current distribution, version and architecture')]
+);
+
+/* Add commands */
 $application->add(new Update());
 $application->add(new Parse());
 $application->add(new Check());
@@ -46,10 +44,11 @@ $application->add(new Write());
 $application->add(new Normalize());
 $application->add(new Generate());
 $application->add(new Generate_test());
-// Add i18n:
+
+// TODO/TO FIX : Support i18n:
 // http://symfony.com/doc/master/components/translation/usage.html
 $application->translator = new Translator(\Locale::getDefault());
-$application->translator->setFallbackLocale(array('en'));
+$application->translator->setFallbackLocales(array('en'));
 $application->translator->addLoader('yaml', new YamlFileLoader());
 foreach (new DirectoryIterator(__DIR__.'/i18n/') as $file) {
     $extension = pathinfo($file, PATHINFO_EXTENSION);
